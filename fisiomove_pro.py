@@ -148,7 +148,7 @@ tests_map = {
 # ---- UI ----
 col_logo, col_title = st.columns([1,2])
 with col_logo:
-    try: st.image(DEFAULT_LOGO_PATH, use_column_width=True)
+    try: st.image(DEFAULT_LOGO_PATH, use_container_width=True)
     except Exception: st.markdown("### Fisiomove")
 with col_title:
     st.markdown("<h1 style='margin-bottom:0'>Fisiomove Pro 2.0</h1>", unsafe_allow_html=True)
