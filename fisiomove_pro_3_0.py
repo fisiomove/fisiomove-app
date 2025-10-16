@@ -74,23 +74,38 @@ def radar_plot(labels, scores, title):
     return fig
 
 def radar_png_buffer(labels, scores):
+    import matplotlib
+    matplotlib.use("Agg")  # ✅ forza backend compatibile con Streamlit Cloud
+
     N = len(labels)
     if N == 0:
         return io.BytesIO()
+
     angles = np.linspace(0, 2*np.pi, N, endpoint=False).tolist()
     angles_c = angles + [angles[0]]
     scores_c = list(scores) + [scores[0]]
     ideal_c = [10]*N + [10]
-    fig, ax = plt.subplots(figsize=(4.2,4.2), subplot_kw=dict(polar=True))
+
+    fig, ax = plt.subplots(figsize=(4.5,4.5), subplot_kw=dict(polar=True))
     ax.plot(angles_c, ideal_c, color="#777", linewidth=1, linestyle="dotted")
     ax.plot(angles_c, scores_c, color="#004A9F", linewidth=2)
     ax.fill(angles_c, scores_c, color="#2f6fb640")
-    ax.set_ylim(0,10); ax.set_yticks([2,4,6,8,10]); ax.set_xticks(angles); ax.set_xticklabels(labels, fontsize=8)
+    ax.set_ylim(0,10)
+    ax.set_yticks([2,4,6,8,10])
+    ax.set_xticks(angles)
+    ax.set_xticklabels(labels, fontsize=8)
     ax.grid(True)
-    buf = io.BytesIO()
-    plt.tight_layout(); plt.savefig(buf, format="png", dpi=200); plt.close(fig); buf.seek(0)
-    return buf
 
+    buf = io.BytesIO()
+    try:
+        plt.tight_layout()
+        fig.savefig(buf, format="png", dpi=200)
+    except Exception as e:
+        print("Errore nel salvataggio radar:", e)
+    finally:
+        plt.close(fig)
+    buf.seek(0)
+    return buf
 def ebm_comment(section_name, df):
     low = df[df["Score"] < 4]["Test"].tolist()
     mid = df[(df["Score"] >= 4) & (df["Score"] <= 7)]["Test"].tolist()
