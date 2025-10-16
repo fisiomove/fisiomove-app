@@ -160,7 +160,7 @@ try:
 except Exception:
     story.append(Paragraph("⚠️ Grafico radar non disponibile (nessun test valido o errore grafico).", normal))
     story.append(Spacer(1, 6))
-        story.append(Paragraph(ebm_comment(section_name, disp).replace("\n","<br/>"), normal))
+    story.append(Paragraph(ebm_comment(section_name, disp).replace("\n","<br/>"), normal))
 
     doc.build(story); buf_pdf.seek(0); return buf_pdf
 
