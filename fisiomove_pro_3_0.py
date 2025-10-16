@@ -115,7 +115,12 @@ def ebm_comment(section_name, df):
 def pdf_single_section(logo_bytes, athlete, evaluator, date_str, section_name, df):
     disp = df[df["Valore"] > 0].copy()
     buf_pdf = io.BytesIO()
-    doc = SimpleDocTemplate(buf_pdf, pagesize=A4, rightMargin=1.5*cm, leftMargin=1.5*cm, topMargin=1.5*cm, bottomMargin=1.5*cm)
+    doc = SimpleDocTemplate(
+        buf_pdf,
+        pagesize=A4,
+        rightMargin=1.5*cm, leftMargin=1.5*cm,
+        topMargin=1.5*cm, bottomMargin=1.5*cm
+    )
     styles = getSampleStyleSheet()
     title = ParagraphStyle('title', parent=styles['Title'], textColor=colors.HexColor(PRIMARY))
     normal = ParagraphStyle('normal', parent=styles['Normal'], fontSize=10, leading=14)
@@ -123,20 +128,29 @@ def pdf_single_section(logo_bytes, athlete, evaluator, date_str, section_name, d
     story = []
     story.append(Paragraph("Fisiomove Pro 3.0 – Mobilità EBM", title))
     story.append(Spacer(1, 6))
-    head = Table([["Atleta", athlete, "Data", date_str, "Valutatore", evaluator]], colWidths=[2*cm, 6*cm, 2*cm, 3*cm, 2.5*cm, 4*cm])
-    head.setStyle(TableStyle([("GRID",(0,0),(-1,-1),0.25,colors.grey), ("BACKGROUND",(0,0),(-1,0),colors.whitesmoke)]))
-    story.append(head); story.append(Spacer(1, 8))
+    head = Table([["Atleta", athlete, "Data", date_str, "Valutatore", evaluator]],
+                 colWidths=[2*cm, 6*cm, 2*cm, 3*cm, 2.5*cm, 4*cm])
+    head.setStyle(TableStyle([
+        ("GRID",(0,0),(-1,-1),0.25,colors.grey),
+        ("BACKGROUND",(0,0),(-1,0),colors.whitesmoke)
+    ]))
+    story.append(head)
+    story.append(Spacer(1, 8))
 
     # Logo
     if logo_bytes:
         try:
-            story.append(Image(ImageReader(io.BytesIO(logo_bytes)), width=6*cm, height=6*cm)); story.append(Spacer(1, 6))
-        except Exception: pass
+            story.append(Image(ImageReader(io.BytesIO(logo_bytes)), width=6*cm, height=6*cm))
+            story.append(Spacer(1, 6))
+        except Exception:
+            pass
     else:
         try:
             with open(DEFAULT_LOGO_PATH, "rb") as f:
-                story.append(Image(ImageReader(f), width=6*cm, height=6*cm)); story.append(Spacer(1, 6))
-        except Exception: pass
+                story.append(Image(ImageReader(f), width=6*cm, height=6*cm))
+                story.append(Spacer(1, 6))
+        except Exception:
+            pass
 
     story.append(Paragraph(f"Sezione testata: <b>{section_name}</b>", styles['Heading3']))
 
@@ -146,24 +160,36 @@ def pdf_single_section(logo_bytes, athlete, evaluator, date_str, section_name, d
         disp["Score"] = disp["Score"].round(1)
         table_data = [["Test","Unità","Rif.","Valore","Punteggio (0–10)"]] + disp.values.tolist()
         tbl = Table(table_data, colWidths=[7*cm,1.5*cm,2.0*cm,2.2*cm,3.1*cm])
-        tbl.setStyle(TableStyle([("BACKGROUND",(0,0),(-1,0),colors.HexColor(PRIMARY)),("TEXTCOLOR",(0,0),(-1,0),colors.white),("GRID",(0,0),(-1,-1),0.25,colors.grey),("ALIGN",(2,1),(-1,-1),"CENTER")]))
-        story.append(tbl); story.append(Spacer(1, 8))
+        tbl.setStyle(TableStyle([
+            ("BACKGROUND",(0,0),(-1,0),colors.HexColor(PRIMARY)),
+            ("TEXTCOLOR",(0,0),(-1,0),colors.white),
+            ("GRID",(0,0),(-1,-1),0.25,colors.grey),
+            ("ALIGN",(2,1),(-1,-1),"CENTER")
+        ]))
+        story.append(tbl)
+        story.append(Spacer(1, 8))
 
+        # Grafico radar con controllo robusto
         rbuf = radar_png_buffer(disp["Test"].tolist(), disp["Score"].tolist())
-try:
-    img = rbuf.getvalue()
-    if img and len(img) > 100:
-        story.append(Image(ImageReader(io.BytesIO(img)), width=10*cm, height=10*cm))
-        story.append(Spacer(1, 6))
-    else:
-        raise ValueError("Radar vuoto")
-except Exception:
-    story.append(Paragraph("⚠️ Grafico radar non disponibile (nessun test valido o errore grafico).", normal))
-    story.append(Spacer(1, 6))
-    story.append(Paragraph(ebm_comment(section_name, disp).replace("\n","<br/>"), normal))
+        try:
+            img = rbuf.getvalue()
+            if img and len(img) > 100:
+                story.append(Image(ImageReader(io.BytesIO(img)), width=10*cm, height=10*cm))
+                story.append(Spacer(1, 6))
+            else:
+                raise ValueError("Radar vuoto")
+        except Exception:
+            story.append(Paragraph("⚠️ Grafico radar non disponibile (nessun test valido o errore grafico).", normal))
+            story.append(Spacer(1, 6))
 
-    doc.build(story); buf_pdf.seek(0); 
+        # Commento EBM
+        story.append(Paragraph(ebm_comment(section_name, disp).replace("\n","<br/>"), normal))
+
+    # ✅ Chiusura corretta della funzione
+    doc.build(story)
+    buf_pdf.seek(0)
     return buf_pdf
+
 
 # ---------- DATASETS ----------
 TESTS = {
