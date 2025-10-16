@@ -150,17 +150,16 @@ def pdf_single_section(logo_bytes, athlete, evaluator, date_str, section_name, d
         story.append(tbl); story.append(Spacer(1, 8))
 
         rbuf = radar_png_buffer(disp["Test"].tolist(), disp["Score"].tolist())
-        try:
-            img = rbuf.getvalue()
-            if img and len(img) > 100:
-                story.append(Image(ImageReader(io.BytesIO(img)), width=10*cm, height=10*cm))
-                story.append(Spacer(1, 6))
-            else:
-                raise ValueError("Radar vuoto")
-        except Exception:
-        story.append(Paragraph("⚠️ Grafico radar non disponibile (nessun test valido o errore grafico).", normal))
+try:
+    img = rbuf.getvalue()
+    if img and len(img) > 100:
+        story.append(Image(ImageReader(io.BytesIO(img)), width=10*cm, height=10*cm))
         story.append(Spacer(1, 6))
-
+    else:
+        raise ValueError("Radar vuoto")
+except Exception:
+    story.append(Paragraph("⚠️ Grafico radar non disponibile (nessun test valido o errore grafico).", normal))
+    story.append(Spacer(1, 6))
         story.append(Paragraph(ebm_comment(section_name, disp).replace("\n","<br/>"), normal))
 
     doc.build(story); buf_pdf.seek(0); return buf_pdf
