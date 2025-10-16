@@ -162,7 +162,8 @@ except Exception:
     story.append(Spacer(1, 6))
     story.append(Paragraph(ebm_comment(section_name, disp).replace("\n","<br/>"), normal))
 
-    doc.build(story); buf_pdf.seek(0); return buf_pdf
+    doc.build(story); buf_pdf.seek(0); 
+    return buf_pdf
 
 # ---------- DATASETS ----------
 TESTS = {
