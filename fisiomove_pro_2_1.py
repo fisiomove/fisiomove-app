@@ -38,7 +38,35 @@ def badge(text: str, color: str) -> str:
     return f"<span style='background:{color}20;color:{color};padding:4px 8px;border-radius:8px;font-weight:700;'>{text}</span>"
 
 def radar_plot(labels, scores, title):
+    # Se non ci sono dati, restituisci grafico vuoto
+    if len(labels) == 0:
+        fig = go.Figure()
+        fig.update_layout(
+            title="Nessun test compilato",
+            polar=dict(radialaxis=dict(visible=True, range=[0,10])),
+            margin=dict(l=10, r=10, t=40, b=10),
+            height=300
+        )
+        return fig
+
     labels_c = list(labels) + [labels[0]]
+    scores_c = list(scores) + [scores[0]]
+    ideal = [10]*len(labels)
+    ideal_c = ideal + [ideal[0]]
+    fig = go.Figure()
+    fig.add_trace(go.Scatterpolar(r=ideal_c, theta=labels_c, name="Target 10/10",
+                                  line=dict(width=1, dash="dot", color="#999")))
+    fig.add_trace(go.Scatterpolar(r=scores_c, theta=labels_c, name="Atleta",
+                                  fill="toself", line=dict(width=2, color=PRIMARY)))
+    fig.update_layout(
+        title=title,
+        showlegend=True,
+        legend=dict(orientation="h", x=0.5, xanchor="center"),
+        polar=dict(radialaxis=dict(visible=True, range=[0,10], tickmode="linear", dtick=1)),
+        margin=dict(l=10, r=10, t=40, b=10),
+        height=460
+    )
+    return fig
     scores_c = list(scores) + [scores[0]]
     ideal = [10]*len(labels); ideal_c = ideal + [ideal[0]]
     fig = go.Figure()
