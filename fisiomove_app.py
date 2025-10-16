@@ -163,7 +163,8 @@ def pdf_report(logo_file, athlete, evaluator, date_str, sections_dict):
         story.append(Spacer(1, 8))
         # Radar image
         radar_buf = radar_matplotlib_image(display["Test"].tolist(), display["Score"].tolist())
-        story.append(Image(ImageReader(radar_buf), width=10*cm, height=10*cm))
+        radar_img = radar_buf.getvalue()
+story.append(Image(io.BytesIO(radar_img), width=10*cm, height=10*cm))
         story.append(Spacer(1, 6))
         # Comment
         comment = ebm_comment(sec_name, display)
