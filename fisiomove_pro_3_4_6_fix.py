@@ -263,7 +263,7 @@ def ebm_explain_row(test_name, unit, ref, val_avg, dx=None, sx=None):
     elif "ER" in test_name and "Shoulder" in test_name:
         lines += [
             f"- Rotazione esterna spalla: {perf}.",
-            "- Limitazioni in panca/low-bar aumentano stress anteriore e alterano controllo scapolare.",
+            "- Limitazioni in panca/low-bar aumentano stress anteriore e alterano controllo scapolare. Possono inoltre causare tensioni in valgo al gomito.",
             "Riferimenti: Ludewig 2009 Phys Ther; Green 2017 JSES."
         ]
     elif "Pectoralis Minor" in test_name:
@@ -365,7 +365,7 @@ LOGO_BYTES = load_logo_bytes()
 
 st.markdown("<div style='text-align:center;'>", unsafe_allow_html=True)
 if LOGO_BYTES:
-    st.image(LOGO_BYTES, use_container_width=True)
+   st.image(LOGO_BYTES)
 else:
     st.markdown("<div style='color:#9aa4b2;font-size:28px;font-weight:700;'>Fisiomove</div>", unsafe_allow_html=True)
 st.markdown("</div>", unsafe_allow_html=True)
