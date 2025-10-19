@@ -72,6 +72,28 @@ TESTS = {
     ],
 }
 
+# Tutorial descrittivo dei test (riassunti EBM)
+TUTORIAL = {
+    "Weight Bearing Lunge Test": "Atleta in affondo fronte muro; tallone in appoggio, ginocchio verso parete. Misurare distanza massima tallone-parete con tallone che resta a contatto.",
+    "Passive Hip Flexion": "Supino, ginocchio flesso. Misura angolo anca fino a compenso pelvico.",
+    "Hip Rotation (flexed 90°)": "Anca e ginocchio flessi 90°. Ruotare internamente ed esternamente fino al fine corsa senza tilt pelvico.",
+    "Thoracic Extension (T4- T12)": "Atleta in posizione seduta o prona, inclinometro su T4-T12; misurare differenza angolare tra estensione e neutro.",
+    "Shoulder ER (adducted, low-bar)": "Spalla addotta, gomito a 90°, ruotare esternamente fino a percezione tensione posteriore.",
+    "Shoulder Flexion (supine)": "Supino, braccio esteso sopra la testa, mantenendo colonna neutra.",
+    "External Rotation (90 deg abd)": "Spalla abdotta 90°, gomito 90°, ruotare in ER fino a tensione capsulare o scapolare.",
+    "Pectoralis Minor Length": "Supino, misurare distanza tra acromion e piano del lettino.",
+    "Wall Angel (distance)": "Schiena a muro, braccia a W. Mantenere contatto lombare e valutare distanza mani/muro.",
+    "Thomas Test (modified)": "Supino bordo lettino, portare un ginocchio al petto. L'altra gamba resta libera: misurare angolo anca rispetto all'orizzontale.",
+    "Active Knee Extension (AKE)": "Supino, anca 90°, estendere ginocchio e misurare angolo residuo.",
+    "Straight Leg Raise (SLR)": "Supino, sollevare arto esteso; misurare angolo anca alla prima tensione neurale.",
+    "Modified Schober (lumbar)": "Segnare L5-S1 e 10 cm sopra; misurare aumento distanza in flessione.",
+    "Sorensen Endurance": "Prono su tavolo con creste iliache al bordo; mani al petto, mantenere orizzontale fino a cedimento.",
+    "SLR (sensibile)": "Test neurodinamico con differenziazione dorsiflessione/piede.",
+    "PNLT tibiale (bias)": "Movimento combinato di dorsiflessione + eversione + estensione dita per tensione n. tibiale.",
+    "PNLT peroneale (bias)": "Movimento combinato di flessione plantare + inversione + flessione dita per n. peroneale.",
+    "ULNT1 (n. mediano)": "Posizione combinata abduzione spalla + ER + estensione gomito + estensione dita e polso, differenziare con spalla.",
+}
+
 def to_ascii(s: str) -> str:
     if not isinstance(s, str): return s
     for k,v in {"–":"-","—":"-","’":"'","‘":"'","“":'"',"”":'"',"•":"-","°":" gradi","→":"->","↔":"<->","≥":">=","≤":"<=","Δ":"Delta","✓":"-","×":"x"}.items():
