@@ -445,8 +445,8 @@ except Exception as e:
 # Body Chart
 bbuf = bodychart_image_from_state()
 from PIL import Image
-body_img = Image.open(bbuf)
-st.image(body_img, use_container_width=True, caption="Body Chart – Sintesi (verde=buono, giallo=parziale, rosso=deficit; triangolo=Dolore)")
+body_img = Image.open(io.BytesIO(bbuf.getvalue()))
+st.image(body_img, caption="Body Chart – Sintesi (verde=buono, giallo=parziale, rosso=deficit; triangolo=Dolore)")
 
 # Commento EBM
 ebm_notes = ebm_from_df(df_show)
