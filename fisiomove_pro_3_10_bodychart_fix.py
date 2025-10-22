@@ -434,7 +434,7 @@ def render_inputs_for_section(section):
                 st.caption(f"Score: **{sc:.1f}/10** — Δ {abs(dx-sx):.1f} {unit} — Sym: **{sym:.1f}/10**")
             else:
                 val = st.slider(f"Valore ({unit})", 0.0, float(ref*1.5 if unit!='sec' else ref*1.2), float(rec.get('Val',0.0)), 0.1, key=f\"{name}_Val_{section}\")
-                p = st.checkbox("Dolore", value=bool(rec.get("Dolore", False)), key=f\"{name}_p_{section}\")
+                p = st.checkbox("Dolore", value=bool(rec.get("Dolore", False)), key=f"{name}_p_{section}")
                 if name not in st.session_state["vals"]:
                     st.session_state["vals"][name] = {}
                 st.session_state["vals"][name].update({"Val":val,"Dolore":p,"unit":unit,"ref":ref,"bilat":False,"region":region,"desc":desc,"section":section})
