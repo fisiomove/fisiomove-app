@@ -444,7 +444,9 @@ except Exception as e:
 
 # Body Chart
 bbuf = bodychart_image_from_state()
-st.image(bbuf.getvalue(), use_container_width=True, caption="Body Chart – Sintesi (verde=buono, giallo=parziale, rosso=deficit; triangolo=Dolore)")
+from PIL import Image
+radar_img = Image.open(radar_buf)
+st.image(radar_img, use_container_width=True), caption="Body Chart – Sintesi (verde=buono, giallo=parziale, rosso=deficit; triangolo=Dolore)")
 
 # Commento EBM
 ebm_notes = ebm_from_df(df_show)
