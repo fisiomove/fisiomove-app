@@ -403,29 +403,65 @@ def render_inputs_for_section(section):
         rec = st.session_state["vals"].get(name)
         if not rec:
             continue
+
         with st.container():
             st.markdown(f"**{name}** — {desc}  \n*Rif:* {ref} {unit}")
             if bilat:
                 c1, c2 = st.columns(2)
                 with c1:
-                    dx = st.slider(f"Dx ({unit})", 0.0, ref * 1.5, float(rec.get("Dx", 0)), 0.1, key=f"{name}_Dx")
-                    pdx = st.checkbox("Dolore Dx", value=bool(rec.get("DoloreDx", False)), key=f"{name}_pDx")
+                    dx = st.slider(
+                        f"Dx ({unit})",
+                        0.0, ref * 1.5,
+                        float(rec.get("Dx", 0.0)),
+                        0.1,
+                        key=f"{name}_Dx_{section}"
+                    )
+                    pdx = st.checkbox(
+                        "Dolore Dx",
+                        value=bool(rec.get("DoloreDx", False)),
+                        key=f"{name}_pDx_{section}"
+                    )
                 with c2:
-                    sx = st.slider(f"Sx ({unit})", 0.0, ref * 1.5, float(rec.get("Sx", 0)), 0.1, key=f"{name}_Sx")
-                    psx = st.checkbox("Dolore Sx", value=bool(rec.get("DoloreSx", False)), key=f"{name}_pSx")
+                    sx = st.slider(
+                        f"Sx ({unit})",
+                        0.0, ref * 1.5,
+                        float(rec.get("Sx", 0.0)),
+                        0.1,
+                        key=f"{name}_Sx_{section}"
+                    )
+                    psx = st.checkbox(
+                        "Dolore Sx",
+                        value=bool(rec.get("DoloreSx", False)),
+                        key=f"{name}_pSx_{section}"
+                    )
 
-                rec.update({"Dx": dx, "Sx": sx, "DoloreDx": pdx, "DoloreSx": psx})
-                sc = ability_linear((dx + sx) / 2, ref)
+                rec.update({
+                    "Dx": dx, "Sx": sx,
+                    "DoloreDx": pdx,
+                    "DoloreSx": psx
+                })
+                sc = ability_linear((dx + sx) / 2.0, ref)
                 sym = symmetry_score(dx, sx, unit)
                 st.caption(f"Score: **{sc:.1f}/10** — Δ {abs(dx - sx):.1f} {unit} — Sym: **{sym:.1f}/10**")
+
             else:
-                val = st.slider(f"Valore ({unit})", 0.0, ref * 1.5, float(rec.get("Val", 0)), 0.1, key=f"{name}_Val")
-                p = st.checkbox("Dolore", value=bool(rec.get("Dolore", False)), key=f"{name}_p")
+                val = st.slider(
+                    f"Valore ({unit})",
+                    0.0, ref * 1.5,
+                    float(rec.get("Val", 0.0)),
+                    0.1,
+                    key=f"{name}_Val_{section}"
+                )
+                p = st.checkbox(
+                    "Dolore",
+                    value=bool(rec.get("Dolore", False)),
+                    key=f"{name}_p_{section}"
+                )
+
                 rec.update({"Val": val, "Dolore": p})
                 sc = ability_linear(val, ref)
                 st.caption(f"Score: **{sc:.1f}/10**")
 
-render_inputs_for_section(st.session_state["section"])
 # 16. Output risultati
 df_show = build_df(st.session_state["section"])
 st.markdown("#### Tabella risultati")
