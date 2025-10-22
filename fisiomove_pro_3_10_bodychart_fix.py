@@ -435,13 +435,15 @@ st.dataframe(df_show, use_container_width=True)
 try:
     if len(df_show) > 0:
         radar_buf = radar_plot(df_show, title=f"{st.session_state['section']} – Punteggi (0–10)")
-        st.image(radar_buf.getvalue(), use_container_width=True)
+        from PIL import Image
+        radar_img = Image.open(radar_buf)
+        st.image(radar_img)  # ✅ versione sicura senza use_container_width
+        st.caption("Radar – Punteggi (0–10)")
     else:
         radar_buf = None
 except Exception as e:
     radar_buf = None
     st.warning(f"■ Radar non disponibile ({e})")
-
 # Body Chart
 bbuf = bodychart_image_from_state()
 from PIL import Image
