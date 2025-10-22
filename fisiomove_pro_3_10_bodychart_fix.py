@@ -461,7 +461,7 @@ def render_inputs_for_section(section):
                 rec.update({"Val": val, "Dolore": p})
                 sc = ability_linear(val, ref)
                 st.caption(f"Score: **{sc:.1f}/10**")
-
+render_inputs_for_section(st.session_state["section"])
 # 16. Output risultati
 df_show = build_df(st.session_state["section"])
 st.markdown("#### Tabella risultati")
