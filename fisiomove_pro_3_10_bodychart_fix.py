@@ -422,11 +422,11 @@ def render_inputs_for_section(section):
             if bilat:
                 c1,c2 = st.columns(2)
                 with c1:
-                    dx = st.slider(f"Dx ({unit})", 0.0, float(ref*1.5 if unit!='sec' else ref*1.2), float(rec.get('Dx',0.0)), 0.1, key=f\"{name}_Dx_{section}\")
-                    pdx = st.checkbox("Dolore Dx", value=bool(rec.get("DoloreDx", False)), key=f\"{name}_pDx_{section}\")
+                    dx = st.slider(f"Dx ({unit})", 0.0, float(ref*1.5 if unit!='sec' else ref*1.2), float(rec.get('Dx',0.0)), 0.1, key=f"{name}_Dx_{section}")
+                    pdx = st.checkbox("Dolore Dx", value=bool(rec.get("DoloreDx", False)), key=f"{name}_pDx_{section}")
                 with c2:
-                    sx = st.slider(f"Sx ({unit})", 0.0, float(ref*1.5 if unit!='sec' else ref*1.2), float(rec.get('Sx',0.0)), 0.1, key=f\"{name}_Sx_{section}\")
-                    psx = st.checkbox("Dolore Sx", value=bool(rec.get("DoloreSx", False)), key=f\"{name}_pSx_{section}\")
+                    sx = st.slider(f"Sx ({unit})", 0.0, float(ref*1.5 if unit!='sec' else ref*1.2), float(rec.get('Sx',0.0)), 0.1, key=f"{name}_Sx_{section}")
+                    psx = st.checkbox("Dolore Sx", value=bool(rec.get("DoloreSx", False)), key=f"{name}_pSx_{section}")
                 if name not in st.session_state["vals"]:
                     st.session_state["vals"][name] = {}
                 st.session_state["vals"][name].update({"Dx":dx,"Sx":sx,"DoloreDx":pdx,"DoloreSx":psx,"unit":unit,"ref":ref,"bilat":True,"region":region,"desc":desc,"section":section})
