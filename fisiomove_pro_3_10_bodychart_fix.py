@@ -444,7 +444,32 @@ try:
             st.caption("Grafico delle asimmetrie tra Dx e Sx per i test bilaterali")
 except Exception as e:
     st.warning(f"■ Grafico asimmetrie non disponibile ({e})")
+# 20. Commenti EBM (Evidence-Based Message)
+def ebm_from_df(df):
+    notes = set()
+    for _, r in df.iterrows():
+        score = float(r["Score"])
+        pain = bool(r["Dolore"])
+        name = (str(r["Test"]) + " " + str(r["Regione"])).lower()
 
+        if score < 4:
+            if "lunge" in name or "ankle" in name:
+                notes.add("Deficit di dorsiflessione: rischio sollevamento del tallone, sovraccarico dell’avampiede e aumento stress rotuleo nello squat.")
+            elif "hip" in name:
+                notes.add("Ridotta flessione/rotazione d’anca: profondità ridotta e maggiori compensi lombari in squat/stacco.")
+            elif "thoracic" in name:
+                notes.add("Scarsa estensione toracica: setup della panca limitato e peggior allineamento nello squat.")
+            elif "shoulder" in name:
+                notes.add("Limitata rotazione esterna di spalla: stabilità scapolo-omerale ridotta in low-bar/panca (più stress anteriori).")
+            elif "lumbar" in name or "knee" in name:
+                notes.add("Rigidità posteriore/lombare: tolleranza al carico ridotta in deadlift (attenzione a butt-wink).")
+        if pain:
+            notes.add("Test doloroso: considerare irritabilità tissutale e progressione graduata del carico.")
+
+    if not notes:
+        notes.add("Nessun deficit clinicamente rilevante: profilo di mobilità adeguato ai compiti.")
+
+    return sorted(list(notes))
 # 20. Commenti EBM
 ebm_notes = ebm_from_df(df_show)
 # 21. Esportazione PDF e CSV
