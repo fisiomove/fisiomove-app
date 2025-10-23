@@ -300,6 +300,17 @@ def radar_plot(df, title="Punteggi (0–10)"):
     plt.close(fig)
     buf.seek(0)
     return buf
+# mostrare grafico streamlit
+try:
+    if len(df_show) > 0 and "Delta" in df_show.columns:
+        asym_buf = asymmetry_bar_plot(df_show, title=f"Asimmetrie – {st.session_state['section']}")
+        if asym_buf:
+            from PIL import Image
+            asym_img = Image.open(asym_buf)
+            st.image(asym_img)
+            st.caption("Grafico delle asimmetrie tra Dx e Sx per i test bilaterali")
+except Exception as e:
+    st.warning(f"■ Grafico asimmetrie non disponibile ({e})")
 # 12. Commenti EBM (regole cliniche)
 def ebm_from_df(df):
     notes = set()
@@ -520,6 +531,37 @@ st.image(body_img, caption="Body Chart – Sintesi (verde=buono, giallo=parziale
 
 # Commento EBM
 ebm_notes = ebm_from_df(df_show)
+#barre asimmetria
+def asymmetry_bar_plot(df, title="Asimmetria Dx–Sx"):
+    import matplotlib.pyplot as plt
+    import io
+
+    df_bilat = df[df["Delta"].notnull()]
+    if df_bilat.empty:
+        return None
+
+    labels = df_bilat["Test"]
+    deltas = df_bilat["Delta"]
+
+    fig, ax = plt.subplots(figsize=(8, 4))
+    bars = ax.barh(labels, deltas, color="#FF6B6B")
+
+    ax.set_xlabel("Asimmetria (unità originali)")
+    ax.set_title(title)
+    ax.invert_yaxis()  # test più recente in alto
+    ax.grid(True, axis='x', linestyle='--', alpha=0.5)
+
+    # Etichette numeriche a fianco delle barre
+    for bar in bars:
+        width = bar.get_width()
+        ax.text(width + 0.05, bar.get_y() + bar.get_height()/2, f"{width:.2f}", va='center')
+
+    buf = io.BytesIO()
+    plt.tight_layout()
+    plt.savefig(buf, format="png")
+    buf.seek(0)
+    plt.close(fig)
+    return buf
 # 17. Esportazione PDF e CSV
 colp1, colp2 = st.columns(2)
 with colp1:
