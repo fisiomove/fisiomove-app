@@ -230,7 +230,7 @@ def bodychart_image_from_state(width=1200, height=800):
         "shoulder_sx": (fx+0.058, 0.225),
         "hip_dx":      (fx-0.110, 0.50),
         "hip_sx":      (fx+0.038, 0.50),
-        "knee_dx":     (fx-0.099, 0.68),
+        "knee_dx":     (fx-0.101, 0.68),
         "knee_sx":     (fx+0.030, 0.68),
         "ankle_dx":    (fx-0.025, 0.94),
         "ankle_sx":    (fx+0.025, 0.94),
