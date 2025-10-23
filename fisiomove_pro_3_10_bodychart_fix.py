@@ -18,10 +18,10 @@ from reportlab.platypus import (
 from reportlab.lib.styles import getSampleStyleSheet
 
 # 2. Config
-st.set_page_config(page_title="Fisiomove Pro 3.10", layout="centered")
+st.set_page_config(page_title="Fisiomove Pro v. 3.10", layout="centered")
 
 # 3. Costanti
-APP_TITLE = "Fisiomove Pro 3.10 — BodyChart Refactor"
+APP_TITLE = "Fisiomove Pro 3.10 — Body mobility screening"
 PRIMARY = "#1E6CF4"
 
 LOGO_PATHS = ["logo.png", "logo 2600x1000.jpg"]
