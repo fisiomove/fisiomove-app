@@ -327,6 +327,29 @@ def ebm_from_df(df):
         notes.add("Nessun deficit clinicamente rilevante: profilo di mobilità adeguato ai compiti.")
 
     return sorted(list(notes))
+# -----------------------------
+# Asymmetry bar plot
+# -----------------------------
+def asymmetry_bar_plot(df, title="Asimmetria Dx–Sx"):
+    sub = df[df["Delta"] != ""].copy()
+    sub = sub[sub["Delta"].astype(str) != "nan"]
+    if sub.empty:
+        raise ValueError("No bilateral data available for asymmetry plot.")
+    
+    sub["Delta"] = sub["Delta"].astype(float)
+    sub = sub.sort_values("Delta", ascending=True)
+
+    fig, ax = plt.subplots(figsize=(6, 0.4 * len(sub)))
+    ax.barh(sub["Test"], sub["Delta"], color="#1E6CF4")
+    ax.set_xlabel("Differenza Assoluta (Dx - Sx)")
+    ax.set_title(title)
+    plt.tight_layout()
+
+    buf = io.BytesIO()
+    fig.savefig(buf, format="png", dpi=160)
+    plt.close(fig)
+    buf.seek(0)
+    return buf
 # 13. PDF Report
 def pdf_report(logo_bytes, athlete, evaluator, date_str, section, df, body_buf, ebm_notes, radar_buf=None):
     buf = io.BytesIO()
@@ -513,6 +536,17 @@ try:
 except Exception as e:
     radar_buf = None
     st.warning(f"■ Radar non disponibile ({e})")
+# Grafico asimmetrie
+try:
+    asym_buf = None
+    if len(df_show) > 0 and "Delta" in df_show.columns:
+        asym_buf = asymmetry_bar_plot(df_show, title=f"Asimmetrie – {st.session_state['section']}")
+        if asym_buf:
+            asym_img = Image.open(asym_buf)
+            st.image(asym_img)
+            st.caption("Grafico delle asimmetrie tra Dx e Sx per i test bilaterali")
+except Exception as e:
+    st.warning(f"■ Grafico asimmetrie non disponibile ({e})")
 # Body Chart
 bbuf = bodychart_image_from_state()
 from PIL import Image
@@ -531,26 +565,6 @@ except Exception as e:
     st.warning(f"■ Grafico asimmetrie non disponibile ({e})")
 # Commento EBM
 ebm_notes = ebm_from_df(df_show)
-#definizione asymmetry bar plot
-def asymmetry_bar_plot(df, title="Asimmetria Dx–Sx"):
-    import matplotlib.pyplot as plt
-    import io
-
-    df_bilat = df[df["Delta"].notnull()]
-    if df_bilat.empty:
-        return None
-
-    labels = df_bilat["Test"]
-    deltas = df_bilat["Delta"]
-
-    fig, ax = plt.subplots(figsize=(8, 4))
-    bars = ax.barh(labels, deltas, color="#FF6B6B")
-
-    ax.set_xlabel("Asimmetria (unità originali)")
-    ax.set_title(title)
-    ax.invert_yaxis()  # test più recenti in alto
-    ax.grid(True, axis='x', linestyle='--', alpha=0.5)
-
     # Etichette numeriche accanto alle barre
     for bar in bars:
         width = bar.get_width()
@@ -562,26 +576,6 @@ def asymmetry_bar_plot(df, title="Asimmetria Dx–Sx"):
     buf.seek(0)
     plt.close(fig)
     return buf
-#barre asimmetria
-def asymmetry_bar_plot(df, title="Asimmetria Dx–Sx"):
-    import matplotlib.pyplot as plt
-    import io
-
-    df_bilat = df[df["Delta"].notnull()]
-    if df_bilat.empty:
-        return None
-
-    labels = df_bilat["Test"]
-    deltas = df_bilat["Delta"]
-
-    fig, ax = plt.subplots(figsize=(8, 4))
-    bars = ax.barh(labels, deltas, color="#FF6B6B")
-
-    ax.set_xlabel("Asimmetria (unità originali)")
-    ax.set_title(title)
-    ax.invert_yaxis()  # test più recente in alto
-    ax.grid(True, axis='x', linestyle='--', alpha=0.5)
-
     # Etichette numeriche a fianco delle barre
     for bar in bars:
         width = bar.get_width()
