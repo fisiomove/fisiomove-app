@@ -75,6 +75,38 @@ def symmetry_score(dx, sx, unit):
         return 10.0 * max(0.0, 1.0 - min(diff, scale)/scale)
     except:
         return 0.0
+# 5bis
+def radar_plot(df, title="Radar Plot"):
+    import matplotlib.pyplot as plt
+    import numpy as np
+    import io
+
+    labels = df["Test"].tolist()
+    values = df["Score"].tolist()
+
+    if len(labels) == 0:
+        return None
+
+    num_vars = len(labels)
+    angles = np.linspace(0, 2 * np.pi, num_vars, endpoint=False).tolist()
+    values += values[:1]  # chiude il cerchio
+    angles += angles[:1]
+
+    fig, ax = plt.subplots(figsize=(6, 6), subplot_kw=dict(polar=True))
+    ax.plot(angles, values, color="#1E6CF4", linewidth=2)
+    ax.fill(angles, values, color="#1E6CF4", alpha=0.25)
+    ax.set_yticks([2, 4, 6, 8, 10])
+    ax.set_ylim(0, 10)
+    ax.set_xticks(angles[:-1])
+    ax.set_xticklabels(labels, fontsize=9)
+    ax.set_title(title, y=1.1, fontsize=14)
+
+    buf = io.BytesIO()
+    plt.tight_layout()
+    plt.savefig(buf, format="png")
+    buf.seek(0)
+    plt.close(fig)
+    return buf
 # 6. Database dei test
 TESTS = {
     "Squat": [
