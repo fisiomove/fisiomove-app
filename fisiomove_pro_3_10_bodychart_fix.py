@@ -226,7 +226,7 @@ def bodychart_image_from_state(width=1200, height=800):
 
     fx, bx = 0.255, 0.745
     points = {
-        "shoulder_dx": (fx-0.028, 0.225),
+        "shoulder_dx": (fx-0.108, 0.225),
         "shoulder_sx": (fx+0.058, 0.225),
         "hip_dx":      (fx-0.038, 0.58),
         "hip_sx":      (fx+0.038, 0.58),
