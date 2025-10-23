@@ -426,6 +426,8 @@ try:
 except Exception as e:
     radar_buf = None
     st.warning(f"■ Radar non disponibile ({e})")
+#def ebm
+def ebm_from_df(df):
 
 # 18. Body Chart
 bbuf = bodychart_image_from_state()
