@@ -531,6 +531,37 @@ except Exception as e:
     st.warning(f"■ Grafico asimmetrie non disponibile ({e})")
 # Commento EBM
 ebm_notes = ebm_from_df(df_show)
+#definizione asymmetry bar plot
+def asymmetry_bar_plot(df, title="Asimmetria Dx–Sx"):
+    import matplotlib.pyplot as plt
+    import io
+
+    df_bilat = df[df["Delta"].notnull()]
+    if df_bilat.empty:
+        return None
+
+    labels = df_bilat["Test"]
+    deltas = df_bilat["Delta"]
+
+    fig, ax = plt.subplots(figsize=(8, 4))
+    bars = ax.barh(labels, deltas, color="#FF6B6B")
+
+    ax.set_xlabel("Asimmetria (unità originali)")
+    ax.set_title(title)
+    ax.invert_yaxis()  # test più recenti in alto
+    ax.grid(True, axis='x', linestyle='--', alpha=0.5)
+
+    # Etichette numeriche accanto alle barre
+    for bar in bars:
+        width = bar.get_width()
+        ax.text(width + 0.05, bar.get_y() + bar.get_height() / 2, f"{width:.2f}", va='center')
+
+    buf = io.BytesIO()
+    plt.tight_layout()
+    plt.savefig(buf, format="png")
+    buf.seek(0)
+    plt.close(fig)
+    return buf
 #barre asimmetria
 def asymmetry_bar_plot(df, title="Asimmetria Dx–Sx"):
     import matplotlib.pyplot as plt
