@@ -300,17 +300,7 @@ def radar_plot(df, title="Punteggi (0–10)"):
     plt.close(fig)
     buf.seek(0)
     return buf
-# mostrare grafico streamlit
-try:
-    if len(df_show) > 0 and "Delta" in df_show.columns:
-        asym_buf = asymmetry_bar_plot(df_show, title=f"Asimmetrie – {st.session_state['section']}")
-        if asym_buf:
-            from PIL import Image
-            asym_img = Image.open(asym_buf)
-            st.image(asym_img)
-            st.caption("Grafico delle asimmetrie tra Dx e Sx per i test bilaterali")
-except Exception as e:
-    st.warning(f"■ Grafico asimmetrie non disponibile ({e})")
+
 # 12. Commenti EBM (regole cliniche)
 def ebm_from_df(df):
     notes = set()
@@ -528,7 +518,17 @@ bbuf = bodychart_image_from_state()
 from PIL import Image
 body_img = Image.open(io.BytesIO(bbuf.getvalue()))
 st.image(body_img, caption="Body Chart – Sintesi (verde=buono, giallo=parziale, rosso=deficit; triangolo=Dolore)")
-
+# mostrare grafico streamlit
+try:
+    if len(df_show) > 0 and "Delta" in df_show.columns:
+        asym_buf = asymmetry_bar_plot(df_show, title=f"Asimmetrie – {st.session_state['section']}")
+        if asym_buf:
+            from PIL import Image
+            asym_img = Image.open(asym_buf)
+            st.image(asym_img)
+            st.caption("Grafico delle asimmetrie tra Dx e Sx per i test bilaterali")
+except Exception as e:
+    st.warning(f"■ Grafico asimmetrie non disponibile ({e})")
 # Commento EBM
 ebm_notes = ebm_from_df(df_show)
 #barre asimmetria
