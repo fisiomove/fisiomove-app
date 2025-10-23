@@ -269,23 +269,34 @@ def radar_plot(df, title="Radar – Punteggi (0–10)"):
 
 # 12. Asymmetry bar plot
 def asymmetry_bar_plot(df, title="Asimmetria Dx–Sx"):
-    df_bilat = df[df["Delta"].notnull()]
+    import matplotlib.pyplot as plt
+    import io
+
+    # Filtra solo righe con delta valido
+    df_bilat = df[df["Delta"].notnull()].copy()
+
+    # Converti esplicitamente i tipi
+    df_bilat["Delta"] = pd.to_numeric(df_bilat["Delta"], errors="coerce")
+    df_bilat["Test"] = df_bilat["Test"].astype(str)
+
     if df_bilat.empty:
         return None
 
-    labels = df_bilat["Test"]
-    deltas = df_bilat["Delta"]
+    labels = df_bilat["Test"].tolist()
+    deltas = df_bilat["Delta"].tolist()
 
     fig, ax = plt.subplots(figsize=(8, 4))
     bars = ax.barh(labels, deltas, color="#FF6B6B")
+
     ax.set_xlabel("Asimmetria (unità originali)")
     ax.set_title(title)
-    ax.invert_yaxis()
+    ax.invert_yaxis()  # test più recenti in alto
     ax.grid(True, axis='x', linestyle='--', alpha=0.5)
 
+    # Etichette numeriche accanto alle barre
     for bar in bars:
         width = bar.get_width()
-        ax.text(width + 0.05, bar.get_y() + bar.get_height()/2, f"{width:.2f}", va='center')
+        ax.text(width + 0.05, bar.get_y() + bar.get_height() / 2, f"{width:.2f}", va='center')
 
     buf = io.BytesIO()
     plt.tight_layout()
