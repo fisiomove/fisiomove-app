@@ -667,6 +667,8 @@ def pdf_report(logo_bytes, athlete, evaluator, date_str, section, df, body_buf, 
 from reportlab.lib.styles import ParagraphStyle
 
 # Stili personalizzati
+styles = getSampleStyleSheet()
+normal = styles["Normal"]
 style_ebm_green = ParagraphStyle(
     'green_note',
     parent=normal,
