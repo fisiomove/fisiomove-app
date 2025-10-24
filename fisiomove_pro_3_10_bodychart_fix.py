@@ -686,8 +686,13 @@ def pdf_report(logo_bytes, athlete, evaluator, date_str, section, df, body_buf, 
     story.append(Spacer(1, 8))
 
     for item in ebm_notes:
+    if isinstance(item, dict):
         msg = item.get("msg", "")
         ref = item.get("ref", "")
+    else:
+        msg = str(item)
+        ref = ""
+
         style = style_ebm_red if "❗" in msg else style_ebm_green
         story.append(Paragraph(msg, style))
         if ref:
