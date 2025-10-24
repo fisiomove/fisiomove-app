@@ -225,16 +225,25 @@ def bodychart_image_from_state(width=1200, height=800):
         return (220, 38, 38, 255)                   # rosso
 
     def draw_marker(xn, yn, score, pain):
-        x = int(xn * width)
-        y = int(yn * height)
-        radius = int(10 + 6 * (1 - min(max(score, 0), 10) / 10))
-        draw.ellipse((x-radius, y-radius, x+radius, y+radius), fill=score_color(score))
-        if score > 7:
-            draw.line((x-4, y, x-2, y+6), fill=(255,255,255,255), width=3)
-            draw.line((x-2, y+6, x+6, y-4), fill=(255,255,255,255), width=3)
-        if pain:
-            tri = [(x+radius+2, y-radius-2), (x+radius+12, y-radius-2), (x+radius+7, y-radius-12)]
-            draw.polygon(tri, fill=(220,38,38,255))
+    try:
+        # Fallback: se score non è un numero valido, forzalo a 0
+        score = float(score)
+        if np.isnan(score):
+            score = 0.0
+    except:
+        score = 0.0
+
+    x = int(xn * width)
+    y = int(yn * height)
+    radius = int(10 + 6 * (1 - min(max(score, 0), 10) / 10))
+    draw.ellipse((x-radius, y-radius, x+radius, y+radius), fill=score_color(score))
+    
+    if score > 7:
+        draw.line((x-4, y, x-2, y+6), fill=(255,255,255,255), width=3)
+        draw.line((x-2, y+6, x+6, y-4), fill=(255,255,255,255), width=3)
+    if pain:
+        tri = [(x+radius+2, y-radius-2), (x+radius+12, y-radius-2), (x+radius+7, y-radius-12)]
+        draw.polygon(tri, fill=(220,38,38,255))
 
     for region, coord in points.items():
         base_region = region.split("_")[0] if "_" in region else region
