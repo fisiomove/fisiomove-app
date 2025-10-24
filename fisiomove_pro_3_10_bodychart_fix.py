@@ -697,7 +697,7 @@ def pdf_report(logo_bytes, athlete, evaluator, date_str, section, df, body_buf, 
         story.append(Paragraph(msg, style))
         if ref:
             story.append(Paragraph(ref, style_reference))
-        story.append(Spacer(1, 6))
+            story.append(Spacer(1, 6))
 
     doc.build(story)
     buf.seek(0)
