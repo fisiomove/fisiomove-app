@@ -285,38 +285,45 @@ def asymmetry_bar_plot(df, title="Asimmetria Dx–Sx"):
     import matplotlib.pyplot as plt
     import io
 
-    # Filtra solo righe con delta valido
+    # Filtra solo test con Delta numerico
     df_bilat = df[df["Delta"].notnull()].copy()
 
-    # Converti esplicitamente i tipi
-    df_bilat["Delta"] = pd.to_numeric(df_bilat["Delta"], errors="coerce")
-    df_bilat["Test"] = df_bilat["Test"].astype(str)
+    try:
+        df_bilat["Delta"] = df_bilat["Delta"].astype(float)
+        df_bilat["SymScore"] = df_bilat["SymScore"].astype(float)
+    except Exception as e:
+        st.warning(f"Errore nel cast dei valori numerici: {e}")
+        return None
 
     if df_bilat.empty:
         return None
 
     labels = df_bilat["Test"].tolist()
-    deltas = df_bilat["Delta"].tolist()
+    
+    # Trasforma SymScore in asimmetria su scala 0-10
+    df_bilat["AsymValue"] = (1 - df_bilat["SymScore"] / 10) * 10
+    asym_values = df_bilat["AsymValue"].tolist()
 
     fig, ax = plt.subplots(figsize=(8, 4))
-    bars = ax.barh(labels, deltas, color="#FF6B6B")
+    bars = ax.barh(labels, asym_values, color="#FF6B6B")
 
-    ax.set_xlabel("Asimmetria (unità originali)")
+    ax.set_xlabel("Indice di Asimmetria (0–10)")
+    ax.set_xlim(0, 10)
     ax.set_title(title)
-    ax.invert_yaxis()  # test più recenti in alto
+    ax.invert_yaxis()
     ax.grid(True, axis='x', linestyle='--', alpha=0.5)
 
-    # Etichette numeriche accanto alle barre
     for bar in bars:
         width = bar.get_width()
-        ax.text(width + 0.05, bar.get_y() + bar.get_height() / 2, f"{width:.2f}", va='center')
+        ax.text(width + 0.2, bar.get_y() + bar.get_height()/2, f"{width:.1f}", va='center')
 
     buf = io.BytesIO()
     plt.tight_layout()
     plt.savefig(buf, format="png")
-    buf.seek(0)
     plt.close(fig)
+    buf.seek(0)
     return buf
+
 # 13. Intestazione app
 st.markdown(f"<h2 style='color:{PRIMARY};margin-bottom:0'>{APP_TITLE}</h2>", unsafe_allow_html=True)
 
