@@ -590,12 +590,7 @@ def ebm_from_df(df):
 ebm_notes = ebm_from_df(df_show)
 #generazione pdf
 def pdf_report(logo_bytes, athlete, evaluator, date_str, section, df, body_buf, ebm_notes, radar_buf=None):
-    import io
-    from reportlab.lib.pagesizes import A4
-    from reportlab.lib.units import cm
-    from reportlab.lib import colors
-    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image as RLImage
-    from reportlab.lib.styles import getSampleStyleSheet
+    from reportlab.lib.styles import ParagraphStyle
 
     buf = io.BytesIO()
     doc = SimpleDocTemplate(
@@ -603,9 +598,34 @@ def pdf_report(logo_bytes, athlete, evaluator, date_str, section, df, body_buf, 
         leftMargin=1.4 * cm, rightMargin=1.4 * cm,
         topMargin=1.2 * cm, bottomMargin=1.2 * cm
     )
+
     styles = getSampleStyleSheet()
     normal = styles["Normal"]
     title = styles["Title"]
+
+    # Stili EBM
+    style_ebm_green = ParagraphStyle(
+        'green_note',
+        parent=normal,
+        textColor=colors.green,
+        leading=14,
+        spaceAfter=6
+    )
+    style_ebm_red = ParagraphStyle(
+        'red_note',
+        parent=normal,
+        textColor=colors.red,
+        leading=14,
+        spaceAfter=6
+    )
+    style_reference = ParagraphStyle(
+        'ref_note',
+        parent=normal,
+        textColor=colors.grey,
+        fontSize=7,
+        leading=10,
+        spaceAfter=8
+    )
 
     story = []
     story.append(RLImage(io.BytesIO(logo_bytes), width=16*cm, height=4*cm))
@@ -613,6 +633,7 @@ def pdf_report(logo_bytes, athlete, evaluator, date_str, section, df, body_buf, 
     story.append(Paragraph(f"<b>Report Valutazione – {section}</b>", title))
     story.append(Spacer(1, 6))
 
+    # Info atleta
     info_data = [["Atleta", athlete, "Valutatore", evaluator, "Data", date_str]]
     info_table = Table(info_data, colWidths=[2.2*cm, 5.0*cm, 2.8*cm, 5.0*cm, 1.8*cm, 2.0*cm])
     info_table.setStyle(TableStyle([
@@ -625,84 +646,58 @@ def pdf_report(logo_bytes, athlete, evaluator, date_str, section, df, body_buf, 
     story.append(info_table)
     story.append(Spacer(1, 8))
 
-    # Aggiunta referenze bibliografiche se esistono
-    df["Riferimenti"] = df["Test"].map(lambda t: next(
-        (x[6] for sec in TESTS.values() for x in sec if x[0] == t and len(x) > 6), ""
-    ))
+    # Tabella risultati
+    disp = df[["Sezione", "Test", "Unità", "Rif", "Valore", "Score", "Dx", "Sx", "Delta", "SymScore", "Dolore"]].copy()
+    disp["Delta"] = pd.to_numeric(disp["Delta"], errors='coerce').round(2)
+    disp["SymScore"] = pd.to_numeric(disp["SymScore"], errors='coerce').round(1)
 
-    disp = df[["Sezione","Test","Unità","Rif","Valore","Score","Dx","Sx","Delta","SymScore","Dolore","Riferimenti"]].copy()
-    # Arrotonda e formatta numeri con massimo 2 decimali
-    for col in ["Rif", "Valore", "Score", "Dx", "Sx", "Delta", "SymScore"]:
-        if col in disp.columns:
-            disp[col] = pd.to_numeric(disp[col], errors="coerce").round(2).astype(str)
-            disp[col] = disp[col].str.replace(".0$", "", regex=True)  # toglie ".0" inutili
     table = Table([disp.columns.tolist()] + disp.values.tolist(), repeatRows=1,
-                  colWidths=[2.2*cm, 6.0*cm, 1.0*cm, 1.0*cm, 1.4*cm, 1.4*cm, 1.4*cm, 1.4*cm, 1.0*cm, 1.4*cm, 1.4*cm, 6.0*cm])
+                  colWidths=[2.2*cm, 6.5*cm, 1.2*cm, 1.2*cm, 1.6*cm, 1.6*cm, 1.4*cm, 1.4*cm, 1.2*cm, 1.6*cm, 1.6*cm])
     table.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor(PRIMARY)),
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1E6CF4")),
         ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
         ("ALIGN", (0, 0), (-1, 0), "CENTER"),
         ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
         ("FONTNAME", (0, 1), (-1, -1), "Helvetica"),
-        ("FONTSIZE", (0, 0), (-1, -1), 7.5),
+        ("FONTSIZE", (0, 0), (-1, -1), 8),
         ("GRID", (0, 0), (-1, -1), 0.25, colors.lightgrey),
         ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
     ]))
     story.append(table)
     story.append(Spacer(1, 8))
 
+    # Radar
     if radar_buf:
         story.append(Paragraph("<b>Radar</b>", normal))
         story.append(Spacer(1, 4))
         story.append(RLImage(io.BytesIO(radar_buf.getvalue()), width=10*cm, height=10*cm))
         story.append(Spacer(1, 6))
 
+    # Body Chart
     story.append(Paragraph("<b>Body Chart – Sintesi</b>", normal))
     story.append(Spacer(1, 4))
     story.append(RLImage(io.BytesIO(body_buf.getvalue()), width=16*cm, height=12*cm))
     story.append(Spacer(1, 6))
-    story.append(Paragraph("Legenda: rosso=deficit; giallo=parziale; verde=buono; triangolo=Dolore.", normal))
+    story.append(Paragraph("Legenda: 🟥 deficit | 🟨 parziale | 🟩 buono | 🔺 dolore", normal))
+    story.append(Spacer(1, 10))
+
+    # Commento clinico EBM
+    story.append(Paragraph("<b>🧠 Commento clinico (EBM)</b>", title))
     story.append(Spacer(1, 8))
 
-from reportlab.lib.styles import ParagraphStyle
+    for item in ebm_notes:
+        msg = item.get("msg", "")
+        ref = item.get("ref", "")
+        style = style_ebm_red if "❗" in msg else style_ebm_green
+        story.append(Paragraph(msg, style))
+        if ref:
+            story.append(Paragraph(ref, style_reference))
+        story.append(Spacer(1, 6))
 
-# Stili personalizzati
-styles = getSampleStyleSheet()
-normal = styles["Normal"]
-style_ebm_green = ParagraphStyle(
-    'green_note',
-    parent=normal,
-    textColor=colors.green,
-    spaceAfter=6,
-)
+    doc.build(story)
+    buf.seek(0)
+    return buf
 
-style_ebm_red = ParagraphStyle(
-    'red_note',
-    parent=normal,
-    textColor=colors.red,
-    spaceAfter=6,
-)
-
-style_ebm_default = ParagraphStyle(
-    'default_note',
-    parent=normal,
-    spaceAfter=6,
-)
-
-# Blocco EBM
-story.append(Paragraph("<b>📋 Commento clinico (EBM)</b>", styles["Heading4"]))
-story.append(Spacer(1, 6))
-
-for note in ebm_notes:
-    if note.startswith("✅"):
-        story.append(Paragraph(note, style_ebm_green))
-    elif note.startswith("❗") or note.startswith("⚠️") or note.startswith("↔️"):
-        story.append(Paragraph(note, style_ebm_red))
-    else:
-        story.append(Paragraph(note, style_ebm_default))
-
-        doc.build(story)
-        buf.seek(0)
 
 # 21. Esportazione PDF e CSV
 colp1, colp2 = st.columns(2)
