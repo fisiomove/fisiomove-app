@@ -685,7 +685,10 @@ def pdf_report(logo_bytes, athlete, evaluator, date_str, section, df, body_buf, 
     story.append(Paragraph("<b>🧠 Commento clinico (EBM)</b>", title))
     story.append(Spacer(1, 8))
 
-    for item in ebm_notes:
+    story.append(Paragraph("<b>Commento clinico (EBM)</b>", normal))
+story.append(Spacer(1, 4))
+
+for item in ebm_notes:
     if isinstance(item, dict):
         msg = item.get("msg", "")
         ref = item.get("ref", "")
@@ -693,15 +696,24 @@ def pdf_report(logo_bytes, athlete, evaluator, date_str, section, df, body_buf, 
         msg = str(item)
         ref = ""
 
-        style = style_ebm_red if "❗" in msg else style_ebm_green
-        story.append(Paragraph(msg, style))
-        if ref:
-            story.append(Paragraph(ref, style_reference))
-            story.append(Spacer(1, 6))
+    if msg.strip():
+        style = styles["Normal"]
+        if "❗" in msg or "⚠️" in msg or "↔" in msg:
+            style = styles["Normal"].clone("Warning")
+            style.textColor = colors.red
+        elif "✅" in msg:
+            style = styles["Normal"].clone("Success")
+            style.textColor = colors.green
 
-    doc.build(story)
-    buf.seek(0)
-    return buf
+        story.append(Paragraph(msg, style))
+        if ref.strip():
+            ref_style = styles["Normal"].clone("Ref")
+            ref_style.fontSize = 8
+            ref_style.textColor = colors.HexColor("#666666")
+            story.append(Paragraph(f"<i>{ref}</i>", ref_style))
+
+        story.append(Spacer(1, 6))  # Più spazio tra i commenti
+
 
 
 # 21. Esportazione PDF e CSV
