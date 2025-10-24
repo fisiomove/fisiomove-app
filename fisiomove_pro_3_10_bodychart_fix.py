@@ -664,9 +664,40 @@ def pdf_report(logo_bytes, athlete, evaluator, date_str, section, df, body_buf, 
     story.append(Paragraph("Legenda: rosso=deficit; giallo=parziale; verde=buono; triangolo=Dolore.", normal))
     story.append(Spacer(1, 8))
 
-    story.append(Paragraph("<b>Commento clinico (EBM)</b>", normal))
-    for note in ebm_notes:
-        story.append(Paragraph(f"• {note}", normal))
+    from reportlab.lib.styles import ParagraphStyle
+
+# Stili personalizzati
+style_ebm_green = ParagraphStyle(
+    'green_note',
+    parent=normal,
+    textColor=colors.green,
+    spaceAfter=6,
+)
+
+style_ebm_red = ParagraphStyle(
+    'red_note',
+    parent=normal,
+    textColor=colors.red,
+    spaceAfter=6,
+)
+
+style_ebm_default = ParagraphStyle(
+    'default_note',
+    parent=normal,
+    spaceAfter=6,
+)
+
+# Blocco EBM
+story.append(Paragraph("<b>📋 Commento clinico (EBM)</b>", styles["Heading4"]))
+story.append(Spacer(1, 6))
+
+for note in ebm_notes:
+    if note.startswith("✅"):
+        story.append(Paragraph(note, style_ebm_green))
+    elif note.startswith("❗") or note.startswith("⚠️") or note.startswith("↔️"):
+        story.append(Paragraph(note, style_ebm_red))
+    else:
+        story.append(Paragraph(note, style_ebm_default))
 
     doc.build(story)
     buf.seek(0)
