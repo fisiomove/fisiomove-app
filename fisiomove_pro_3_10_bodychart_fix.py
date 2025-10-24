@@ -472,6 +472,86 @@ def ebm_from_df(df):
     return sorted(list(notes))
 # 20. Commenti EBM
 ebm_notes = ebm_from_df(df_show)
+#generazione pdf
+def pdf_report(logo_bytes, athlete, evaluator, date_str, section, df, body_buf, ebm_notes, radar_buf=None):
+    import io
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.units import cm
+    from reportlab.lib import colors
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image as RLImage
+    from reportlab.lib.styles import getSampleStyleSheet
+
+    buf = io.BytesIO()
+    doc = SimpleDocTemplate(
+        buf, pagesize=A4,
+        leftMargin=1.4 * cm, rightMargin=1.4 * cm,
+        topMargin=1.2 * cm, bottomMargin=1.2 * cm
+    )
+    styles = getSampleStyleSheet()
+    normal = styles["Normal"]
+    title = styles["Title"]
+
+    story = []
+    story.append(RLImage(io.BytesIO(logo_bytes), width=16*cm, height=4*cm))
+    story.append(Spacer(1, 6))
+    story.append(Paragraph(f"<b>Report Valutazione – {section}</b>", title))
+    story.append(Spacer(1, 6))
+
+    info_data = [["Atleta", athlete, "Valutatore", evaluator, "Data", date_str]]
+    info_table = Table(info_data, colWidths=[2.2*cm, 5.0*cm, 2.8*cm, 5.0*cm, 1.8*cm, 2.0*cm])
+    info_table.setStyle(TableStyle([
+        ("BOX", (0, 0), (-1, -1), 0.6, colors.lightgrey),
+        ("INNERGRID", (0, 0), (-1, -1), 0.3, colors.lightgrey),
+        ("BACKGROUND", (0, 0), (-1, -1), colors.whitesmoke),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("FONTNAME", (0, 0), (-1, -1), "Helvetica"),
+    ]))
+    story.append(info_table)
+    story.append(Spacer(1, 8))
+
+    # Aggiunta referenze bibliografiche se esistono
+    df["Riferimenti"] = df["Test"].map(lambda t: next(
+        (x[6] for sec in TESTS.values() for x in sec if x[0] == t and len(x) > 6), ""
+    ))
+
+    disp = df[["Sezione","Test","Unità","Rif","Valore","Score","Dx","Sx","Delta","SymScore","Dolore","Riferimenti"]].copy()
+
+    table = Table([disp.columns.tolist()] + disp.values.tolist(), repeatRows=1,
+                  colWidths=[2.2*cm, 6.0*cm, 1.0*cm, 1.0*cm, 1.4*cm, 1.4*cm, 1.4*cm, 1.4*cm, 1.0*cm, 1.4*cm, 1.4*cm, 6.0*cm])
+    table.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor(PRIMARY)),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("ALIGN", (0, 0), (-1, 0), "CENTER"),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("FONTNAME", (0, 1), (-1, -1), "Helvetica"),
+        ("FONTSIZE", (0, 0), (-1, -1), 7.5),
+        ("GRID", (0, 0), (-1, -1), 0.25, colors.lightgrey),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+    ]))
+    story.append(table)
+    story.append(Spacer(1, 8))
+
+    if radar_buf:
+        story.append(Paragraph("<b>Radar</b>", normal))
+        story.append(Spacer(1, 4))
+        story.append(RLImage(io.BytesIO(radar_buf.getvalue()), width=10*cm, height=10*cm))
+        story.append(Spacer(1, 6))
+
+    story.append(Paragraph("<b>Body Chart – Sintesi</b>", normal))
+    story.append(Spacer(1, 4))
+    story.append(RLImage(io.BytesIO(body_buf.getvalue()), width=16*cm, height=12*cm))
+    story.append(Spacer(1, 6))
+    story.append(Paragraph("Legenda: rosso=deficit; giallo=parziale; verde=buono; triangolo=Dolore.", normal))
+    story.append(Spacer(1, 8))
+
+    story.append(Paragraph("<b>Commento clinico (EBM)</b>", normal))
+    for note in ebm_notes:
+        story.append(Paragraph(f"• {note}", normal))
+
+    doc.build(story)
+    buf.seek(0)
+    return buf
+
 # 21. Esportazione PDF e CSV
 colp1, colp2 = st.columns(2)
 
