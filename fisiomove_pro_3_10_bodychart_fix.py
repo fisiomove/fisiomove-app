@@ -664,7 +664,7 @@ def pdf_report(logo_bytes, athlete, evaluator, date_str, section, df, body_buf, 
     story.append(Paragraph("Legenda: rosso=deficit; giallo=parziale; verde=buono; triangolo=Dolore.", normal))
     story.append(Spacer(1, 8))
 
-    from reportlab.lib.styles import ParagraphStyle
+from reportlab.lib.styles import ParagraphStyle
 
 # Stili personalizzati
 style_ebm_green = ParagraphStyle(
@@ -701,7 +701,6 @@ for note in ebm_notes:
 
         doc.build(story)
         buf.seek(0)
-    return buf
 
 # 21. Esportazione PDF e CSV
 colp1, colp2 = st.columns(2)
