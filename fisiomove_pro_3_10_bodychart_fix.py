@@ -701,7 +701,7 @@ for note in ebm_notes:
 
     doc.build(story)
     buf.seek(0)
-    return buf
+return buf
 
 # 21. Esportazione PDF e CSV
 colp1, colp2 = st.columns(2)
