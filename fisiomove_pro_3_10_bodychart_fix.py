@@ -472,7 +472,6 @@ except Exception as e:
 def ebm_from_df(df):
     notes = set()
 
-    # Mappa test → messaggi EBM + riferimenti
     ebm_library = {
         # Squat
         "Weight Bearing Lunge Test": {
@@ -543,52 +542,52 @@ def ebm_from_df(df):
         }
     }
 
-    # Analizza ogni riga
+    # Lista di test che effettivamente generano commento
+    tests_with_comments = set()
+
     for _, r in df.iterrows():
         test = str(r["Test"]).strip()
         score = float(r["Score"])
         pain = bool(r["Dolore"])
         sym_score = r.get("SymScore", None)
 
-        # Score < 4
+        # Flag per capire se il test genera un commento
+        test_has_comment = False
+
+        # Score basso
         if score < 4:
-            ebm = ebm_library.get(test, {})
-            default_msg = f'Deficit rilevato nel test "{test}".'
-            notes.add(f"❗ {ebm.get('low_score', default_msg)}")
+            msg = ebm_library.get(test, {}).get("low_score", f"Deficit rilevato nel test '{test}'.")
+            notes.add(f"❗ {msg}")
+            test_has_comment = True
 
-
-        # Dolore presente
+        # Dolore
         if pain:
-            notes.add(f"⚠️ Dolore presente nel test \"{test}\": considerare irritabilità tissutale e carico progressivo.")
+            notes.add(f"⚠️ Dolore presente nel test '{test}': considerare irritabilità tissutale e gestione del carico.")
+            test_has_comment = True
 
         # Asimmetria significativa
         try:
             sym = float(sym_score)
             if sym < 7.0:
-                notes.add(f"↔️ Asimmetria significativa nel test \"{test}\" (SymScore: {sym:.1f}/10).")
+                notes.add(f"↔️ Asimmetria significativa nel test '{test}' (SymScore: {sym:.1f}/10).")
+                test_has_comment = True
         except:
             pass
 
-    # Se nessun commento
+        if test_has_comment:
+            tests_with_comments.add(test)
+
+    # Se non c'è alcun commento
     if not notes:
         notes.add("✅ Nessun deficit clinicamente rilevante nei test analizzati.")
+        return sorted(notes)
 
-    # Aggiungi riferimenti solo se ci sono commenti clinici veri (escludi solo asimmetrie)
-    clinical_comments = [n for n in notes if "❗" in n or "⚠️" in n]
-    if clinical_comments:
-        refs = set()
-        for _, r in df.iterrows():
-            test = str(r["Test"]).strip()
-            ebm = ebm_library.get(test, {})
-            ref = ebm.get("ref")
-            if ref:
-                refs.add(ref)
-        for ref in sorted(refs):
+    # Aggiungi riferimenti solo per test che hanno generato commenti
+    for t in sorted(tests_with_comments):
+        ref = ebm_library.get(t, {}).get("ref")
+        if ref:
             notes.add(f"📚 Riferimento: {ref}")
-    else:
-        # Se non ci sono commenti clinici, lascia riga vuota (placeholder)
-        notes.add("")
-    
+
     return sorted(notes)
 
 
