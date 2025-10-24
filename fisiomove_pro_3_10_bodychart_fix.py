@@ -573,17 +573,22 @@ def ebm_from_df(df):
     if not notes:
         notes.add("✅ Nessun deficit clinicamente rilevante nei test analizzati.")
 
-    # Riferimenti (unici)
-    refs = set()
-    for _, r in df.iterrows():
-        test = str(r["Test"]).strip()
-        ebm = ebm_library.get(test, {})
-        ref = ebm.get("ref")
-        if ref:
-            refs.add(ref)
-    for ref in sorted(refs):
-        notes.add(f"📚 Riferimento: {ref}")
-
+    # Aggiungi riferimenti solo se ci sono commenti clinici veri (escludi solo asimmetrie)
+    clinical_comments = [n for n in notes if "❗" in n or "⚠️" in n]
+    if clinical_comments:
+        refs = set()
+        for _, r in df.iterrows():
+            test = str(r["Test"]).strip()
+            ebm = ebm_library.get(test, {})
+            ref = ebm.get("ref")
+            if ref:
+                refs.add(ref)
+        for ref in sorted(refs):
+            notes.add(f"📚 Riferimento: {ref}")
+    else:
+        # Se non ci sono commenti clinici, lascia riga vuota (placeholder)
+        notes.add("")
+    
     return sorted(notes)
 
 
