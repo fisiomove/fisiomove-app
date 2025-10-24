@@ -471,45 +471,70 @@ except Exception as e:
 # 20. Commenti EBM (Evidence-Based Message)
 def ebm_from_df(df):
     notes = set()
-
-    REFERENCES = {
-        "Weight Bearing Lunge Test": "Bennell KL 1998, Konor MM 2012",
-        "Passive Hip Flexion": "Reese NB & Bandy WD, 2020",
-        "Hip Rotation (flexed 90°)": "Norkin CC & White DJ, 2016",
-        "Thoracic Extension (T4–T12)": "Edmonston SJ et al., 2011",
-        "Shoulder ER (adducted, low-bar)": "Wilk KE et al., 2015",
+    
+    # Mappa test → riferimento scientifico + messaggio clinico
+    ebm_library = {
+        "Weight Bearing Lunge Test": {
+            "ref": "Bennell KL et al., Aust J Physiother. 1998; Konor MM et al., J Athl Train. 2012.",
+            "low_score": "Deficit di dorsiflessione: rischio compensi, stress al ginocchio e sollevamento tallone nello squat."
+        },
+        "Passive Hip Flexion": {
+            "ref": "Reese NB, Bandy WD. Goniometry Guide, 5th ed. 2020.",
+            "low_score": "Flessione d’anca ridotta: profondità limitata, compensi lombari nello squat o stacco."
+        },
+        "Hip Rotation (flexed 90°)": {
+            "ref": "Norkin CC, White DJ. Joint Motion. 2016; Gajdosik RL et al., Phys Ther. 1983.",
+            "low_score": "Rotazione anca limitata: possibile stress capsulare o ridotta rotazione interna."
+        },
+        "Thoracic Extension (T4-T12)": {
+            "ref": "Edmonston SJ et al., Manual Therapy. 2011.",
+            "low_score": "Estensione toracica ridotta: setup e allineamento compromessi in panca e squat."
+        },
+        "Shoulder ER (adducted, low-bar)": {
+            "ref": "Wilk KE et al., JOSPT. 2015.",
+            "low_score": "Rotazione esterna spalla ridotta: minor stabilità scapolo-omerale per squat low-bar."
+        }
     }
 
     for _, r in df.iterrows():
-        score = float(r["Score"])
-        pain = bool(r["Dolore"])
         test = str(r["Test"])
         region = str(r["Regione"])
-        name = (test + " " + region).lower()
+        score = float(r["Score"])
+        pain = bool(r["Dolore"])
+        sym_score = r.get("SymScore", None)
 
+        # 1. Score basso (< 4)
         if score < 4:
-            if "lunge" in name or "ankle" in name:
-                notes.add("Deficit di dorsiflessione: rischio sollevamento del tallone, sovraccarico dell’avampiede e aumento stress rotuleo nello squat.")
-            elif "hip" in name:
-                notes.add("Ridotta flessione/rotazione d’anca: profondità ridotta e maggiori compensi lombari in squat/stacco.")
-            elif "thoracic" in name:
-                notes.add("Scarsa estensione toracica: setup della panca limitato e peggior allineamento nello squat.")
-            elif "shoulder" in name:
-                notes.add("Limitata rotazione esterna di spalla: stabilità scapolo-omerale ridotta in low-bar/panca (più stress anteriori).")
-            elif "lumbar" in name or "knee" in name:
-                notes.add("Rigidità posteriore/lombare: tolleranza al carico ridotta in deadlift (attenzione a butt-wink).")
-        
+            ebm = ebm_library.get(test, {})
+            msg = ebm.get("low_score", f"Valore ridotto nel test \"{test}\".")
+            notes.add(f"❗ {msg}")
+
+        # 2. Dolore presente
         if pain:
-            notes.add("Test doloroso: considerare irritabilità tissutale e progressione graduata del carico.")
+            notes.add(f"⚠️ Presenza di dolore nel test \"{test}\": considerare progressione del carico e irritabilità tissutale.")
 
-        # Aggiunta fonte scientifica se disponibile
-        if test in REFERENCES:
-            notes.add(f"{test}: {REFERENCES[test]}")
+        # 3. Asimmetria marcata (SymScore < 7.0)
+        try:
+            sym = float(sym_score)
+            if sym < 7.0:
+                notes.add(f"↔️ Asimmetria significativa nel test \"{test}\" (SymScore: {sym:.1f}/10).")
+        except:
+            pass
 
+    # 4. Nessun commento → nota neutra
     if not notes:
-        notes.add("Nessun deficit clinicamente rilevante: profilo di mobilità adeguato ai compiti.")
+        notes.add("✅ Nessun deficit clinicamente rilevante nei test di questa sezione.")
 
-    return sorted(list(notes))
+    # 5. Aggiunta riferimenti bibliografici finali
+    refs = {
+        v["ref"] for k, v in ebm_library.items()
+        if any(k in str(r["Test"]) for _, r in df.iterrows())
+    }
+    for ref in sorted(refs):
+        notes.add(f"📚 Riferimento: {ref}")
+
+    return sorted(notes)
+
 
 # 20. Commenti EBM
 ebm_notes = ebm_from_df(df_show)
