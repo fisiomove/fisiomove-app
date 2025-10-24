@@ -590,7 +590,14 @@ def ebm_from_df(df):
 ebm_notes = ebm_from_df(df_show)
 #generazione pdf
 def pdf_report(logo_bytes, athlete, evaluator, date_str, section, df, body_buf, ebm_notes, radar_buf=None):
-    from reportlab.lib.styles import ParagraphStyle
+    from reportlab.platypus import (
+        SimpleDocTemplate, Paragraph, Spacer,
+        Image as RLImage, Table, TableStyle
+    )
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.units import cm
+    from reportlab.lib import colors
+    from reportlab.lib.styles import getSampleStyleSheet
 
     buf = io.BytesIO()
     doc = SimpleDocTemplate(
@@ -603,37 +610,13 @@ def pdf_report(logo_bytes, athlete, evaluator, date_str, section, df, body_buf, 
     normal = styles["Normal"]
     title = styles["Title"]
 
-    # Stili EBM
-    style_ebm_green = ParagraphStyle(
-        'green_note',
-        parent=normal,
-        textColor=colors.green,
-        leading=14,
-        spaceAfter=6
-    )
-    style_ebm_red = ParagraphStyle(
-        'red_note',
-        parent=normal,
-        textColor=colors.red,
-        leading=14,
-        spaceAfter=6
-    )
-    style_reference = ParagraphStyle(
-        'ref_note',
-        parent=normal,
-        textColor=colors.grey,
-        fontSize=7,
-        leading=10,
-        spaceAfter=8
-    )
-
     story = []
     story.append(RLImage(io.BytesIO(logo_bytes), width=16*cm, height=4*cm))
     story.append(Spacer(1, 6))
     story.append(Paragraph(f"<b>Report Valutazione – {section}</b>", title))
     story.append(Spacer(1, 6))
 
-    # Info atleta
+    # Intestazione
     info_data = [["Atleta", athlete, "Valutatore", evaluator, "Data", date_str]]
     info_table = Table(info_data, colWidths=[2.2*cm, 5.0*cm, 2.8*cm, 5.0*cm, 1.8*cm, 2.0*cm])
     info_table.setStyle(TableStyle([
@@ -648,11 +631,18 @@ def pdf_report(logo_bytes, athlete, evaluator, date_str, section, df, body_buf, 
 
     # Tabella risultati
     disp = df[["Sezione", "Test", "Unità", "Rif", "Valore", "Score", "Dx", "Sx", "Delta", "SymScore", "Dolore"]].copy()
-    disp["Delta"] = pd.to_numeric(disp["Delta"], errors='coerce').round(2)
-    disp["SymScore"] = pd.to_numeric(disp["SymScore"], errors='coerce').round(1)
 
-    table = Table([disp.columns.tolist()] + disp.values.tolist(), repeatRows=1,
-                  colWidths=[2.2*cm, 6.5*cm, 1.2*cm, 1.2*cm, 1.6*cm, 1.6*cm, 1.4*cm, 1.4*cm, 1.2*cm, 1.6*cm, 1.6*cm])
+    # Format numerici a due decimali
+    for col in ["Valore", "Score", "Dx", "Sx", "Delta", "SymScore"]:
+        if col in disp.columns:
+            disp[col] = pd.to_numeric(disp[col], errors="coerce").round(2)
+
+    table = Table(
+        [disp.columns.tolist()] + disp.values.tolist(),
+        repeatRows=1,
+        colWidths=[2.2*cm, 6.5*cm, 1.2*cm, 1.2*cm, 1.6*cm, 1.6*cm,
+                   1.4*cm, 1.4*cm, 1.2*cm, 1.6*cm, 1.6*cm]
+    )
     table.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1E6CF4")),
         ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
@@ -678,43 +668,45 @@ def pdf_report(logo_bytes, athlete, evaluator, date_str, section, df, body_buf, 
     story.append(Spacer(1, 4))
     story.append(RLImage(io.BytesIO(body_buf.getvalue()), width=16*cm, height=12*cm))
     story.append(Spacer(1, 6))
-    story.append(Paragraph("Legenda: 🟥 deficit | 🟨 parziale | 🟩 buono | 🔺 dolore", normal))
+    story.append(Paragraph("Legenda: rosso=deficit; giallo=parziale; verde=buono; triangolo=Dolore.", normal))
     story.append(Spacer(1, 10))
 
-    # Commento clinico EBM
-    story.append(Paragraph("<b>🧠 Commento clinico (EBM)</b>", title))
-    story.append(Spacer(1, 8))
-
+    # Commenti clinici EBM
     story.append(Paragraph("<b>Commento clinico (EBM)</b>", normal))
-story.append(Spacer(1, 4))
+    story.append(Spacer(1, 6))
 
-for item in ebm_notes:
-    if isinstance(item, dict):
-        msg = item.get("msg", "")
-        ref = item.get("ref", "")
-    else:
-        msg = str(item)
-        ref = ""
+    for item in ebm_notes:
+        if isinstance(item, dict):
+            msg = item.get("msg", "")
+            ref = item.get("ref", "")
+        else:
+            msg = str(item)
+            ref = ""
 
-    if msg.strip():
-        style = styles["Normal"]
-        if "❗" in msg or "⚠️" in msg or "↔" in msg:
-            style = styles["Normal"].clone("Warning")
-            style.textColor = colors.red
-        elif "✅" in msg:
-            style = styles["Normal"].clone("Success")
-            style.textColor = colors.green
+        if msg.strip():
+            style = styles["Normal"]
 
-        story.append(Paragraph(msg, style))
-        if ref.strip():
-            ref_style = styles["Normal"].clone("Ref")
-            ref_style.fontSize = 8
-            ref_style.textColor = colors.HexColor("#666666")
-            story.append(Paragraph(f"<i>{ref}</i>", ref_style))
+            if any(w in msg for w in ["❗", "⚠️", "↔"]):
+                style = styles["Normal"].clone("Warning")
+                style.textColor = colors.red
+            elif "✅" in msg:
+                style = styles["Normal"].clone("Success")
+                style.textColor = colors.green
 
-        story.append(Spacer(1, 6))  # Più spazio tra i commenti
+            story.append(Paragraph(msg, style))
 
+            if ref.strip():
+                ref_style = styles["Normal"].clone("Ref")
+                ref_style.fontSize = 8
+                ref_style.textColor = colors.HexColor("#666666")
+                story.append(Paragraph(f"<i>{ref}</i>", ref_style))
 
+            story.append(Spacer(1, 6))  # spazio extra
+
+    # Costruzione del documento PDF
+    doc.build(story)
+    buf.seek(0)
+    return buf
 
 # 21. Esportazione PDF e CSV
 colp1, colp2 = st.columns(2)
