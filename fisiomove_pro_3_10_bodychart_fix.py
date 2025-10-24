@@ -447,10 +447,21 @@ except Exception as e:
 # 20. Commenti EBM (Evidence-Based Message)
 def ebm_from_df(df):
     notes = set()
+
+    REFERENCES = {
+        "Weight Bearing Lunge Test": "Bennell KL 1998, Konor MM 2012",
+        "Passive Hip Flexion": "Reese NB & Bandy WD, 2020",
+        "Hip Rotation (flexed 90°)": "Norkin CC & White DJ, 2016",
+        "Thoracic Extension (T4–T12)": "Edmonston SJ et al., 2011",
+        "Shoulder ER (adducted, low-bar)": "Wilk KE et al., 2015",
+    }
+
     for _, r in df.iterrows():
         score = float(r["Score"])
         pain = bool(r["Dolore"])
-        name = (str(r["Test"]) + " " + str(r["Regione"])).lower()
+        test = str(r["Test"])
+        region = str(r["Regione"])
+        name = (test + " " + region).lower()
 
         if score < 4:
             if "lunge" in name or "ankle" in name:
@@ -463,13 +474,19 @@ def ebm_from_df(df):
                 notes.add("Limitata rotazione esterna di spalla: stabilità scapolo-omerale ridotta in low-bar/panca (più stress anteriori).")
             elif "lumbar" in name or "knee" in name:
                 notes.add("Rigidità posteriore/lombare: tolleranza al carico ridotta in deadlift (attenzione a butt-wink).")
+        
         if pain:
             notes.add("Test doloroso: considerare irritabilità tissutale e progressione graduata del carico.")
+
+        # Aggiunta fonte scientifica se disponibile
+        if test in REFERENCES:
+            notes.add(f"{test}: {REFERENCES[test]}")
 
     if not notes:
         notes.add("Nessun deficit clinicamente rilevante: profilo di mobilità adeguato ai compiti.")
 
     return sorted(list(notes))
+
 # 20. Commenti EBM
 ebm_notes = ebm_from_df(df_show)
 #generazione pdf
