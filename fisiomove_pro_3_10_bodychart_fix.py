@@ -532,6 +532,7 @@ def pdf_report(logo_bytes, athlete, evaluator, date_str, section, df, body_buf, 
     ))
 
     disp = df[["Sezione","Test","Unità","Rif","Valore","Score","Dx","Sx","Delta","SymScore","Dolore","Riferimenti"]].copy()
+    disp["Delta"] = pd.to_numeric(disp["Delta"], errors="coerce").round(2)
 
     table = Table([disp.columns.tolist()] + disp.values.tolist(), repeatRows=1,
                   colWidths=[2.2*cm, 6.0*cm, 1.0*cm, 1.0*cm, 1.4*cm, 1.4*cm, 1.4*cm, 1.4*cm, 1.0*cm, 1.4*cm, 1.4*cm, 6.0*cm])
