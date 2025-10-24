@@ -553,7 +553,9 @@ def ebm_from_df(df):
         # Score < 4
         if score < 4:
             ebm = ebm_library.get(test, {})
-            notes.add(f"❗ {ebm.get('low_score', f'Deficit rilevato nel test \"{test}\".')}")
+            default_msg = f'Deficit rilevato nel test "{test}".'
+            notes.add(f"❗ {ebm.get('low_score', default_msg)}")
+
 
         # Dolore presente
         if pain:
