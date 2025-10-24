@@ -470,7 +470,7 @@ except Exception as e:
     st.warning(f"■ Grafico asimmetrie non disponibile ({e})")
 # 20. Commenti EBM (Evidence-Based Message)
 def ebm_from_df(df):
-    notes = set()
+    notes = []
 
     ebm_library = {
         # Squat
@@ -494,7 +494,6 @@ def ebm_from_df(df):
             "ref": "Wilk KE et al., 2015",
             "low_score": "Limitata ER spalla: può compromettere la posizione low-bar e aumentare lo stress anteriore."
         },
-
         # Panca
         "Shoulder Flexion (supine)": {
             "ref": "Reese NB, Bandy WD, 2020",
@@ -512,7 +511,6 @@ def ebm_from_df(df):
             "ref": "Harvey D, 1998",
             "low_score": "Flessibilità anca ridotta: associata a compensi in estensione lombare in panca e squat."
         },
-
         # Deadlift
         "Active Knee Extension (AKE)": {
             "ref": "Sahrmann SA, 2002",
@@ -530,7 +528,6 @@ def ebm_from_df(df):
             "ref": "Moreau CE et al., 2001",
             "low_score": "Scarsa endurance lombare: rischio di cedimento precoce durante lo stacco o esercizi statici."
         },
-
         # Neurodinamica
         "Popliteal Knee Bend (PKB)": {
             "ref": "Shacklock M, 2005",
@@ -542,53 +539,50 @@ def ebm_from_df(df):
         }
     }
 
-    # Lista di test che effettivamente generano commento
-    tests_with_comments = set()
+    tests_with_problems = set()
 
     for _, r in df.iterrows():
         test = str(r["Test"]).strip()
         score = float(r["Score"])
         pain = bool(r["Dolore"])
-        sym_score = r.get("SymScore", None)
+        sym_score = r.get("SymScore", 10.0)
 
-        # Flag per capire se il test genera un commento
-        test_has_comment = False
+        issue_found = False
 
-        # Score basso
+        # Score insufficiente
         if score < 4:
             msg = ebm_library.get(test, {}).get("low_score", f"Deficit rilevato nel test '{test}'.")
-            notes.add(f"❗ {msg}")
-            test_has_comment = True
+            notes.append(f"❗ {msg}")
+            tests_with_problems.add(test)
+            issue_found = True
 
         # Dolore
         if pain:
-            notes.add(f"⚠️ Dolore presente nel test '{test}': considerare irritabilità tissutale e gestione del carico.")
-            test_has_comment = True
+            notes.append(f"⚠️ Dolore presente nel test '{test}': considerare irritabilità tissutale e gestione del carico.")
+            tests_with_problems.add(test)
+            issue_found = True
 
-        # Asimmetria significativa
+        # Asimmetria
         try:
             sym = float(sym_score)
-            if sym < 7.0:
-                notes.add(f"↔️ Asimmetria significativa nel test '{test}' (SymScore: {sym:.1f}/10).")
-                test_has_comment = True
+            if sym < 7:
+                notes.append(f"↔️ Asimmetria significativa nel test '{test}' (SymScore: {sym:.1f}/10).")
+                tests_with_problems.add(test)
+                issue_found = True
         except:
             pass
 
-        if test_has_comment:
-            tests_with_comments.add(test)
+        # ✅ Test superato senza problemi
+        if not issue_found:
+            notes.append(f"✅ Il test '{test}' soddisfa la sufficienza.")
 
-    # Se non c'è alcun commento
-    if not notes:
-        notes.add("✅ Nessun deficit clinicamente rilevante nei test analizzati.")
-        return sorted(notes)
-
-    # Aggiungi riferimenti solo per test che hanno generato commenti
-    for t in sorted(tests_with_comments):
-        ref = ebm_library.get(t, {}).get("ref")
+    # Aggiunta riferimenti SOLO per i test con problemi
+    for test in sorted(tests_with_problems):
+        ref = ebm_library.get(test, {}).get("ref")
         if ref:
-            notes.add(f"📚 Riferimento: {ref}")
+            notes.append(f"📚 Riferimento: {ref}")
 
-    return sorted(notes)
+    return notes
 
 
 
