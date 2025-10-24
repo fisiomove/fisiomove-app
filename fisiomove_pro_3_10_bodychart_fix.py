@@ -212,7 +212,11 @@ def bodychart_image_from_state(width=1200, height=800):
     region_pain = {}
     for region in ["shoulder", "hip", "knee", "ankle", "thoracic", "lumbar"]:
         sub = df_all[df_all["Regione"] == region]
-        region_scores[region] = float(np.clip(sub["Score"].astype(float).mean(), 0, 10)) if len(sub) else 0.0
+        # Nuovo calcolo: penalizza asimmetria nella media regionale
+        mean_score = sub["Score"].astype(float).mean()
+        penalty = sub["SymScore"].astype(float).apply(lambda x: 1 - x / 10).mean()
+        final_score = np.clip(mean_score * (1 - penalty), 0, 10)
+        region_scores[region] = float(final_score)
         region_pain[region] = bool(sub["Dolore"].any()) if len(sub) else False
 
     def score_color(score):
