@@ -289,11 +289,15 @@ def asymmetry_bar_plot(df, title="Asimmetria Dx–Sx"):
     df_bilat = df[df["Delta"].notnull()].copy()
 
     try:
-        df_bilat["Delta"] = df_bilat["Delta"].astype(float)
-        df_bilat["SymScore"] = df_bilat["SymScore"].astype(float)
+        df_bilat["Delta"] = pd.to_numeric(df_bilat["Delta"], errors="coerce")
+        df_bilat["SymScore"] = pd.to_numeric(df_bilat["SymScore"], errors="coerce")
     except Exception as e:
         st.warning(f"Errore nel cast dei valori numerici: {e}")
         return None
+
+    # Rimuovi righe dove i dati non sono numerici
+    df_bilat = df_bilat.dropna(subset=["Delta", "SymScore"])
+
 
     if df_bilat.empty:
         return None
