@@ -214,7 +214,7 @@ def bodychart_image_from_state(width=1200, height=800):
         sub = df_all[df_all["Regione"] == region]
         # Nuovo calcolo: penalizza asimmetria nella media regionale
         mean_score = sub["Score"].astype(float).mean()
-        penalty = sub["SymScore"].astype(float).apply(lambda x: 1 - x / 10).mean()
+        penalty = pd.to_numeric(sub["SymScore"], errors="coerce").dropna().apply(lambda x: 1 - x / 10).mean()
         final_score = np.clip(mean_score * (1 - penalty), 0, 10)
         region_scores[region] = float(final_score)
         region_pain[region] = bool(sub["Dolore"].any()) if len(sub) else False
