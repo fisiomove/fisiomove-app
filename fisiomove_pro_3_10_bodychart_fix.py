@@ -699,9 +699,9 @@ for note in ebm_notes:
     else:
         story.append(Paragraph(note, style_ebm_default))
 
-    doc.build(story)
-    buf.seek(0)
-return buf
+        doc.build(story)
+        buf.seek(0)
+    return buf
 
 # 21. Esportazione PDF e CSV
 colp1, colp2 = st.columns(2)
