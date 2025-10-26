@@ -11,11 +11,7 @@ from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image as RLImage, Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet
 
-st.set_page_config(
-    page_title="Fisiomove MobilityPro v. 1.0",
-    layout="centered"  # o "wide", "centered"
-)
-
+st.set_page_config(page_title="Fisiomove MobilityPro v. 1.0",layout="centered")
 
 # -----------------------------
 # Constants & Assets
