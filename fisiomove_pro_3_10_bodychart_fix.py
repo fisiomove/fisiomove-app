@@ -742,6 +742,35 @@ def pdf_report(
     story.append(Paragraph("Legenda: rosso=deficit; giallo=parziale; verde=buono; triangolo=Dolore.", normal))
     story.append(Spacer(1, 10))
 
+    # Sezione: Regioni Dolorose
+    pain_regions = []
+
+    for _, row in df.iterrows():
+        regione = row.get("Regione", "").capitalize()
+        if not regione:
+            continue
+
+        if row.get("DoloreDx", False):
+        pain_regions.append(f"{regione} destra")
+        if row.get("DoloreSx", False):
+        pain_regions.append(f"{regione} sinistra")
+        if row.get("Dolore", False) and not (row.get("DoloreDx") or row.get("DoloreSx")):
+        pain_regions.append(f"{regione}")
+
+    # Rimuovi duplicati
+    pain_regions = list(dict.fromkeys(pain_regions))
+
+    # Scrivi intestazione
+    story.append(Paragraph("<b>🩹 Regioni dolorose riscontrate durante il test:</b>", normal))
+    if pain_regions:
+        for reg in pain_regions:
+            story.append(Paragraph(f"• {reg.capitalize()}", normal))
+    else:
+        story.append(Paragraph("Nessuna regione segnalata come dolorosa.", normal))
+
+    story.append(Spacer(1, 12))  # spazio prima dei commenti EBM
+
+    
     # ▶️ Commento EBM
     story.append(Paragraph("<b>Commento clinico (EBM)</b>", normal))
     story.append(Spacer(1, 4))
