@@ -235,35 +235,48 @@ def radar_plot(df, title="Punteggi (0–10)"):
 # -----------------------------
 # Asymmetry bar plot
 # -----------------------------
-def asymmetry_bar_plot(df, title="Asimmetria Dx–Sx"):
+def asymmetry_bar_plot(df, title="SymScore – Simmetria Dx/Sx"):
     import matplotlib.pyplot as plt
     import io
 
-    df_bilat = df[df["Delta"].notnull()].copy()
+    df_bilat = df[df["SymScore"].notnull()].copy()
+
     try:
-        df_bilat["Delta"] = pd.to_numeric(df_bilat["Delta"], errors="coerce")
-        df_bilat = df_bilat.dropna(subset=["Delta"])
+        df_bilat["SymScore"] = pd.to_numeric(df_bilat["SymScore"], errors="coerce")
+        df_bilat = df_bilat.dropna(subset=["SymScore"])
     except Exception as e:
-        print(f"Errore nella conversione di Delta: {e}")
+        print(f"Errore nella conversione di SymScore: {e}")
         return None
 
     if df_bilat.empty:
         return None
 
     labels = df_bilat["Test"].tolist()
-    deltas = df_bilat["Delta"].tolist()
+    scores = df_bilat["SymScore"].tolist()
+
+    # Colori basati sul punteggio
+    colors_map = []
+    for score in scores:
+        if score >= 7:
+            colors_map.append("#16A34A")  # Verde
+        elif score >= 4:
+            colors_map.append("#F59E0B")  # Giallo
+        else:
+            colors_map.append("#DC2626")  # Rosso
 
     fig, ax = plt.subplots(figsize=(8, 4))
-    bars = ax.barh(labels, deltas, color="#FF6B6B")
+    bars = ax.barh(labels, scores, color=colors_map)
 
-    ax.set_xlabel("Asimmetria (unità originali)")
+    ax.set_xlabel("SymScore (0–10)")
     ax.set_title(title)
+    ax.set_xlim(0, 10)
     ax.invert_yaxis()
     ax.grid(True, axis='x', linestyle='--', alpha=0.5)
 
+    # Etichette numeriche sulle barre
     for bar in bars:
         width = bar.get_width()
-        ax.text(width + 0.05, bar.get_y() + bar.get_height()/2, f"{width:.2f}", va='center')
+        ax.text(width + 0.2, bar.get_y() + bar.get_height()/2, f"{width:.1f}", va='center')
 
     buf = io.BytesIO()
     plt.tight_layout()
@@ -271,6 +284,7 @@ def asymmetry_bar_plot(df, title="Asimmetria Dx–Sx"):
     buf.seek(0)
     plt.close(fig)
     return buf
+
 # -----------------------------
 # Titolo app
 # -----------------------------
