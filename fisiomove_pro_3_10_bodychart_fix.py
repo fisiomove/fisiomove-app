@@ -311,11 +311,14 @@ def radar_plot(df, title="Punteggi (0–10)"):
     if len(labels) < 3:
         raise ValueError("Servono almeno 3 test per il radar.")
 
-    # Chiudi il cerchio
+    # Chiudere il cerchio aggiungendo il primo valore alla fine
     values += values[:1]
-    angles = np.linspace(0, 2 * np.pi, len(values), endpoint=False).tolist()
-    angles += angles[:1]
+    
+    num_vars = len(labels)
+    angles = np.linspace(0, 2 * np.pi, num_vars, endpoint=False).tolist()
+    angles += angles[:1]  # Chiudere il cerchio
 
+    # Plot
     fig, ax = plt.subplots(figsize=(6, 6), subplot_kw=dict(polar=True))
     ax.set_theta_offset(np.pi / 2)
     ax.set_theta_direction(-1)
@@ -326,7 +329,7 @@ def radar_plot(df, title="Punteggi (0–10)"):
     ax.set_yticks([2, 4, 6, 8, 10])
     ax.set_ylim(0, 10)
 
-    # Label sugli assi (saltando l'ultimo perché è il primo duplicato)
+    # Etichette
     ax.set_xticks(angles[:-1])
     ax.set_xticklabels(labels, fontsize=9)
 
