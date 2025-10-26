@@ -193,6 +193,7 @@ def bodychart_image_from_state(width=1200, height=800):
     base = BODYCHART_BASE.copy().resize((width, height))
     draw = ImageDraw.Draw(base)
 
+    # Coordinate dei marker sulla body chart
     fx, bx = 0.255, 0.745
     points = {
         "shoulder_dx": (fx - 0.135, 0.225),
@@ -209,50 +210,53 @@ def bodychart_image_from_state(width=1200, height=800):
 
     df_all = build_df("Valutazione Generale")
 
-    # Calcolo dei punteggi per ciascun lato o zona
+    # Dizionari per punteggi e dolore
     region_scores = {}
     region_pain = {}
 
     for region in points.keys():
-        matching = df_all[df_all["Regione"].notnull() & (df_all["Regione"].str.lower() == region.split("_")[0])]
+        base_region = region.split("_")[0]  # esempio: shoulder_dx → shoulder
+        side = None
         if "_dx" in region:
             side = "Dx"
         elif "_sx" in region:
             side = "Sx"
-        else:
-            side = None  # parte centrale, come thoracic/lumbar
+
+        # Filtra i test relativi alla regione
+        matching = df_all[df_all["Regione"].notnull() & (df_all["Regione"].str.lower() == base_region)]
+
+        score = 0.0
+        pain = False
 
         if not matching.empty:
-            if side:
-                # lato Dx o Sx
+            if side:  # test bilaterale
                 col = side
                 vals = matching[matching[col].notnull()]
                 if not vals.empty:
-                    avg = vals[col].astype(float).mean()
-                    ref = vals["Rif"].astype(float).mean()
-                    score = ability_linear(avg, ref)
-                    pain = matching[f"Dolore{side}"].any()
-                else:
-                    score = 0.0
-                    pain = False
-            else:
-                # parte centrale
+                    try:
+                        avg = vals[col].astype(float).mean()
+                        ref = vals["Rif"].astype(float).mean()
+                        score = ability_linear(avg, ref)
+                    except Exception:
+                        score = 0.0
+                # Dolore solo se colonna esiste
+                pain_col = f"Dolore{side}"
+                pain = matching[pain_col].any() if pain_col in matching.columns else False
+            else:  # test centrale (thoracic/lumbar)
                 vals = matching[matching["Valore"].notnull()]
                 if not vals.empty:
-                    avg = vals["Valore"].astype(float).mean()
-                    ref = vals["Rif"].astype(float).mean()
-                    score = ability_linear(avg, ref)
-                    pain = matching["Dolore"].any()
-                else:
-                    score = 0.0
-                    pain = False
-        else:
-            score = 0.0
-            pain = False
+                    try:
+                        avg = vals["Valore"].astype(float).mean()
+                        ref = vals["Rif"].astype(float).mean()
+                        score = ability_linear(avg, ref)
+                    except Exception:
+                        score = 0.0
+                pain = matching["Dolore"].any() if "Dolore" in matching.columns else False
 
-        region_scores[region] = score
-        region_pain[region] = pain
+        region_scores[region] = float(np.clip(score, 0, 10))
+        region_pain[region] = bool(pain)
 
+    # Colore in base al punteggio
     def score_color(score):
         if score > 7:
             return (22, 163, 74, 255)     # verde
@@ -261,24 +265,34 @@ def bodychart_image_from_state(width=1200, height=800):
         else:
             return (220, 38, 38, 255)    # rosso
 
+    # Disegno marker
     def draw_marker(xn, yn, score, pain):
         x = int(xn * width)
         y = int(yn * height)
         radius = int(10 + 6 * (1 - min(max(score, 0), 10) / 10))
         draw.ellipse((x - radius, y - radius, x + radius, y + radius), fill=score_color(score))
+
+        # Check mark bianco se punteggio alto
         if score > 7:
             draw.line((x - 4, y, x - 2, y + 6), fill=(255, 255, 255, 255), width=3)
             draw.line((x - 2, y + 6, x + 6, y - 4), fill=(255, 255, 255, 255), width=3)
+
+        # Triangolo rosso se dolore
         if pain:
-            tri = [(x + radius + 2, y - radius - 2), (x + radius + 12, y - radius - 2), (x + radius + 7, y - radius - 12)]
+            tri = [
+                (x + radius + 2, y - radius - 2),
+                (x + radius + 12, y - radius - 2),
+                (x + radius + 7, y - radius - 12),
+            ]
             draw.polygon(tri, fill=(220, 38, 38, 255))
 
-    # Disegna tutti i marker (lato per lato)
+    # Disegna tutti i marker Dx / Sx
     for region_label, coord in points.items():
         score = region_scores.get(region_label, 0.0)
         pain = region_pain.get(region_label, False)
         draw_marker(*coord, score, pain)
 
+    # Esporta immagine
     bio = io.BytesIO()
     base.save(bio, format="PNG")
     bio.seek(0)
