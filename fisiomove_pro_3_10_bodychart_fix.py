@@ -300,31 +300,43 @@ def bodychart_image_from_state(width=1200, height=800):
 
 
 # 11. Radar plot (score)
-def radar_plot(df, title="Radar – Punteggi (0–10)"):
+def radar_plot(df, title="Punteggi (0–10)"):
+    import matplotlib.pyplot as plt
+    import numpy as np
+    import io
+
     labels = df["Test"].tolist()
     values = df["Score"].astype(float).tolist()
+
     if len(labels) < 3:
         raise ValueError("Servono almeno 3 test per il radar.")
 
-    values_c = values + [values[0]]
-    labels_c = labels + [labels[0]]
-    angles = np.linspace(0, 2 * np.pi, len(values_c), endpoint=False)
+    # Chiudi il cerchio
+    values += values[:1]
+    angles = np.linspace(0, 2 * np.pi, len(values), endpoint=False).tolist()
+    angles += angles[:1]
 
-    fig = plt.figure(figsize=(5,5))
-    ax = plt.subplot(111, polar=True)
+    fig, ax = plt.subplots(figsize=(6, 6), subplot_kw=dict(polar=True))
     ax.set_theta_offset(np.pi / 2)
     ax.set_theta_direction(-1)
-    ax.set_thetagrids(angles[:-1] * 180/np.pi, labels)
+
+    ax.plot(angles, values, linewidth=2, linestyle='solid', color="#1E6CF4")
+    ax.fill(angles, values, alpha=0.25, color="#1E6CF4")
+
+    ax.set_yticks([2, 4, 6, 8, 10])
     ax.set_ylim(0, 10)
-    ax.plot(angles, values_c, linewidth=2, linestyle='solid')
-    ax.fill(angles, values_c, alpha=0.25)
-    ax.set_title(title)
+
+    # Label sugli assi (saltando l'ultimo perché è il primo duplicato)
+    ax.set_xticks(angles[:-1])
+    ax.set_xticklabels(labels, fontsize=9)
+
+    ax.set_title(title, y=1.1, fontsize=14)
 
     buf = io.BytesIO()
     plt.tight_layout()
-    fig.savefig(buf, format="PNG", dpi=160)
-    plt.close(fig)
+    plt.savefig(buf, format="png")
     buf.seek(0)
+    plt.close(fig)
     return buf
 
 # 12. Asymmetry bar plot
