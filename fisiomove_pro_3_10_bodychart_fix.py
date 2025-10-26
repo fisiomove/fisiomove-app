@@ -231,8 +231,8 @@ def bodychart_image_from_state(width=1200, height=800):
 
         if not matching.empty:
             if side:  # test bilaterale
-            col = side
-            pain_col = f"Dolore{side}"
+                col = side
+                pain_col = f"Dolore{side}"
 
             try:
                 vals = pd.to_numeric(matching[col], errors="coerce").dropna()
