@@ -650,28 +650,23 @@ def ebm_from_df(df):
 # 20. Commenti EBM
 ebm_notes = ebm_from_df(df_show)
 #generazione pdf
-def pdf_report(
+def pdf_report_no_bodychart(
     logo_bytes,
     athlete,
     evaluator,
     date_str,
     section,
     df,
-    body_buf,
     ebm_notes,
     radar_buf=None,
-    asym_buf=None  # ✅ aggiunto
+    asym_buf=None
 ):
-    from reportlab.platypus import (
-        SimpleDocTemplate, Paragraph, Spacer,
-        Image as RLImage, Table, TableStyle
-    )
+    import io
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image as RLImage, Table, TableStyle
     from reportlab.lib.pagesizes import A4
     from reportlab.lib.units import cm
     from reportlab.lib import colors
     from reportlab.lib.styles import getSampleStyleSheet
-
-    import io
 
     buf = io.BytesIO()
     doc = SimpleDocTemplate(
@@ -701,8 +696,9 @@ def pdf_report(
     story.append(info_table)
     story.append(Spacer(1, 8))
 
+    # Tabella risultati
     disp = df[["Sezione", "Test", "Unità", "Rif", "Valore", "Score", "Dx", "Sx", "Delta", "SymScore", "Dolore"]].copy()
-    disp["Delta"] = pd.to_numeric(disp["Delta"], errors="coerce").round(2)  # ✅ massimo 2 decimali
+    disp["Delta"] = pd.to_numeric(disp["Delta"], errors="coerce").round(2)
     disp["SymScore"] = pd.to_numeric(disp["SymScore"], errors="coerce").round(2)
 
     table = Table([disp.columns.tolist()] + disp.values.tolist(), repeatRows=1,
@@ -727,22 +723,14 @@ def pdf_report(
         story.append(RLImage(io.BytesIO(radar_buf.getvalue()), width=10*cm, height=10*cm))
         story.append(Spacer(1, 8))
 
-    # ▶️ Asymmetry bar plot ✅
+    # ▶️ Asymmetry bar plot
     if asym_buf:
         story.append(Paragraph("<b>Grafico Asimmetrie Dx/Sx</b>", normal))
         story.append(Spacer(1, 4))
         story.append(RLImage(io.BytesIO(asym_buf.getvalue()), width=14*cm, height=6*cm))
         story.append(Spacer(1, 8))
 
-    # ▶️ Body Chart
-    story.append(Paragraph("<b>Body Chart – Sintesi</b>", normal))
-    story.append(Spacer(1, 4))
-    story.append(RLImage(io.BytesIO(body_buf.getvalue()), width=16*cm, height=12*cm))
-    story.append(Spacer(1, 4))
-    story.append(Paragraph("Legenda: rosso=deficit; giallo=parziale; verde=buono; triangolo=Dolore.", normal))
-    story.append(Spacer(1, 10))
-
-    # Sezione: Regioni Dolorose
+    # ▶️ Regioni dolorose
     pain_regions = []
 
     for _, row in df.iterrows():
@@ -757,10 +745,8 @@ def pdf_report(
         if row.get("Dolore", False) and not (row.get("DoloreDx") or row.get("DoloreSx")):
             pain_regions.append(f"{regione}")
 
-    # Rimuovi duplicati
     pain_regions = list(dict.fromkeys(pain_regions))
 
-    # Scrivi intestazione
     story.append(Paragraph("<b>🩹 Regioni dolorose riscontrate durante il test:</b>", normal))
     if pain_regions:
         for reg in pain_regions:
@@ -768,11 +754,10 @@ def pdf_report(
     else:
         story.append(Paragraph("Nessuna regione segnalata come dolorosa.", normal))
 
-    story.append(Spacer(1, 12))  # spazio prima dei commenti EBM
+    story.append(Spacer(1, 12))
 
-    
-    # ▶️ Commento EBM
-    story.append(Paragraph("<b>Commento clinico (EBM)</b>", normal))
+    # ▶️ Commento clinico EBM
+    story.append(Paragraph("<b>🧠 Commento clinico (EBM)</b>", normal))
     story.append(Spacer(1, 4))
 
     if ebm_notes:
@@ -786,6 +771,7 @@ def pdf_report(
     doc.build(story)
     buf.seek(0)
     return buf
+
 
 
 # 21. Esportazione PDF e CSV
