@@ -511,7 +511,7 @@ except Exception as e:
     radar_buf = None
     st.warning(f"■ Radar non disponibile ({e})")
 #def ebm
-"""def ebm_from_df(df):
+def ebm_from_df(df):
 
 # 18. Body Chart
 # ✅ Body chart disattivata in questa versione — se vuoi riattivarla, decommenta le righe qui sotto
@@ -779,8 +779,6 @@ def pdf_report_no_bodychart(
     buf.seek(0)
     return buf
 
-
-
 # 21. Esportazione PDF e CSV
 colp1, colp2 = st.columns(2)
 
@@ -798,8 +796,6 @@ with colp1:
                 radar_buf=radar_buf,
                 asym_buf=asym_buf
             )
-
-            
             st.download_button(
                 "Scarica PDF",
                 data=pdf.getvalue(),
@@ -809,6 +805,7 @@ with colp1:
             )
         except Exception as e:
             st.error(f"Errore durante generazione PDF: {e}")
+
 
 with colp2:
     if st.button("Esporta CSV", use_container_width=True):
