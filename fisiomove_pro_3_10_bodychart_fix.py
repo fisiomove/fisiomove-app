@@ -422,11 +422,13 @@ def render_inputs_for_section(section):
     items = []
     if section == "Valutazione Generale":
         for s in ["Squat", "Panca", "Deadlift", "Neurodinamica"]:
-            items += TESTS[s]
+            for item in TESTS[s]:
+                items.append((s, *item))  # Aggiungi la sezione originale
     else:
-        items = TESTS.get(section, [])
+        for item in TESTS.get(section, []):
+            items.append((section, *item))  # Aggiungi la sezione originale
 
-    for (name, unit, ref, bilat, region, desc) in items:
+    for sec, name, unit, ref, bilat, region, desc in items:
         rec = st.session_state["vals"].get(name)
         if not rec:
             continue
@@ -441,12 +443,12 @@ def render_inputs_for_section(section):
                         0.0, ref * 1.5,
                         float(rec.get("Dx", 0.0)),
                         0.1,
-                        key=f"{name}_Dx_{section}"
+                        key=f"{sec}_{name}_Dx"
                     )
                     pdx = st.checkbox(
                         "Dolore Dx",
                         value=bool(rec.get("DoloreDx", False)),
-                        key=f"{name}_pDx_{section}"
+                        key=f"{sec}_{name}_pDx"
                     )
                 with c2:
                     sx = st.slider(
@@ -454,12 +456,12 @@ def render_inputs_for_section(section):
                         0.0, ref * 1.5,
                         float(rec.get("Sx", 0.0)),
                         0.1,
-                        key=f"{name}_Sx_{section}"
+                        key=f"{sec}_{name}_Sx"
                     )
                     psx = st.checkbox(
                         "Dolore Sx",
                         value=bool(rec.get("DoloreSx", False)),
-                        key=f"{name}_pSx_{section}"
+                        key=f"{sec}_{name}_pSx"
                     )
 
                 rec.update({
@@ -477,16 +479,17 @@ def render_inputs_for_section(section):
                     0.0, ref * 1.5,
                     float(rec.get("Val", 0.0)),
                     0.1,
-                    key=f"{name}_Val_{section}"
+                    key=f"{sec}_{name}_Val"
                 )
                 p = st.checkbox(
                     "Dolore",
                     value=bool(rec.get("Dolore", False)),
-                    key=f"{name}_p_{section}"
+                    key=f"{sec}_{name}_p"
                 )
                 rec.update({"Val": val, "Dolore": p})
                 sc = ability_linear(val, ref)
                 st.caption(f"Score: **{sc:.1f}/10**")
+
 
 # Render input dinamici
 render_inputs_for_section(st.session_state["section"])
