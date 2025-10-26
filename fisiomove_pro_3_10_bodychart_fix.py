@@ -500,8 +500,8 @@ def ebm_from_df(df):
         }
     }
 
-    # 🔹 Traccia solo i test che hanno avuto reali problematiche
-    problematic_tests = set()
+    # 🔹 Traccia test problematici (solo una volta)
+    problematic_tests = {}
 
     for _, r in df.iterrows():
         test = str(r["Test"]).strip()
@@ -510,41 +510,47 @@ def ebm_from_df(df):
         sym_score = r.get("SymScore", 10.0)
 
         issue_found = False
+        comment_lines = []
 
         # Score insufficiente
         if score < 4:
             msg = ebm_library.get(test, {}).get("low_score", f"Deficit rilevato nel test '{test}'.")
-            notes.append(f"❗ {msg}")
-            problematic_tests.add(test)
+            comment_lines.append(f"❗ {msg}")
+            problematic_tests[test] = ebm_library.get(test, {}).get("ref", None)
             issue_found = True
 
         # Dolore
         if pain:
-            notes.append(f"⚠️ Dolore presente nel test '{test}': considerare irritabilità tissutale e gestione del carico.")
-            problematic_tests.add(test)
+            comment_lines.append(f"⚠️ Dolore presente nel test '{test}': considerare irritabilità tissutale e gestione del carico.")
+            problematic_tests[test] = ebm_library.get(test, {}).get("ref", None)
             issue_found = True
 
         # Asimmetria
         try:
             sym = float(sym_score)
             if sym < 7:
-                notes.append(f"↔️ Asimmetria significativa nel test '{test}' (SymScore: {sym:.1f}/10).")
-                problematic_tests.add(test)
+                comment_lines.append(f"↔️ Asimmetria significativa nel test '{test}' (SymScore: {sym:.1f}/10).")
+                problematic_tests[test] = ebm_library.get(test, {}).get("ref", None)
                 issue_found = True
         except:
             pass
 
-        # ✅ Test superato
+        # ✅ Test sufficiente
         if not issue_found:
-            notes.append(f"✅ Il test '{test}' soddisfa la sufficienza.")
+            comment_lines.append(f"✅ Il test '{test}' soddisfa la sufficienza.")
 
-    # 🔹 Aggiungi riferimenti SOLO per test problematici
-    for test in sorted(problematic_tests):
-        ref = ebm_library.get(test, {}).get("ref")
-        if ref:
-            notes.append(f"📚 Riferimento: {ref}")
+        # Aggiungi righe per il test corrente
+        notes.extend(comment_lines)
+
+    # 🔹 Aggiungi riferimenti SOLO una volta per i test con problemi
+    if problematic_tests:
+        notes.append("")  # spazio
+        for test, ref in problematic_tests.items():
+            if ref:
+                notes.append(f"📚 Riferimento: {ref}")
 
     return notes
+
 
 
 ebm_notes = ebm_from_df(df_show)
