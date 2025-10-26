@@ -270,21 +270,25 @@ def bodychart_image_from_state(width=1200, height=800):
         x = int(xn * width)
         y = int(yn * height)
         radius = int(10 + 6 * (1 - min(max(score, 0), 10) / 10))
+    
+        # Disegna il marker circolare colorato
         draw.ellipse((x - radius, y - radius, x + radius, y + radius), fill=score_color(score))
 
-        # Check mark bianco se punteggio alto
+        # Check mark bianco se il punteggio è alto
         if score > 7:
             draw.line((x - 4, y, x - 2, y + 6), fill=(255, 255, 255, 255), width=3)
             draw.line((x - 2, y + 6, x + 6, y - 4), fill=(255, 255, 255, 255), width=3)
 
-        # Triangolo rosso se dolore
+        # Triangolo rosso se flag dolore attivo
         if pain:
+            offset = radius + 8
             tri = [
-                (x + radius + 2, y - radius - 2),
-                (x + radius + 12, y - radius - 2),
-                (x + radius + 7, y - radius - 12),
+                (x + offset, y - radius),             # Punto in basso a sinistra
+                (x + offset + 10, y - radius),        # Punto in basso a destra
+                (x + offset + 5, y - radius - 10),    # Punta in alto
             ]
-            draw.polygon(tri, fill=(220, 38, 38, 255))
+            draw.polygon(tri, fill=(255, 0, 0, 255))
+
 
     # Disegna tutti i marker Dx / Sx
     for region_label, coord in points.items():
