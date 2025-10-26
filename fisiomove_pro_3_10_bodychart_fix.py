@@ -253,8 +253,8 @@ def bodychart_image_from_state(width=1200, height=800):
                 pain = False
 
 
-        region_scores[region] = float(np.clip(score, 0, 10))
-        region_pain[region] = bool(pain)
+            region_scores[region] = float(np.clip(score, 0, 10))
+            region_pain[region] = bool(pain)
 
     # Colore in base al punteggio
     def score_color(score):
