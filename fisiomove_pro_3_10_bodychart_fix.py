@@ -511,7 +511,7 @@ except Exception as e:
     radar_buf = None
     st.warning(f"■ Radar non disponibile ({e})")
 #def ebm
-def ebm_from_df(df):
+#def ebm_from_df(df):
 
 # 18. Body Chart
 # ✅ Body chart disattivata in questa versione — se vuoi riattivarla, decommenta le righe qui sotto
@@ -523,7 +523,7 @@ def ebm_from_df(df):
 #     st.warning("⚠️ Body chart non disponibile.")
 
 # 📉 Placeholder informativo
-st.info("📉 Body Chart disattivata in questa versione.")
+    st.info("📉 Body Chart disattivata in questa versione.")
 
 
 # 19. Asymmetry bar plot
