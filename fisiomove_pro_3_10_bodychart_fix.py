@@ -208,16 +208,31 @@ def bodychart_image_from_state(width=1200, height=800):
     }
 
     df_all = build_df("Valutazione Generale")
+
     region_scores = {}
     region_pain = {}
+
     for region in ["shoulder", "hip", "knee", "ankle", "thoracic", "lumbar"]:
         sub = df_all[df_all["Regione"] == region]
-        # Nuovo calcolo: penalizza asimmetria nella media regionale
-        mean_score = sub["Score"].astype(float).mean()
-        penalty = pd.to_numeric(sub["SymScore"], errors="coerce").dropna().apply(lambda x: 1 - x / 10).mean()
-        final_score = np.clip(mean_score * (1 - penalty), 0, 10)
-        region_scores[region] = float(final_score)
-        region_pain[region] = bool(sub["Dolore"].any()) if len(sub) else False
+        # punteggio separato per DX
+        sub_dx = sub[sub["Dx"] != ""]
+        try:
+            score_dx = sub_dx["Dx"].astype(float).mean()
+            region_scores[f"{region}_dx"] = float(np.clip(score_dx, 0, 10))
+        except:
+            region_scores[f"{region}_dx"] = 0.0
+
+        # punteggio separato per SX
+        sub_sx = sub[sub["Sx"] != ""]
+        try:
+            score_sx = sub_sx["Sx"].astype(float).mean()
+            region_scores[f"{region}_sx"] = float(np.clip(score_sx, 0, 10))
+        except:
+            region_scores[f"{region}_sx"] = 0.0
+
+        # dolore
+        region_pain[f"{region}_dx"] = bool((sub["Dolore"] | sub["Dolore"]).any())
+        region_pain[f"{region}_sx"] = bool((sub["Dolore"] | sub["Dolore"]).any())
 
     def score_color(score):
         if score > 7: return (22, 163, 74, 255)     # verde
@@ -225,19 +240,10 @@ def bodychart_image_from_state(width=1200, height=800):
         return (220, 38, 38, 255)                   # rosso
 
     def draw_marker(xn, yn, score, pain):
-        try:
-            # Fallback: se score non è un numero valido, forzalo a 0
-            score = float(score)
-            if np.isnan(score):
-                score = 0.0
-        except:
-            score = 0.0
-
         x = int(xn * width)
         y = int(yn * height)
         radius = int(10 + 6 * (1 - min(max(score, 0), 10) / 10))
         draw.ellipse((x-radius, y-radius, x+radius, y+radius), fill=score_color(score))
-    
         if score > 7:
             draw.line((x-4, y, x-2, y+6), fill=(255,255,255,255), width=3)
             draw.line((x-2, y+6, x+6, y-4), fill=(255,255,255,255), width=3)
@@ -245,12 +251,16 @@ def bodychart_image_from_state(width=1200, height=800):
             tri = [(x+radius+2, y-radius-2), (x+radius+12, y-radius-2), (x+radius+7, y-radius-12)]
             draw.polygon(tri, fill=(220,38,38,255))
 
-    for region, coord in points.items():
-        base_region = region.split("_")[0] if "_" in region else region
-        draw_marker(*coord, region_scores.get(base_region, 0), region_pain.get(base_region, False))
+    for region_label, coord in points.items():
+        score = region_scores.get(region_label, 0.0)
+        pain = region_pain.get(region_label, False)
+        draw_marker(*coord, score, pain)
 
-    bio = io.BytesIO(); base.save(bio, format="PNG"); bio.seek(0)
+    bio = io.BytesIO()
+    base.save(bio, format="PNG")
+    bio.seek(0)
     return bio
+
 
 # 11. Radar plot (score)
 def radar_plot(df, title="Radar – Punteggi (0–10)"):
