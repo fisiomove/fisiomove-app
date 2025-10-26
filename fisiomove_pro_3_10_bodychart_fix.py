@@ -515,8 +515,12 @@ except Exception as e:
 
 # 18. Body Chart
 bbuf = bodychart_image_from_state()
-body_img = Image.open(io.BytesIO(bbuf.getvalue()))
-st.image(body_img, caption="Body Chart – Sintesi (verde=buono, giallo=parziale, rosso=deficit; triangolo=Dolore)")
+if bbuf:
+    body_img = Image.open(io.BytesIO(bbuf.getvalue()))
+    st.image(body_img, caption="Body Chart – Sintesi")
+else:
+    st.warning("⚠️ Body chart non disponibile.")
+
 
 # 19. Asymmetry bar plot
 try:
