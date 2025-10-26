@@ -210,53 +210,53 @@ def bodychart_image_from_state(width=1200, height=800):
 
     df_all = build_df(st.session_state["section"])
 
-
-    # Dizionari per punteggi e dolore
     region_scores = {}
     region_pain = {}
 
     for region in points.keys():
-        base_region = region.split("_")[0]  # esempio: shoulder_dx → shoulder
+        base_region = region.split("_")[0]
         side = None
         if "_dx" in region:
             side = "Dx"
         elif "_sx" in region:
             side = "Sx"
 
-        # Filtra i test relativi alla regione
-        matching = df_all[df_all["Regione"].notnull() & (df_all["Regione"].str.lower() == base_region)]
-
         score = 0.0
         pain = False
 
+        matching = df_all[df_all["Regione"].notnull() & (df_all["Regione"].str.lower() == base_region)]
         if not matching.empty:
-            if side:  # test bilaterale
-                col = side
-                pain_col = f"Dolore{side}"
-
             try:
-                vals = pd.to_numeric(matching[col], errors="coerce").dropna()
-                refs = pd.to_numeric(matching["Rif"], errors="coerce").dropna()
-                if len(vals) > 0 and len(refs) > 0:
-                    avg = vals.mean()
-                    ref = refs.mean()
-                    score = ability_linear(avg, ref)
+                if side:  # test laterale
+                    vals = pd.to_numeric(matching[side], errors="coerce").dropna()
+                    refs = pd.to_numeric(matching["Rif"], errors="coerce").dropna()
+                    if len(vals) > 0 and len(refs) > 0:
+                        avg = vals.mean()
+                        ref = refs.mean()
+                        score = ability_linear(avg, ref)
+
+                    pain_col = f"Dolore{side}"
+                    if pain_col in matching.columns:
+                        pain_vals = matching[pain_col].astype(bool)
+                        pain = pain_vals.any()
+
+                else:  # test centrale
+                    vals = pd.to_numeric(matching["Valore"], errors="coerce").dropna()
+                    refs = pd.to_numeric(matching["Rif"], errors="coerce").dropna()
+                    if len(vals) > 0 and len(refs) > 0:
+                        avg = vals.mean()
+                        ref = refs.mean()
+                        score = ability_linear(avg, ref)
+
+                    if "Dolore" in matching.columns:
+                        pain = matching["Dolore"].astype(bool).any()
             except:
                 score = 0.0
-
-            # Dolore separato
-            try:
-                if pain_col in matching.columns:
-                    pain_vals = matching[pain_col].astype(bool)
-                    pain = pain_vals.any()
-            except:
                 pain = False
 
+        region_scores[region] = float(np.clip(score, 0, 10))
+        region_pain[region] = bool(pain)
 
-            region_scores[region] = float(np.clip(score, 0, 10))
-            region_pain[region] = bool(pain)
-
-    # Colore in base al punteggio
     def score_color(score):
         if score > 7:
             return (22, 163, 74, 255)     # verde
@@ -265,43 +265,40 @@ def bodychart_image_from_state(width=1200, height=800):
         else:
             return (220, 38, 38, 255)    # rosso
 
-    # Disegno marker
     def draw_marker(xn, yn, score, pain):
         x = int(xn * width)
         y = int(yn * height)
         radius = int(10 + 6 * (1 - min(max(score, 0), 10) / 10))
-    
-        # Disegna il marker circolare
+
+        # marker circolare colorato
         draw.ellipse((x - radius, y - radius, x + radius, y + radius), fill=score_color(score))
 
-        # Check mark bianco se punteggio alto
+        # checkmark bianco
         if score > 7:
             draw.line((x - 4, y, x - 2, y + 6), fill=(255, 255, 255, 255), width=3)
             draw.line((x - 2, y + 6, x + 6, y - 4), fill=(255, 255, 255, 255), width=3)
 
-        # Triangolo rosso se c'è dolore
+        # triangolo rosso sopra il marker se dolore
         if pain:
-            # Coordinate triangolo sopra il marker
-            triangle_height = 16
-            triangle_base = 16
-            tx = x
-            ty = y - radius - 12  # sopra al marker
-
+            offset = radius + 6
             tri = [
-                (tx, ty),  # Punta
-                (tx - triangle_base // 2, ty + triangle_height),
-                (tx + triangle_base // 2, ty + triangle_height),
+                (x, y - offset - 10),  # punta
+                (x - 7, y - offset),
+                (x + 7, y - offset),
             ]
+            draw.polygon(tri, fill=(255, 0, 0, 255))  # triangolo rosso
 
-            # Bordi neri per visibilità
-            draw.polygon(tri, fill=(0, 0, 0, 255))  # bordo
-            inner_tri = [
-                (tx, ty + 1),
-                (tx - triangle_base // 2 + 1, ty + triangle_height - 1),
-                (tx + triangle_base // 2 - 1, ty + triangle_height - 1),
-            ]
-            draw.polygon(inner_tri, fill=(255, 0, 0, 255))  # rosso
+    # disegna tutti i marker
+    for region_label, coord in points.items():
+        score = region_scores.get(region_label, 0.0)
+        pain = region_pain.get(region_label, False)
+        draw_marker(*coord, score, pain)
 
+    # esporta immagine
+    bio = io.BytesIO()
+    base.save(bio, format="PNG")
+    bio.seek(0)
+    return bio
 
 
 # 11. Radar plot (score)
