@@ -195,76 +195,85 @@ def bodychart_image_from_state(width=1200, height=800):
 
     fx, bx = 0.255, 0.745
     points = {
-        "shoulder_dx": (fx-0.135, 0.225),
-        "shoulder_sx": (fx+0.058, 0.225),
-        "hip_dx":      (fx-0.112, 0.50),
-        "hip_sx":      (fx+0.038, 0.50),
-        "knee_dx":     (fx-0.106, 0.68),
-        "knee_sx":     (fx+0.030, 0.68),
-        "ankle_dx":    (fx-0.070, 0.94),
-        "ankle_sx":    (fx+0.025, 0.94),
+        "shoulder_dx": (fx - 0.135, 0.225),
+        "shoulder_sx": (fx + 0.058, 0.225),
+        "hip_dx":      (fx - 0.112, 0.50),
+        "hip_sx":      (fx + 0.038, 0.50),
+        "knee_dx":     (fx - 0.106, 0.68),
+        "knee_sx":     (fx + 0.030, 0.68),
+        "ankle_dx":    (fx - 0.070, 0.94),
+        "ankle_sx":    (fx + 0.025, 0.94),
         "thoracic":    (bx, 0.30),
         "lumbar":      (bx, 0.40),
     }
 
     df_all = build_df("Valutazione Generale")
 
+    # Calcolo dei punteggi per ciascun lato o zona
     region_scores = {}
     region_pain = {}
 
-    # Score medio per lato, usando Score per bilaterali
-    for region in ["shoulder", "hip", "knee", "ankle", "thoracic", "lumbar"]:
-        # DX
-        sub_dx = df_all[(df_all["Regione"] == region) & (df_all["Dx"] != "")]
-        try:
-            scores = []
-            for _, row in sub_dx.iterrows():
-                dx_val = float(row["Dx"])
-                sx_val = float(row["Sx"]) if row["Sx"] != "" else dx_val
-                ref = float(row["Rif"])
-                unit = row["Unità"]
-                sc = ability_linear((dx_val + sx_val) / 2.0, ref)
-                scores.append(sc)
-            region_scores[f"{region}_dx"] = float(np.clip(np.mean(scores), 0, 10)) if scores else 0.0
-        except:
-            region_scores[f"{region}_dx"] = 0.0
+    for region in points.keys():
+        matching = df_all[df_all["Regione"].notnull() & (df_all["Regione"].str.lower() == region.split("_")[0])]
+        if "_dx" in region:
+            side = "Dx"
+        elif "_sx" in region:
+            side = "Sx"
+        else:
+            side = None  # parte centrale, come thoracic/lumbar
 
-        # SX
-        sub_sx = df_all[(df_all["Regione"] == region) & (df_all["Sx"] != "")]
-        try:
-            scores = []
-            for _, row in sub_sx.iterrows():
-                dx_val = float(row["Dx"]) if row["Dx"] != "" else 0
-                sx_val = float(row["Sx"])
-                ref = float(row["Rif"])
-                unit = row["Unità"]
-                sc = ability_linear((dx_val + sx_val) / 2.0, ref)
-                scores.append(sc)
-            region_scores[f"{region}_sx"] = float(np.clip(np.mean(scores), 0, 10)) if scores else 0.0
-        except:
-            region_scores[f"{region}_sx"] = 0.0
+        if not matching.empty:
+            if side:
+                # lato Dx o Sx
+                col = side
+                vals = matching[matching[col].notnull()]
+                if not vals.empty:
+                    avg = vals[col].astype(float).mean()
+                    ref = vals["Rif"].astype(float).mean()
+                    score = ability_linear(avg, ref)
+                    pain = matching[f"Dolore{side}"].any()
+                else:
+                    score = 0.0
+                    pain = False
+            else:
+                # parte centrale
+                vals = matching[matching["Valore"].notnull()]
+                if not vals.empty:
+                    avg = vals["Valore"].astype(float).mean()
+                    ref = vals["Rif"].astype(float).mean()
+                    score = ability_linear(avg, ref)
+                    pain = matching["Dolore"].any()
+                else:
+                    score = 0.0
+                    pain = False
+        else:
+            score = 0.0
+            pain = False
 
-        # Dolore generico (se c'è in uno dei due)
-        region_pain[f"{region}_dx"] = bool(sub_dx["Dolore"].any()) if not sub_dx.empty else False
-        region_pain[f"{region}_sx"] = bool(sub_sx["Dolore"].any()) if not sub_sx.empty else False
+        region_scores[region] = score
+        region_pain[region] = pain
 
     def score_color(score):
-        if score > 7: return (22, 163, 74, 255)     # verde
-        if score >= 4: return (245, 158, 11, 255)   # giallo
-        return (220, 38, 38, 255)                   # rosso
+        if score > 7:
+            return (22, 163, 74, 255)     # verde
+        elif score >= 4:
+            return (245, 158, 11, 255)   # giallo
+        else:
+            return (220, 38, 38, 255)    # rosso
 
     def draw_marker(xn, yn, score, pain):
         x = int(xn * width)
         y = int(yn * height)
         radius = int(10 + 6 * (1 - min(max(score, 0), 10) / 10))
-        draw.ellipse((x-radius, y-radius, x+radius, y+radius), fill=score_color(score))
+        draw.ellipse((x - radius, y - radius, x + radius, y + radius), fill=score_color(score))
         if score > 7:
-            draw.line((x-4, y, x-2, y+6), fill=(255,255,255,255), width=3)
-            draw.line((x-2, y+6, x+6, y-4), fill=(255,255,255,255), width=3)
+            draw.line((x - 4, y, x - 2, y + 6), fill=(255, 255, 255, 255), width=3)
+            draw.line((x - 2, y + 6, x + 6, y - 4), fill=(255, 255, 255, 255), width=3)
         if pain:
-            tri = [(x+radius+2, y-radius-2), (x+radius+12, y-radius-2), (x+radius+7, y-radius-12)]
-            draw.polygon(tri, fill=(220,38,38,255))
+            tri = [(x + radius + 2, y - radius - 2), (x + radius + 12, y - radius - 2), (x + radius + 7, y - radius - 12)]
+            draw.polygon(tri, fill=(220, 38, 38, 255))
 
+    # Disegna tutti i marker (lato per lato)
     for region_label, coord in points.items():
         score = region_scores.get(region_label, 0.0)
         pain = region_pain.get(region_label, False)
