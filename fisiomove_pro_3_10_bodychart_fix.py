@@ -189,11 +189,11 @@ def build_df(section):
         "Dx", "Sx", "Delta", "SymScore", "Dolore", "Regione"
     ])
 # 10. Bodychart rendering
-def bodychart_image_from_state(width=1200, height=800):
+"""def bodychart_image_from_state(width=1200, height=800):
     base = BODYCHART_BASE.copy().resize((width, height))
     draw = ImageDraw.Draw(base)
 
-    # Coordinate dei marker sulla body chart
+    #Coordinate dei marker sulla body chart
     fx, bx = 0.255, 0.745
     points = {
         "shoulder_dx": (fx - 0.135, 0.225),
@@ -208,7 +208,7 @@ def bodychart_image_from_state(width=1200, height=800):
         "lumbar":      (bx, 0.40),
     }
 
-    df_all = build_df(st.session_state["section"])
+    f_all = build_df(st.session_state["section"])
 
     region_scores = {}
     region_pain = {}
@@ -298,7 +298,7 @@ def bodychart_image_from_state(width=1200, height=800):
     bio = io.BytesIO()
     base.save(bio, format="PNG")
     bio.seek(0)
-    return bio
+    return bio"""
 
 
 # 11. Radar plot (score)
@@ -342,7 +342,7 @@ def radar_plot(df, title="Punteggi (0–10)"):
     plt.savefig(buf, format="png")
     buf.seek(0)
     plt.close(fig)
-    return buf
+    return buf 
 
 # 12. Asymmetry bar plot
 def asymmetry_bar_plot(df, title="Asimmetria Dx–Sx"):
@@ -508,7 +508,7 @@ except Exception as e:
     radar_buf = None
     st.warning(f"■ Radar non disponibile ({e})")
 #def ebm
-#def ebm_from_df(df):
+"""def ebm_from_df(df):
 
 # 18. Body Chart
 #bbuf = bodychart_image_from_state()
@@ -516,7 +516,7 @@ except Exception as e:
 #    body_img = Image.open(io.BytesIO(bbuf.getvalue()))
 #    st.image(body_img, caption="Body Chart – Sintesi")
 #else:
- #   st.warning("⚠️ Body chart non disponibile.")
+ #   st.warning("⚠️ Body chart non disponibile.")"""
 
 
 # 19. Asymmetry bar plot
