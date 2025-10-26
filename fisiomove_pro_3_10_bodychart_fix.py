@@ -434,7 +434,7 @@ def ebm_from_df(df):
     notes = []
 
     ebm_library = {
-        # Esempi Squat
+        # Squat
         "Weight Bearing Lunge Test": {
             "ref": "Bennell KL et al., 1998; Konor MM et al., 2012",
             "low_score": "Deficit dorsiflessione caviglia: rischio compensi, sollevamento tallone e stress femoro-rotuleo nello squat."
@@ -443,10 +443,65 @@ def ebm_from_df(df):
             "ref": "Reese NB, Bandy WD, 2020",
             "low_score": "Flessione d’anca ridotta: può limitare la profondità dello squat e aumentare i compensi lombari."
         },
-        # ... (continua con gli altri test se necessario)
+        "Hip Rotation (flexed 90°)": {
+            "ref": "Gajdosik RL et al., 1983; Norkin & White, 2016",
+            "low_score": "Limitata rotazione d’anca: associata a compensi pelvici e rischio di impingement."
+        },
+        "Thoracic Extension (T4-T12)": {
+            "ref": "Edmonston SJ et al., 2011",
+            "low_score": "Estensione toracica ridotta: compromette il setup in panca e l’allineamento nello squat."
+        },
+        "Shoulder ER (adducted, low-bar)": {
+            "ref": "Wilk KE et al., 2015",
+            "low_score": "Limitata ER spalla: può compromettere la posizione low-bar e aumentare lo stress anteriore."
+        },
+        # Panca
+        "Shoulder Flexion (supine)": {
+            "ref": "Reese NB, Bandy WD, 2020",
+            "low_score": "Flessione spalla limitata: influisce sulla profondità in panca e stressa la spalla."
+        },
+        "External Rotation (90° abd)": {
+            "ref": "Wilk KE et al., 2015",
+            "low_score": "ER spalla a 90° ridotta: possibile rischio per instabilità anteriore in overhead."
+        },
+        "Pectoralis Minor Length": {
+            "ref": "Borstad JD, 2006",
+            "low_score": "PM corto: postura in protrazione scapolare, rischio impingement e setup panca compromesso."
+        },
+        "Thomas Test (modified)": {
+            "ref": "Harvey D, 1998",
+            "low_score": "Flessibilità anca ridotta: associata a compensi in estensione lombare in panca e squat."
+        },
+        # Deadlift
+        "Active Knee Extension (AKE)": {
+            "ref": "Sahrmann SA, 2002",
+            "low_score": "Estensione attiva ginocchio ridotta: può riflettere tensione posteriore e rischio compensi."
+        },
+        "Straight Leg Raise (SLR)": {
+            "ref": "Herrington L, 2011",
+            "low_score": "SLR ridotto: tensione catena posteriore, rischio compensi lombari nello stacco."
+        },
+        "Modified Schober (lumbar)": {
+            "ref": "Macrae IF et al., 1980",
+            "low_score": "Mobilità lombare ridotta: può influenzare la flessione corretta nello stacco."
+        },
+        "Sorensen Endurance": {
+            "ref": "Moreau CE et al., 2001",
+            "low_score": "Scarsa endurance lombare: rischio di cedimento precoce durante lo stacco o esercizi statici."
+        },
+        # Neurodinamica
+        "Popliteal Knee Bend (PKB)": {
+            "ref": "Shacklock M, 2005",
+            "low_score": "PKB ridotto: tensione del nervo sciatico, suggerisce alterata neurodinamica distale."
+        },
+        "ULNT1A (Median nerve)": {
+            "ref": "Nee RJ et al., 2012",
+            "low_score": "Test ULNT1A positivo: sensibilità aumentata del nervo mediano o deficit scorrimento brachiale."
+        }
     }
 
-    tests_with_problems = set()
+    # 🔹 Traccia solo i test che hanno avuto reali problematiche
+    problematic_tests = set()
 
     for _, r in df.iterrows():
         test = str(r["Test"]).strip()
@@ -456,35 +511,41 @@ def ebm_from_df(df):
 
         issue_found = False
 
+        # Score insufficiente
         if score < 4:
             msg = ebm_library.get(test, {}).get("low_score", f"Deficit rilevato nel test '{test}'.")
             notes.append(f"❗ {msg}")
-            tests_with_problems.add(test)
+            problematic_tests.add(test)
             issue_found = True
 
+        # Dolore
         if pain:
             notes.append(f"⚠️ Dolore presente nel test '{test}': considerare irritabilità tissutale e gestione del carico.")
-            tests_with_problems.add(test)
+            problematic_tests.add(test)
             issue_found = True
 
+        # Asimmetria
         try:
             sym = float(sym_score)
             if sym < 7:
                 notes.append(f"↔️ Asimmetria significativa nel test '{test}' (SymScore: {sym:.1f}/10).")
-                tests_with_problems.add(test)
+                problematic_tests.add(test)
                 issue_found = True
         except:
             pass
 
+        # ✅ Test superato
         if not issue_found:
             notes.append(f"✅ Il test '{test}' soddisfa la sufficienza.")
 
-    for test in sorted(tests_with_problems):
+    # 🔹 Aggiungi riferimenti SOLO per test problematici
+    for test in sorted(problematic_tests):
         ref = ebm_library.get(test, {}).get("ref")
         if ref:
             notes.append(f"📚 Riferimento: {ref}")
 
     return notes
+
 
 ebm_notes = ebm_from_df(df_show)
 
