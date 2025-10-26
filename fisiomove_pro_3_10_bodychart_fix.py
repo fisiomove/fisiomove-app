@@ -511,12 +511,12 @@ except Exception as e:
 #def ebm_from_df(df):
 
 # 18. Body Chart
-bbuf = bodychart_image_from_state()
-if bbuf:
-    body_img = Image.open(io.BytesIO(bbuf.getvalue()))
-    st.image(body_img, caption="Body Chart – Sintesi")
-else:
-    st.warning("⚠️ Body chart non disponibile.")
+#bbuf = bodychart_image_from_state()
+#if bbuf:
+#    body_img = Image.open(io.BytesIO(bbuf.getvalue()))
+#    st.image(body_img, caption="Body Chart – Sintesi")
+#else:
+ #   st.warning("⚠️ Body chart non disponibile.")
 
 
 # 19. Asymmetry bar plot
