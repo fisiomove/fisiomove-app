@@ -266,27 +266,27 @@ def bodychart_image_from_state(width=1200, height=800):
             return (220, 38, 38, 255)    # rosso
 
     def draw_marker(xn, yn, score, pain):
-    x = int(xn * width)
-    y = int(yn * height)
-    radius = int(10 + 6 * (1 - min(max(score, 0), 10) / 10))
+        x = int(xn * width)
+        y = int(yn * height)
+        radius = int(10 + 6 * (1 - min(max(score, 0), 10) / 10))
 
-    # Disegna il marker circolare colorato
-    draw.ellipse((x - radius, y - radius, x + radius, y + radius), fill=score_color(score))
+        # Disegna il marker circolare colorato
+        draw.ellipse((x - radius, y - radius, x + radius, y + radius), fill=score_color(score))
 
-    # Checkmark bianco se punteggio alto
-    if score > 7:
-        draw.line((x - 4, y, x - 2, y + 6), fill=(255, 255, 255, 255), width=3)
-        draw.line((x - 2, y + 6, x + 6, y - 4), fill=(255, 255, 255, 255), width=3)
+        # Checkmark bianco se punteggio alto
+        if score > 7:
+            draw.line((x - 4, y, x - 2, y + 6), fill=(255, 255, 255, 255), width=3)
+            draw.line((x - 2, y + 6, x + 6, y - 4), fill=(255, 255, 255, 255), width=3)
 
-    # Triangolo rosso se dolore (accanto a destra del marker)
-    if pain:
-        offset_x = radius + 8  # Spostamento a destra
-        tri = [
-            (x + offset_x,     y - 6),  # punta in alto
-            (x + offset_x - 6, y + 6),  # basso sinistra
-            (x + offset_x + 6, y + 6),  # basso destra
-        ]
-        draw.polygon(tri, fill=(255, 0, 0, 255))  # triangolo rosso
+        # Triangolo rosso se dolore (accanto a destra del marker)
+        if pain:
+            offset_x = radius + 8  # Spostamento a destra
+            tri = [
+                (x + offset_x,     y - 6),  # punta in alto
+                (x + offset_x - 6, y + 6),  # basso sinistra
+                (x + offset_x + 6, y + 6),  # basso destra
+            ]
+            draw.polygon(tri, fill=(255, 0, 0, 255))  # triangolo rosso
 
 
     # disegna tutti i marker
