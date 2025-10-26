@@ -310,6 +310,78 @@ with st.sidebar:
 # -----------------------------
 # Rendering input dinamico
 # -----------------------------
+def render_inputs_for_section(section):
+    items = []
+    if section == "Valutazione Generale":
+        for s in ["Squat", "Panca", "Deadlift", "Neurodinamica"]:
+            for item in TESTS[s]:
+                items.append((s, *item))  # Aggiungi la sezione originale
+    else:
+        for item in TESTS.get(section, []):
+            items.append((section, *item))  # Aggiungi la sezione originale
+
+    for sec, name, unit, ref, bilat, region, desc in items:
+        rec = st.session_state["vals"].get(name)
+        if not rec:
+            continue
+
+        with st.container():
+            st.markdown(f"**{name}** — {desc}  \n*Rif:* {ref} {unit}")
+            if bilat:
+                c1, c2 = st.columns(2)
+                with c1:
+                    dx = st.slider(
+                        f"Dx ({unit})",
+                        0.0, ref * 1.5,
+                        float(rec.get("Dx", 0.0)),
+                        0.1,
+                        key=f"{sec}_{name}_Dx"
+                    )
+                    pdx = st.checkbox(
+                        "Dolore Dx",
+                        value=bool(rec.get("DoloreDx", False)),
+                        key=f"{sec}_{name}_pDx"
+                    )
+                with c2:
+                    sx = st.slider(
+                        f"Sx ({unit})",
+                        0.0, ref * 1.5,
+                        float(rec.get("Sx", 0.0)),
+                        0.1,
+                        key=f"{sec}_{name}_Sx"
+                    )
+                    psx = st.checkbox(
+                        "Dolore Sx",
+                        value=bool(rec.get("DoloreSx", False)),
+                        key=f"{sec}_{name}_pSx"
+                    )
+
+                rec.update({
+                    "Dx": dx, "Sx": sx,
+                    "DoloreDx": pdx,
+                    "DoloreSx": psx
+                })
+                sc = ability_linear((dx + sx) / 2.0, ref)
+                sym = symmetry_score(dx, sx, unit)
+                st.caption(f"Score: **{sc:.1f}/10** — Δ {abs(dx - sx):.1f} {unit} — Sym: **{sym:.1f}/10**")
+
+            else:
+                val = st.slider(
+                    f"Valore ({unit})",
+                    0.0, ref * 1.5,
+                    float(rec.get("Val", 0.0)),
+                    0.1,
+                    key=f"{sec}_{name}_Val"
+                )
+                p = st.checkbox(
+                    "Dolore",
+                    value=bool(rec.get("Dolore", False)),
+                    key=f"{sec}_{name}_p"
+                )
+                rec.update({"Val": val, "Dolore": p})
+                sc = ability_linear(val, ref)
+                st.caption(f"Score: **{sc:.1f}/10**")
+
 render_inputs_for_section(st.session_state["section"])
 
 # -----------------------------
