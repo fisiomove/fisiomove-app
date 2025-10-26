@@ -271,36 +271,37 @@ def bodychart_image_from_state(width=1200, height=800):
         y = int(yn * height)
         radius = int(10 + 6 * (1 - min(max(score, 0), 10) / 10))
     
-        # Disegna il marker circolare colorato
+        # Disegna il marker circolare
         draw.ellipse((x - radius, y - radius, x + radius, y + radius), fill=score_color(score))
 
-        # Check mark bianco se il punteggio è alto
+        # Check mark bianco se punteggio alto
         if score > 7:
             draw.line((x - 4, y, x - 2, y + 6), fill=(255, 255, 255, 255), width=3)
             draw.line((x - 2, y + 6, x + 6, y - 4), fill=(255, 255, 255, 255), width=3)
 
-        # Triangolo rosso se flag dolore attivo
+        # Triangolo rosso se c'è dolore
         if pain:
-            offset = radius + 8
+            # Coordinate triangolo sopra il marker
+            triangle_height = 16
+            triangle_base = 16
+            tx = x
+            ty = y - radius - 12  # sopra al marker
+
             tri = [
-                (x + offset, y - radius),             # Punto in basso a sinistra
-                (x + offset + 10, y - radius),        # Punto in basso a destra
-                (x + offset + 5, y - radius - 10),    # Punta in alto
+                (tx, ty),  # Punta
+                (tx - triangle_base // 2, ty + triangle_height),
+                (tx + triangle_base // 2, ty + triangle_height),
             ]
-            draw.polygon(tri, fill=(255, 0, 0, 255))
 
+            # Bordi neri per visibilità
+            draw.polygon(tri, fill=(0, 0, 0, 255))  # bordo
+            inner_tri = [
+                (tx, ty + 1),
+                (tx - triangle_base // 2 + 1, ty + triangle_height - 1),
+                (tx + triangle_base // 2 - 1, ty + triangle_height - 1),
+            ]
+            draw.polygon(inner_tri, fill=(255, 0, 0, 255))  # rosso
 
-    # Disegna tutti i marker Dx / Sx
-    for region_label, coord in points.items():
-        score = region_scores.get(region_label, 0.0)
-        pain = region_pain.get(region_label, False)
-        draw_marker(*coord, score, pain)
-
-    # Esporta immagine
-    bio = io.BytesIO()
-    base.save(bio, format="PNG")
-    bio.seek(0)
-    return bio
 
 
 # 11. Radar plot (score)
