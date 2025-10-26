@@ -488,6 +488,132 @@ def ebm_from_df(df):
 
 ebm_notes = ebm_from_df(df_show)
 
+# Aggiunta per generare pdf
+
+def pdf_report_no_bodychart(
+    logo_bytes,
+    athlete,
+    evaluator,
+    date_str,
+    section,
+    df,
+    ebm_notes,
+    radar_buf=None,
+    asym_buf=None
+):
+    import io
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image as RLImage, Table, TableStyle
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.units import cm
+    from reportlab.lib import colors
+    from reportlab.lib.styles import getSampleStyleSheet
+
+    buf = io.BytesIO()
+    doc = SimpleDocTemplate(
+        buf, pagesize=A4,
+        leftMargin=1.4 * cm, rightMargin=1.4 * cm,
+        topMargin=1.2 * cm, bottomMargin=1.2 * cm
+    )
+    styles = getSampleStyleSheet()
+    normal = styles["Normal"]
+    title = styles["Title"]
+
+    story = []
+    story.append(RLImage(io.BytesIO(logo_bytes), width=16*cm, height=4*cm))
+    story.append(Spacer(1, 6))
+    story.append(Paragraph(f"<b>Report Valutazione – {section}</b>", title))
+    story.append(Spacer(1, 6))
+
+    info_data = [["Atleta", athlete, "Valutatore", evaluator, "Data", date_str]]
+    info_table = Table(info_data, colWidths=[2.2*cm, 5.0*cm, 2.8*cm, 5.0*cm, 1.8*cm, 2.0*cm])
+    info_table.setStyle(TableStyle([
+        ("BOX", (0, 0), (-1, -1), 0.6, colors.lightgrey),
+        ("INNERGRID", (0, 0), (-1, -1), 0.3, colors.lightgrey),
+        ("BACKGROUND", (0, 0), (-1, -1), colors.whitesmoke),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("FONTNAME", (0, 0), (-1, -1), "Helvetica"),
+    ]))
+    story.append(info_table)
+    story.append(Spacer(1, 8))
+
+    # Tabella risultati
+    disp = df[["Sezione", "Test", "Unità", "Rif", "Valore", "Score", "Dx", "Sx", "Delta", "SymScore", "Dolore"]].copy()
+    disp["Delta"] = pd.to_numeric(disp["Delta"], errors="coerce").round(2)
+    disp["SymScore"] = pd.to_numeric(disp["SymScore"], errors="coerce").round(2)
+
+    table = Table([disp.columns.tolist()] + disp.values.tolist(), repeatRows=1,
+                  colWidths=[2.2*cm, 6.5*cm, 1.2*cm, 1.2*cm, 1.6*cm, 1.6*cm, 1.4*cm, 1.4*cm, 1.2*cm, 1.6*cm, 1.6*cm])
+    table.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1E6CF4")),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("ALIGN", (0, 0), (-1, 0), "CENTER"),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("FONTNAME", (0, 1), (-1, -1), "Helvetica"),
+        ("FONTSIZE", (0, 0), (-1, -1), 8),
+        ("GRID", (0, 0), (-1, -1), 0.25, colors.lightgrey),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+    ]))
+    story.append(table)
+    story.append(Spacer(1, 10))
+
+    # ▶️ Radar plot
+    if radar_buf:
+        story.append(Paragraph("<b>Radar – Punteggi (0–10)</b>", normal))
+        story.append(Spacer(1, 4))
+        story.append(RLImage(io.BytesIO(radar_buf.getvalue()), width=10*cm, height=10*cm))
+        story.append(Spacer(1, 8))
+
+    # ▶️ Asymmetry bar plot
+    if asym_buf:
+        story.append(Paragraph("<b>Grafico Asimmetrie Dx/Sx</b>", normal))
+        story.append(Spacer(1, 4))
+        story.append(RLImage(io.BytesIO(asym_buf.getvalue()), width=14*cm, height=6*cm))
+        story.append(Spacer(1, 8))
+
+    # ▶️ Regioni dolorose
+    pain_regions = []
+
+    for _, row in df.iterrows():
+        regione = row.get("Regione", "").capitalize()
+        if not regione:
+            continue
+
+        if row.get("DoloreDx", False):
+            pain_regions.append(f"{regione} destra")
+        if row.get("DoloreSx", False):
+            pain_regions.append(f"{regione} sinistra")
+        if row.get("Dolore", False) and not (row.get("DoloreDx") or row.get("DoloreSx")):
+            pain_regions.append(f"{regione}")
+
+    pain_regions = list(dict.fromkeys(pain_regions))
+
+    story.append(Paragraph("<b>🩹 Regioni dolorose riscontrate durante il test:</b>", normal))
+    if pain_regions:
+        for reg in pain_regions:
+            story.append(Paragraph(f"• {reg.capitalize()}", normal))
+    else:
+        story.append(Paragraph("Nessuna regione segnalata come dolorosa.", normal))
+
+    story.append(Spacer(1, 12))
+
+    # ▶️ Commento clinico EBM
+    story.append(Paragraph("<b>🧠 Commento clinico (EBM)</b>", normal))
+    story.append(Spacer(1, 4))
+
+    if ebm_notes:
+        for note in ebm_notes:
+            if isinstance(note, str):
+                story.append(Paragraph(f"• {note}", normal))
+                story.append(Spacer(1, 4))
+    else:
+        story.append(Paragraph("Nessun commento disponibile.", normal))
+
+    doc.build(story)
+    buf.seek(0)
+    return buf
+
+
+
 # -----------------------------
 # Esportazione PDF e CSV
 # -----------------------------
