@@ -231,28 +231,27 @@ def bodychart_image_from_state(width=1200, height=800):
 
         if not matching.empty:
             if side:  # test bilaterale
-                col = side
-                vals = matching[matching[col].notnull()]
-                if not vals.empty:
-                    try:
-                        avg = vals[col].astype(float).mean()
-                        ref = vals["Rif"].astype(float).mean()
-                        score = ability_linear(avg, ref)
-                    except Exception:
-                        score = 0.0
-                # Dolore solo se colonna esiste
-                pain_col = f"Dolore{side}"
-                pain = matching[pain_col].any() if pain_col in matching.columns else False
-            else:  # test centrale (thoracic/lumbar)
-                vals = matching[matching["Valore"].notnull()]
-                if not vals.empty:
-                    try:
-                        avg = vals["Valore"].astype(float).mean()
-                        ref = vals["Rif"].astype(float).mean()
-                        score = ability_linear(avg, ref)
-                    except Exception:
-                        score = 0.0
-                pain = matching["Dolore"].any() if "Dolore" in matching.columns else False
+            col = side
+            pain_col = f"Dolore{side}"
+
+            try:
+                vals = pd.to_numeric(matching[col], errors="coerce").dropna()
+                refs = pd.to_numeric(matching["Rif"], errors="coerce").dropna()
+                if len(vals) > 0 and len(refs) > 0:
+                    avg = vals.mean()
+                    ref = refs.mean()
+                    score = ability_linear(avg, ref)
+            except:
+                score = 0.0
+
+            # Dolore separato
+            try:
+                if pain_col in matching.columns:
+                    pain_vals = matching[pain_col].astype(bool)
+                    pain = pain_vals.any()
+            except:
+                pain = False
+
 
         region_scores[region] = float(np.clip(score, 0, 10))
         region_pain[region] = bool(pain)
