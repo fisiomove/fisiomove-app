@@ -413,18 +413,34 @@ st.info("📉 Body Chart disattivata in questa versione.")
 # -----------------------------
 # Asymmetry bar plot
 # -----------------------------
+# 19. Tabella Simmetria e Asymmetry bar plot
 try:
     if len(df_show) > 0 and "Delta" in df_show.columns:
-        asym_buf = asymmetry_bar_plot(df_show, title=f"Asimmetrie – {st.session_state['section']}")
-        if asym_buf:
-            asym_img = Image.open(asym_buf)
-            st.image(asym_img)
-            st.caption("Grafico delle asimmetrie tra Dx e Sx per i test bilaterali")
-    else:
-        asym_buf = None
+        df_sym = df_show[df_show["Delta"].notnull()].copy()
+
+        # Converti i campi
+        df_sym["Delta"] = pd.to_numeric(df_sym["Delta"], errors="coerce").round(2)
+        df_sym["SymScore"] = pd.to_numeric(df_sym["SymScore"], errors="coerce").round(2)
+
+        # Mostra tabella
+        if not df_sym.empty:
+            st.markdown("#### Tabella Simmetria")
+            st.dataframe(
+                df_sym[["Test", "Delta", "SymScore"]],
+                use_container_width=True
+            )
+
+            # Plot barre
+            asym_buf = asymmetry_bar_plot(df_show, title=f"Asimmetrie – {st.session_state['section']}")
+            if asym_buf:
+                asym_img = Image.open(asym_buf)
+                st.image(asym_img)
+                st.caption("Grafico delle asimmetrie tra Dx e Sx")
+        else:
+            asym_buf = None
 except Exception as e:
+    st.warning(f"■ Tabella simmetria non disponibile ({e})")
     asym_buf = None
-    st.warning(f"■ Grafico asimmetrie non disponibile ({e})")
 
 # -----------------------------
 # Commenti EBM
