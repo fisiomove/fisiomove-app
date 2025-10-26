@@ -780,7 +780,8 @@ colp1, colp2 = st.columns(2)
 with colp1:
     if st.button("Genera PDF", use_container_width=True):
         try:
-            pdf = pdf_report(
+            pdf = pdf_report_no_bodychart(...)
+
                 LOGO,
                 st.session_state["athlete"],
                 st.session_state["evaluator"],
