@@ -11,12 +11,16 @@ from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image as RLImage, Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet
 
-st.set_page_config(page_title="Fisiomove Pro 3.10", layout="centered")
+st.set_page_config(
+    page_title="Fisiomove MobilityPro v. 1.0",
+    layout="centered"  # o "wide", "centered"
+)
+
 
 # -----------------------------
 # Constants & Assets
 # -----------------------------
-APP_TITLE = "Fisiomove Pro 3.10 — BodyChart Fix"
+APP_TITLE = "Fisiomove MobilityPro v. 1.0"
 PRIMARY = "#1E6CF4"
 
 LOGO_PATHS = ["logo 2600x1000.jpg", "logo.png", "logo.jpg"]
