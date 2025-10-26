@@ -328,51 +328,38 @@ def radar_plot(df, title="Radar – Punteggi (0–10)"):
     return buf
 
 # 12. Asymmetry bar plot
-def asymmetry_bar_plot(df, title="Asimmetria Dx–Sx"):
+def asymmetry_bar_plot(df, title="Asimmetria (0–10, più è alto più è asimmetrico)"):
     import matplotlib.pyplot as plt
     import io
 
-    # Filtra solo test con Delta numerico
-    df_bilat = df[df["Delta"].notnull()].copy()
-
-    try:
-        df_bilat["Delta"] = pd.to_numeric(df_bilat["Delta"], errors="coerce")
-        df_bilat["SymScore"] = pd.to_numeric(df_bilat["SymScore"], errors="coerce")
-    except Exception as e:
-        st.warning(f"Errore nel cast dei valori numerici: {e}")
-        return None
-
-    # Rimuovi righe dove i dati non sono numerici
-    df_bilat = df_bilat.dropna(subset=["Delta", "SymScore"])
-
+    df_bilat = df[df["SymScore"].notnull()].copy()
 
     if df_bilat.empty:
         return None
 
-    labels = df_bilat["Test"].tolist()
-    
-    # Trasforma SymScore in asimmetria su scala 0-10
-    df_bilat["AsymValue"] = (1 - df_bilat["SymScore"] / 10) * 10
-    asym_values = df_bilat["AsymValue"].tolist()
+    df_bilat["Asimmetria"] = df_bilat["SymScore"].astype(float).apply(lambda x: round(10 - x, 2))
+
+    labels = df_bilat["Test"]
+    asyms = df_bilat["Asimmetria"]
 
     fig, ax = plt.subplots(figsize=(8, 4))
-    bars = ax.barh(labels, asym_values, color="#FF6B6B")
+    bars = ax.barh(labels, asyms, color="#EF4444")
 
-    ax.set_xlabel("Indice di Asimmetria (0–10)")
     ax.set_xlim(0, 10)
+    ax.set_xlabel("Asimmetria (0–10)")
     ax.set_title(title)
     ax.invert_yaxis()
     ax.grid(True, axis='x', linestyle='--', alpha=0.5)
 
     for bar in bars:
         width = bar.get_width()
-        ax.text(width + 0.2, bar.get_y() + bar.get_height()/2, f"{width:.1f}", va='center')
+        ax.text(width + 0.2, bar.get_y() + bar.get_height()/2, f"{width:.2f}", va='center')
 
     buf = io.BytesIO()
     plt.tight_layout()
     plt.savefig(buf, format="png")
-    plt.close(fig)
     buf.seek(0)
+    plt.close(fig)
     return buf
 
 # 13. Intestazione app
@@ -636,7 +623,18 @@ def ebm_from_df(df):
 # 20. Commenti EBM
 ebm_notes = ebm_from_df(df_show)
 #generazione pdf
-def pdf_report(logo_bytes, athlete, evaluator, date_str, section, df, body_buf, ebm_notes, radar_buf=None):
+def pdf_report(
+    logo_bytes,
+    athlete,
+    evaluator,
+    date_str,
+    section,
+    df,
+    body_buf,
+    ebm_notes,
+    radar_buf=None,
+    asym_buf=None  # ✅ aggiunto
+):
     from reportlab.platypus import (
         SimpleDocTemplate, Paragraph, Spacer,
         Image as RLImage, Table, TableStyle
@@ -646,13 +644,14 @@ def pdf_report(logo_bytes, athlete, evaluator, date_str, section, df, body_buf, 
     from reportlab.lib import colors
     from reportlab.lib.styles import getSampleStyleSheet
 
+    import io
+
     buf = io.BytesIO()
     doc = SimpleDocTemplate(
         buf, pagesize=A4,
         leftMargin=1.4 * cm, rightMargin=1.4 * cm,
         topMargin=1.2 * cm, bottomMargin=1.2 * cm
     )
-
     styles = getSampleStyleSheet()
     normal = styles["Normal"]
     title = styles["Title"]
@@ -663,7 +662,6 @@ def pdf_report(logo_bytes, athlete, evaluator, date_str, section, df, body_buf, 
     story.append(Paragraph(f"<b>Report Valutazione – {section}</b>", title))
     story.append(Spacer(1, 6))
 
-    # Intestazione
     info_data = [["Atleta", athlete, "Valutatore", evaluator, "Data", date_str]]
     info_table = Table(info_data, colWidths=[2.2*cm, 5.0*cm, 2.8*cm, 5.0*cm, 1.8*cm, 2.0*cm])
     info_table.setStyle(TableStyle([
@@ -676,20 +674,12 @@ def pdf_report(logo_bytes, athlete, evaluator, date_str, section, df, body_buf, 
     story.append(info_table)
     story.append(Spacer(1, 8))
 
-    # Tabella risultati
     disp = df[["Sezione", "Test", "Unità", "Rif", "Valore", "Score", "Dx", "Sx", "Delta", "SymScore", "Dolore"]].copy()
+    disp["Delta"] = pd.to_numeric(disp["Delta"], errors="coerce").round(2)  # ✅ massimo 2 decimali
+    disp["SymScore"] = pd.to_numeric(disp["SymScore"], errors="coerce").round(2)
 
-    # Format numerici a due decimali
-    for col in ["Valore", "Score", "Dx", "Sx", "Delta", "SymScore"]:
-        if col in disp.columns:
-            disp[col] = pd.to_numeric(disp[col], errors="coerce").round(2)
-
-    table = Table(
-        [disp.columns.tolist()] + disp.values.tolist(),
-        repeatRows=1,
-        colWidths=[2.2*cm, 6.5*cm, 1.2*cm, 1.2*cm, 1.6*cm, 1.6*cm,
-                   1.4*cm, 1.4*cm, 1.2*cm, 1.6*cm, 1.6*cm]
-    )
+    table = Table([disp.columns.tolist()] + disp.values.tolist(), repeatRows=1,
+                  colWidths=[2.2*cm, 6.5*cm, 1.2*cm, 1.2*cm, 1.6*cm, 1.6*cm, 1.4*cm, 1.4*cm, 1.2*cm, 1.6*cm, 1.6*cm])
     table.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1E6CF4")),
         ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
@@ -701,59 +691,46 @@ def pdf_report(logo_bytes, athlete, evaluator, date_str, section, df, body_buf, 
         ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
     ]))
     story.append(table)
-    story.append(Spacer(1, 8))
+    story.append(Spacer(1, 10))
 
-    # Radar
+    # ▶️ Radar plot
     if radar_buf:
-        story.append(Paragraph("<b>Radar</b>", normal))
+        story.append(Paragraph("<b>Radar – Punteggi (0–10)</b>", normal))
         story.append(Spacer(1, 4))
         story.append(RLImage(io.BytesIO(radar_buf.getvalue()), width=10*cm, height=10*cm))
-        story.append(Spacer(1, 6))
+        story.append(Spacer(1, 8))
 
-    # Body Chart
+    # ▶️ Asymmetry bar plot ✅
+    if asym_buf:
+        story.append(Paragraph("<b>Grafico Asimmetrie Dx/Sx</b>", normal))
+        story.append(Spacer(1, 4))
+        story.append(RLImage(io.BytesIO(asym_buf.getvalue()), width=14*cm, height=6*cm))
+        story.append(Spacer(1, 8))
+
+    # ▶️ Body Chart
     story.append(Paragraph("<b>Body Chart – Sintesi</b>", normal))
     story.append(Spacer(1, 4))
     story.append(RLImage(io.BytesIO(body_buf.getvalue()), width=16*cm, height=12*cm))
-    story.append(Spacer(1, 6))
+    story.append(Spacer(1, 4))
     story.append(Paragraph("Legenda: rosso=deficit; giallo=parziale; verde=buono; triangolo=Dolore.", normal))
     story.append(Spacer(1, 10))
 
-    # Commenti clinici EBM
+    # ▶️ Commento EBM
     story.append(Paragraph("<b>Commento clinico (EBM)</b>", normal))
-    story.append(Spacer(1, 6))
+    story.append(Spacer(1, 4))
 
-    for item in ebm_notes:
-        if isinstance(item, dict):
-            msg = item.get("msg", "")
-            ref = item.get("ref", "")
-        else:
-            msg = str(item)
-            ref = ""
+    if ebm_notes:
+        for note in ebm_notes:
+            if isinstance(note, str):
+                story.append(Paragraph(f"• {note}", normal))
+                story.append(Spacer(1, 4))
+    else:
+        story.append(Paragraph("Nessun commento disponibile.", normal))
 
-        if msg.strip():
-            style = styles["Normal"]
-
-            if any(w in msg for w in ["❗", "⚠️", "↔"]):
-                style = styles["Normal"].clone("Warning")
-                style.textColor = colors.red
-            elif "✅" in msg:
-                style = styles["Normal"].clone("Success")
-                style.textColor = colors.green
-
-            story.append(Paragraph(msg, style))
-
-            if ref.strip():
-                ref_style = styles["Normal"].clone("Ref")
-                ref_style.fontSize = 8
-                ref_style.textColor = colors.HexColor("#666666")
-                story.append(Paragraph(f"<i>{ref}</i>", ref_style))
-
-            story.append(Spacer(1, 6))  # spazio extra
-
-    # Costruzione del documento PDF
     doc.build(story)
     buf.seek(0)
     return buf
+
 
 # 21. Esportazione PDF e CSV
 colp1, colp2 = st.columns(2)
