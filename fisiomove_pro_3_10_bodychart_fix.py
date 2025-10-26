@@ -635,11 +635,15 @@ def pdf_report_no_bodychart(
 
     # Tabella risultati
     disp = df[["Sezione", "Test", "Unità", "Rif", "Valore", "Score", "Dx", "Sx", "Delta", "SymScore", "Dolore"]].copy()
-    disp["Delta"] = pd.to_numeric(disp["Delta"], errors="coerce").round(2)
-    disp["SymScore"] = pd.to_numeric(disp["SymScore"], errors="coerce").round(2)
+
+    # ✅ Arrotondamento per evitare overflow in PDF
+    for col in ["Valore", "Score", "Dx", "Sx", "Delta", "SymScore"]:
+        disp[col] = pd.to_numeric(disp[col], errors="coerce").round(2)
+
 
     table = Table([disp.columns.tolist()] + disp.values.tolist(), repeatRows=1,
-                  colWidths=[2.2*cm, 6.5*cm, 1.2*cm, 1.2*cm, 1.6*cm, 1.6*cm, 1.4*cm, 1.4*cm, 1.2*cm, 1.6*cm, 1.6*cm])
+              colWidths=[2.2*cm, 6.5*cm, 1.2*cm, 1.2*cm, 1.6*cm, 1.6*cm, 1.4*cm, 1.4*cm, 1.2*cm, 1.6*cm, 1.6*cm])
+
     table.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1E6CF4")),
         ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
