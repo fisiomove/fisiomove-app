@@ -212,27 +212,41 @@ def bodychart_image_from_state(width=1200, height=800):
     region_scores = {}
     region_pain = {}
 
+    # Score medio per lato, usando Score per bilaterali
     for region in ["shoulder", "hip", "knee", "ankle", "thoracic", "lumbar"]:
-        sub = df_all[df_all["Regione"] == region]
-        # punteggio separato per DX
-        sub_dx = sub[sub["Dx"] != ""]
+        # DX
+        sub_dx = df_all[(df_all["Regione"] == region) & (df_all["Dx"] != "")]
         try:
-            score_dx = sub_dx["Dx"].astype(float).mean()
-            region_scores[f"{region}_dx"] = float(np.clip(score_dx, 0, 10))
+            scores = []
+            for _, row in sub_dx.iterrows():
+                dx_val = float(row["Dx"])
+                sx_val = float(row["Sx"]) if row["Sx"] != "" else dx_val
+                ref = float(row["Rif"])
+                unit = row["Unità"]
+                sc = ability_linear((dx_val + sx_val) / 2.0, ref)
+                scores.append(sc)
+            region_scores[f"{region}_dx"] = float(np.clip(np.mean(scores), 0, 10)) if scores else 0.0
         except:
             region_scores[f"{region}_dx"] = 0.0
 
-        # punteggio separato per SX
-        sub_sx = sub[sub["Sx"] != ""]
+        # SX
+        sub_sx = df_all[(df_all["Regione"] == region) & (df_all["Sx"] != "")]
         try:
-            score_sx = sub_sx["Sx"].astype(float).mean()
-            region_scores[f"{region}_sx"] = float(np.clip(score_sx, 0, 10))
+            scores = []
+            for _, row in sub_sx.iterrows():
+                dx_val = float(row["Dx"]) if row["Dx"] != "" else 0
+                sx_val = float(row["Sx"])
+                ref = float(row["Rif"])
+                unit = row["Unità"]
+                sc = ability_linear((dx_val + sx_val) / 2.0, ref)
+                scores.append(sc)
+            region_scores[f"{region}_sx"] = float(np.clip(np.mean(scores), 0, 10)) if scores else 0.0
         except:
             region_scores[f"{region}_sx"] = 0.0
 
-        # dolore
-        region_pain[f"{region}_dx"] = bool((sub["Dolore"] | sub["Dolore"]).any())
-        region_pain[f"{region}_sx"] = bool((sub["Dolore"] | sub["Dolore"]).any())
+        # Dolore generico (se c'è in uno dei due)
+        region_pain[f"{region}_dx"] = bool(sub_dx["Dolore"].any()) if not sub_dx.empty else False
+        region_pain[f"{region}_sx"] = bool(sub_sx["Dolore"].any()) if not sub_sx.empty else False
 
     def score_color(score):
         if score > 7: return (22, 163, 74, 255)     # verde
