@@ -208,7 +208,8 @@ def bodychart_image_from_state(width=1200, height=800):
         "lumbar":      (bx, 0.40),
     }
 
-    df_all = build_df("Valutazione Generale")
+    df_all = build_df(st.session_state["section"])
+
 
     # Dizionari per punteggi e dolore
     region_scores = {}
