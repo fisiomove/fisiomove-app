@@ -429,6 +429,63 @@ except Exception as e:
 # -----------------------------
 # Commenti EBM
 # -----------------------------
+# 20. Commenti EBM (Evidence-Based Message)
+def ebm_from_df(df):
+    notes = []
+
+    ebm_library = {
+        # Esempi Squat
+        "Weight Bearing Lunge Test": {
+            "ref": "Bennell KL et al., 1998; Konor MM et al., 2012",
+            "low_score": "Deficit dorsiflessione caviglia: rischio compensi, sollevamento tallone e stress femoro-rotuleo nello squat."
+        },
+        "Passive Hip Flexion": {
+            "ref": "Reese NB, Bandy WD, 2020",
+            "low_score": "Flessione d’anca ridotta: può limitare la profondità dello squat e aumentare i compensi lombari."
+        },
+        # ... (continua con gli altri test se necessario)
+    }
+
+    tests_with_problems = set()
+
+    for _, r in df.iterrows():
+        test = str(r["Test"]).strip()
+        score = float(r["Score"])
+        pain = bool(r["Dolore"])
+        sym_score = r.get("SymScore", 10.0)
+
+        issue_found = False
+
+        if score < 4:
+            msg = ebm_library.get(test, {}).get("low_score", f"Deficit rilevato nel test '{test}'.")
+            notes.append(f"❗ {msg}")
+            tests_with_problems.add(test)
+            issue_found = True
+
+        if pain:
+            notes.append(f"⚠️ Dolore presente nel test '{test}': considerare irritabilità tissutale e gestione del carico.")
+            tests_with_problems.add(test)
+            issue_found = True
+
+        try:
+            sym = float(sym_score)
+            if sym < 7:
+                notes.append(f"↔️ Asimmetria significativa nel test '{test}' (SymScore: {sym:.1f}/10).")
+                tests_with_problems.add(test)
+                issue_found = True
+        except:
+            pass
+
+        if not issue_found:
+            notes.append(f"✅ Il test '{test}' soddisfa la sufficienza.")
+
+    for test in sorted(tests_with_problems):
+        ref = ebm_library.get(test, {}).get("ref")
+        if ref:
+            notes.append(f"📚 Riferimento: {ref}")
+
+    return notes
+
 ebm_notes = ebm_from_df(df_show)
 
 # -----------------------------
