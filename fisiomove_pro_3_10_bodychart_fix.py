@@ -792,7 +792,7 @@ with colp1:
                 asym_buf=asym_buf
             )
 
-            )
+            
             st.download_button(
                 "Scarica PDF",
                 data=pdf.getvalue(),
