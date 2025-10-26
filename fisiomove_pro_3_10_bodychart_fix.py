@@ -780,16 +780,18 @@ colp1, colp2 = st.columns(2)
 with colp1:
     if st.button("Genera PDF", use_container_width=True):
         try:
-            pdf = pdf_report_no_bodychart(
-                LOGO,
-                st.session_state["athlete"],
-                st.session_state["evaluator"],
-                st.session_state["date"],
-                st.session_state["section"],
-                df_show,
-                bbuf,
-                ebm_notes,
-                radar_buf=radar_buf
+            pdf_report_no_bodychart(
+                logo_bytes=LOGO,
+                athlete=st.session_state["athlete"],
+                evaluator=st.session_state["evaluator"],
+                date_str=st.session_state["date"],
+                section=st.session_state["section"],
+                df=df_show,
+                ebm_notes=ebm_notes,
+                radar_buf=radar_buf,
+                asym_buf=asym_buf
+            )
+
             )
             st.download_button(
                 "Scarica PDF",
