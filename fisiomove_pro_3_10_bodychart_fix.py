@@ -751,11 +751,11 @@ def pdf_report(
             continue
 
         if row.get("DoloreDx", False):
-        pain_regions.append(f"{regione} destra")
+            pain_regions.append(f"{regione} destra")
         if row.get("DoloreSx", False):
-        pain_regions.append(f"{regione} sinistra")
+            pain_regions.append(f"{regione} sinistra")
         if row.get("Dolore", False) and not (row.get("DoloreDx") or row.get("DoloreSx")):
-        pain_regions.append(f"{regione}")
+            pain_regions.append(f"{regione}")
 
     # Rimuovi duplicati
     pain_regions = list(dict.fromkeys(pain_regions))
