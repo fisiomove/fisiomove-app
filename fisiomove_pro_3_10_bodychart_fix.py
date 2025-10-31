@@ -633,23 +633,6 @@ def ebm_from_df(df):
 
 ebm_notes = ebm_from_df(df_show)
 
-##
-
-    # ▶️ Radar media punteggi per sezione
-    if section == "Valutazione Generale":
-        try:
-            radar_sec_buf = radar_plot_per_section(df, title="Media punteggi per sezione")
-            if radar_sec_buf:
-                story.append(Paragraph("<b>Radar – Media punteggi per sezione</b>", normal))
-                story.append(Spacer(1, 4))
-                story.append(RLImage(io.BytesIO(radar_sec_buf.getvalue()), width=10*cm, height=10*cm))
-                story.append(Spacer(1, 8))
-        except Exception as e:
-            story.append(Paragraph(f"⚠️ Radar media per sezione non disponibile ({e})", normal))
-
-
-##
-
 # Aggiunta per generare pdf
 
 def pdf_report_no_bodychart(
@@ -728,6 +711,32 @@ def pdf_report_no_bodychart(
         story.append(Spacer(1, 4))
         story.append(RLImage(io.BytesIO(radar_buf.getvalue()), width=10*cm, height=10*cm))
         story.append(Spacer(1, 8))
+    # ▶️ Tabella Simmetria
+    df_sym = df[df["Delta"].notnull()].copy()
+    df_sym["SymScore"] = pd.to_numeric(df_sym["SymScore"], errors="coerce").round(2)
+
+    if not df_sym.empty:
+        story.append(Paragraph("<b>Tabella Simmetria (Dx–Sx)</b>", normal))
+        story.append(Spacer(1, 4))
+
+        sym_table_data = [  # intestazioni
+            ["Test", "Dx", "Sx", "Delta", "SymScore"]
+        ] + df_sym[["Test", "Dx", "Sx", "Delta", "SymScore"]].values.tolist()
+
+        sym_table = Table(sym_table_data, colWidths=[7.5*cm, 2*cm, 2*cm, 2*cm, 2.5*cm])
+        sym_table.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1E6CF4")),
+            ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+            ("ALIGN", (0, 0), (-1, 0), "CENTER"),
+            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+            ("FONTNAME", (0, 1), (-1, -1), "Helvetica"),
+            ("FONTSIZE", (0, 0), (-1, -1), 8),
+            ("GRID", (0, 0), (-1, -1), 0.25, colors.lightgrey),
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ]))
+
+        story.append(sym_table)
+        story.append(Spacer(1, 10))
 
     # ▶️ Asymmetry bar plot
     if asym_buf:
