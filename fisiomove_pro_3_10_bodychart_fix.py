@@ -21,6 +21,9 @@ from reportlab.lib.styles import getSampleStyleSheet
 st.set_page_config(page_title="Fisiomove Pro v. 3.10", layout="centered")
 PRIMARY = "#1E6CF4"
 
+APP_TITLE = "Fisiomove Pro 3.10 — Body mobility screening"
+PRIMARY = "#1E6CF4"
+
 # 3. Costanti e asset
 LOGO_PATHS = ["logo.png", "logo 2600x1000.jpg"]
 ALL_SECTIONS = ["Squat", "Panca", "Deadlift", "Neurodinamica", "Valutazione Generale"]
