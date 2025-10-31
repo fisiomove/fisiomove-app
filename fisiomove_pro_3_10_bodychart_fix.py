@@ -493,8 +493,8 @@ try:
                     if st.session_state["section"] == "Valutazione Generale":
                         radar_sec_buf = radar_plot_per_section(df_show, title="Media punteggi per sezione")
                         if radar_sec_buf:
-                        radar_sec_img = Image.open(radar_sec_buf)
-                        st.image(radar_sec_img, caption="Radar – Media per sezione")
+                            radar_sec_img = Image.open(radar_sec_buf)
+                            st.image(radar_sec_img, caption="Radar – Media per sezione")
                 except Exception as e:
                     st.warning(f"■ Radar sezione non disponibile ({e})")
 
