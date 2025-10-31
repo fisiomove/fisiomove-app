@@ -633,6 +633,23 @@ def ebm_from_df(df):
 
 ebm_notes = ebm_from_df(df_show)
 
+##
+
+    # ▶️ Radar media punteggi per sezione
+    if section == "Valutazione Generale":
+        try:
+            radar_sec_buf = radar_plot_per_section(df, title="Media punteggi per sezione")
+            if radar_sec_buf:
+                story.append(Paragraph("<b>Radar – Media punteggi per sezione</b>", normal))
+                story.append(Spacer(1, 4))
+                story.append(RLImage(io.BytesIO(radar_sec_buf.getvalue()), width=10*cm, height=10*cm))
+                story.append(Spacer(1, 8))
+        except Exception as e:
+            story.append(Paragraph(f"⚠️ Radar media per sezione non disponibile ({e})", normal))
+
+
+##
+
 # Aggiunta per generare pdf
 
 def pdf_report_no_bodychart(
