@@ -275,7 +275,7 @@ except Exception as e:
     st.warning(f"■ Grafico asimmetrie non disponibile ({e})")
 
 # 16. Commenti EBM
-ebm_notes = ebm_from_df(df_show)
+
 # 17. Generazione PDF
 def pdf_report_no_bodychart(
     logo_bytes,
@@ -392,6 +392,8 @@ def pdf_report_no_bodychart(
     doc.build(story)
     buf.seek(0)
     return buf
+
+ebm_notes = ebm_from_df(df_show)
 # 21. Esportazione PDF e CSV
 colp1, colp2 = st.columns(2)
 
