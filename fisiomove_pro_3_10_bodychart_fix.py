@@ -284,6 +284,44 @@ def asymmetry_bar_plot(df, title="SymScore – Simmetria Dx/Sx"):
     buf.seek(0)
     plt.close(fig)
     return buf
+def radar_plot_per_section(df, title="Media punteggi per sezione"):
+    import matplotlib.pyplot as plt
+    import numpy as np
+    import io
+
+    # Calcola media per sezione
+    section_means = df.groupby("Sezione")["Score"].mean().dropna()
+
+    labels = section_means.index.tolist()
+    values = section_means.values.tolist()
+
+    if len(labels) < 3:
+        return None  # Serve almeno 3 sezioni per disegno radar
+
+    # Chiudi il cerchio
+    values += values[:1]
+    angles = np.linspace(0, 2 * np.pi, len(labels), endpoint=False).tolist()
+    angles += angles[:1]
+
+    fig, ax = plt.subplots(figsize=(6, 6), subplot_kw=dict(polar=True))
+    ax.set_theta_offset(np.pi / 2)
+    ax.set_theta_direction(-1)
+
+    ax.plot(angles, values, color="#10A37F", linewidth=2)
+    ax.fill(angles, values, color="#10A37F", alpha=0.25)
+
+    ax.set_yticks([2, 4, 6, 8, 10])
+    ax.set_ylim(0, 10)
+    ax.set_xticks(angles[:-1])
+    ax.set_xticklabels(labels, fontsize=10)
+    ax.set_title(title, fontsize=14, y=1.1)
+
+    buf = io.BytesIO()
+    plt.tight_layout()
+    plt.savefig(buf, format="png")
+    plt.close(fig)
+    buf.seek(0)
+    return buf
 
 # -----------------------------
 # Titolo app
@@ -450,6 +488,16 @@ try:
                 asym_img = Image.open(asym_buf)
                 st.image(asym_img)
                 st.caption("Grafico delle asimmetrie tra Dx e Sx")
+                # 20. Radar media per sezione (solo se "Valutazione Generale")
+                try:
+                    if st.session_state["section"] == "Valutazione Generale":
+                        radar_sec_buf = radar_plot_per_section(df_show, title="Media punteggi per sezione")
+                        if radar_sec_buf:
+                        radar_sec_img = Image.open(radar_sec_buf)
+                        st.image(radar_sec_img, caption="Radar – Media per sezione")
+                except Exception as e:
+                    st.warning(f"■ Radar sezione non disponibile ({e})")
+
         else:
             asym_buf = None
 except Exception as e:
