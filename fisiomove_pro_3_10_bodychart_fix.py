@@ -681,17 +681,13 @@ def pdf_report_no_bodychart(
     story.append(info_table)
     story.append(Spacer(1, 8))
 
-    # Tabella risultati
+    # ▶️ Tabella risultati
     disp = df[["Sezione", "Test", "Unità", "Rif", "Valore", "Score", "Dx", "Sx", "Delta", "SymScore", "Dolore"]].copy()
-
-    # ✅ Arrotondamento per evitare overflow in PDF
-    for col in ["Valore", "Score", "Dx", "Sx", "Delta", "SymScore"]:
-        disp[col] = pd.to_numeric(disp[col], errors="coerce").round(2)
-
+    disp["Delta"] = pd.to_numeric(disp["Delta"], errors="coerce").round(2)
+    disp["SymScore"] = pd.to_numeric(disp["SymScore"], errors="coerce").round(2)
 
     table = Table([disp.columns.tolist()] + disp.values.tolist(), repeatRows=1,
-              colWidths=[2.2*cm, 6.5*cm, 1.2*cm, 1.2*cm, 1.6*cm, 1.6*cm, 1.4*cm, 1.4*cm, 1.2*cm, 1.6*cm, 1.6*cm])
-
+                  colWidths=[2.2*cm, 6.5*cm, 1.2*cm, 1.2*cm, 1.6*cm, 1.6*cm, 1.4*cm, 1.4*cm, 1.2*cm, 1.6*cm, 1.6*cm])
     table.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1E6CF4")),
         ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
@@ -711,6 +707,7 @@ def pdf_report_no_bodychart(
         story.append(Spacer(1, 4))
         story.append(RLImage(io.BytesIO(radar_buf.getvalue()), width=10*cm, height=10*cm))
         story.append(Spacer(1, 8))
+
     # ▶️ Tabella Simmetria
     df_sym = df[df["Delta"].notnull()].copy()
     df_sym["SymScore"] = pd.to_numeric(df_sym["SymScore"], errors="coerce").round(2)
@@ -719,9 +716,7 @@ def pdf_report_no_bodychart(
         story.append(Paragraph("<b>Tabella Simmetria (Dx–Sx)</b>", normal))
         story.append(Spacer(1, 4))
 
-        sym_table_data = [  # intestazioni
-            ["Test", "Dx", "Sx", "Delta", "SymScore"]
-        ] + df_sym[["Test", "Dx", "Sx", "Delta", "SymScore"]].values.tolist()
+        sym_table_data = [["Test", "Dx", "Sx", "Delta", "SymScore"]] + df_sym[["Test", "Dx", "Sx", "Delta", "SymScore"]].values.tolist()
 
         sym_table = Table(sym_table_data, colWidths=[7.5*cm, 2*cm, 2*cm, 2*cm, 2.5*cm])
         sym_table.setStyle(TableStyle([
@@ -747,12 +742,10 @@ def pdf_report_no_bodychart(
 
     # ▶️ Regioni dolorose
     pain_regions = []
-
     for _, row in df.iterrows():
         regione = row.get("Regione", "").capitalize()
         if not regione:
             continue
-
         if row.get("DoloreDx", False):
             pain_regions.append(f"{regione} destra")
         if row.get("DoloreSx", False):
@@ -761,20 +754,17 @@ def pdf_report_no_bodychart(
             pain_regions.append(f"{regione}")
 
     pain_regions = list(dict.fromkeys(pain_regions))
-
     story.append(Paragraph("<b>🩹 Regioni dolorose riscontrate durante il test:</b>", normal))
     if pain_regions:
         for reg in pain_regions:
             story.append(Paragraph(f"• {reg.capitalize()}", normal))
     else:
         story.append(Paragraph("Nessuna regione segnalata come dolorosa.", normal))
-
     story.append(Spacer(1, 12))
 
     # ▶️ Commento clinico EBM
     story.append(Paragraph("<b>🧠 Commento clinico (EBM)</b>", normal))
     story.append(Spacer(1, 4))
-
     if ebm_notes:
         for note in ebm_notes:
             if isinstance(note, str):
