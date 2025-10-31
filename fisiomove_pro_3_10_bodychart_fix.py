@@ -635,7 +635,7 @@ ebm_notes = ebm_from_df(df_show)
 
 ##
 
-# ▶️ Radar media punteggi per sezione
+    # ▶️ Radar media punteggi per sezione
     if section == "Valutazione Generale":
         try:
             radar_sec_buf = radar_plot_per_section(df, title="Media punteggi per sezione")
