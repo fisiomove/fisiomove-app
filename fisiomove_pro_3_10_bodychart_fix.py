@@ -85,45 +85,19 @@ BODYCHART_BASE = load_bodychart_image()
 # Stato Streamlit
 # -----------------------------
 def init_state():
-if "vals" not in st.session_state:
-st.session_state["vals"] = {}
-if "athlete" not in st.session_state:
-st.session_state["athlete"] = "Mario Rossi"
-if "evaluator" not in st.session_state:
-st.session_state["evaluator"] = "Dott. Alessandro Ferreri"
-if "date" not in st.session_state:
-st.session_state["date"] = datetime.now().strftime("%Y-%m-%d")
-if "section" not in st.session_state:
-st.session_state["section"] = "Squat"
-
+    if "vals" not in st.session_state:
+        st.session_state["vals"] = {}
+    if "athlete" not in st.session_state:
+        st.session_state["athlete"] = "Mario Rossi"
+    if "evaluator" not in st.session_state:
+        st.session_state["evaluator"] = "Dott. Alessandro Ferreri"
+    if "date" not in st.session_state:
+        st.session_state["date"] = datetime.now().strftime("%Y-%m-%d")
+    if "section" not in st.session_state:
+        st.session_state["section"] = "Squat"
 
 init_state()
 
-
-# -----------------------------
-# Funzioni di scoring
-# -----------------------------
-def ability_linear(val, ref):
-try:
-if ref <= 0: return 0.0
-score = (float(val) / float(ref)) * 10.0
-return max(0.0, min(10.0, score))
-except:
-return 0.0
-
-
-def symmetry_score(dx, sx, unit):
-try:
-diff = abs(float(dx) - float(sx))
-if "°" in unit:
-scale = 20.0
-elif unit == "cm":
-scale = 8.0
-else:
-scale = 10.0
-return 10.0 * max(0.0, 1.0 - min(diff, scale)/scale)
-except:
-return 0.0
 
 # -----------------------------
 # Funzioni di scoring
