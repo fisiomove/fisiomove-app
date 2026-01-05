@@ -11,67 +11,125 @@ from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image as RLImage, Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet
 
-st.set_page_config(page_title="Fisiomove MobilityPro v. 1.0",layout="centered")
+
+st.set_page_config(page_title="Fisiomove MobilityPro v. 1.0", layout="centered")
+
 
 # -----------------------------
 # Constants & Assets
 # -----------------------------
 APP_TITLE = "Fisiomove MobilityPro v. 1.0"
 PRIMARY = "#1E6CF4"
+TEST_NAME_TRANSLATIONS = {
+    "Weight Bearing Lunge Test": "Test dorsiflessione caviglia",
+    "Passive Hip Flexion": "Flessione anca passiva",
+    "Hip Rotation (flexed 90°)": "Rotazione anca (flessione 90°)",
+    "Wall Angel Test": "Test Wall Angel",
+    "Shoulder ER (adducted, low-bar)": "Rotazione esterna spalla (low bar)",
+    "Shoulder Flexion (supine)": "Flessione spalla supina",
+    "External Rotation (90° abd)": "Rotazione esterna a 90° abduzione",
+    "Pectoralis Minor Length": "Lunghezza piccolo pettorale",
+    "Thomas Test (modified)": "Test di Thomas modificato",
+    "Active Knee Extension (AKE)": "Estensione attiva ginocchio",
+    "Straight Leg Raise (SLR)": "Sollevamento gamba tesa",
+    "Sorensen Endurance": "Test endurance estensori lombari",
+    "ULNT1A (Median nerve)": "Test neurodinamico mediano (ULNT1A)"
+}
+
+
 
 LOGO_PATHS = ["logo 2600x1000.jpg", "logo.png", "logo.jpg"]
 BODYCHART_PATHS = ["8741B9DF-86A6-45B2-AB4C-20E2D2AA3EC7.png", "body_chart.png"]
 
+
 def load_logo_bytes():
-    for p in LOGO_PATHS:
-        if os.path.exists(p):
-            with open(p, "rb") as f:
-                return f.read()
-    img = Image.new("RGB", (1000, 260), (30, 108, 244))
-    d = ImageDraw.Draw(img)
-    d.text((30, 100), "Fisiomove", fill=(255,255,255))
-    bio = io.BytesIO(); img.save(bio, format="PNG"); return bio.getvalue()
+for p in LOGO_PATHS:
+if os.path.exists(p):
+with open(p, "rb") as f:
+return f.read()
+img = Image.new("RGB", (1000, 260), (30, 108, 244))
+d = ImageDraw.Draw(img)
+d.text((30, 100), "Fisiomove", fill=(255,255,255))
+bio = io.BytesIO()
+img.save(bio, format="PNG")
+return bio.getvalue()
+
 
 def load_bodychart_image():
-    for p in BODYCHART_PATHS:
-        if os.path.exists(p):
-            try:
-                return Image.open(p).convert("RGBA")
-            except Exception:
-                pass
-    img = Image.new("RGBA", (1200, 800), (245,245,245,255))
-    d = ImageDraw.Draw(img)
-    d.text((20,20), "Aggiungi body_chart.png (anteriore a sinistra, posteriore a destra)", fill=(10,10,10))
-    return img
+for p in BODYCHART_PATHS:
+if os.path.exists(p):
+try:
+return Image.open(p).convert("RGBA")
+except Exception:
+pass
+img = Image.new("RGBA", (1200, 800), (245,245,245,255))
+d = ImageDraw.Draw(img)
+d.text((20,20), "Aggiungi body_chart.png (anteriore a sinistra, posteriore a destra)", fill=(10,10,10))
+return img
+
+
 LOGO = load_logo_bytes()
 BODYCHART_BASE = load_bodychart_image()
+
+
 # -----------------------------
 # Stato Streamlit
 # -----------------------------
 def init_state():
-    if "vals" not in st.session_state:
-        st.session_state["vals"] = {}
-    if "athlete" not in st.session_state:
-        st.session_state["athlete"] = "Mario Rossi"
-    if "evaluator" not in st.session_state:
-        st.session_state["evaluator"] = "Dott. Alessandro Ferreri"
-    if "date" not in st.session_state:
-        st.session_state["date"] = datetime.now().strftime("%Y-%m-%d")
-    if "section" not in st.session_state:
-        st.session_state["section"] = "Squat"
+if "vals" not in st.session_state:
+st.session_state["vals"] = {}
+if "athlete" not in st.session_state:
+st.session_state["athlete"] = "Mario Rossi"
+if "evaluator" not in st.session_state:
+st.session_state["evaluator"] = "Dott. Alessandro Ferreri"
+if "date" not in st.session_state:
+st.session_state["date"] = datetime.now().strftime("%Y-%m-%d")
+if "section" not in st.session_state:
+st.session_state["section"] = "Squat"
+
 
 init_state()
+
+
+# -----------------------------
+# Funzioni di scoring
+# -----------------------------
+def ability_linear(val, ref):
+try:
+if ref <= 0: return 0.0
+score = (float(val) / float(ref)) * 10.0
+return max(0.0, min(10.0, score))
+except:
+return 0.0
+
+
+def symmetry_score(dx, sx, unit):
+try:
+diff = abs(float(dx) - float(sx))
+if "°" in unit:
+scale = 20.0
+elif unit == "cm":
+scale = 8.0
+else:
+scale = 10.0
+return 10.0 * max(0.0, 1.0 - min(diff, scale)/scale)
+except:
+return 0.0
 
 # -----------------------------
 # Funzioni di scoring
 # -----------------------------
 def ability_linear(val, ref):
     try:
-        if ref <= 0: return 0.0
+        if ref <= 0:
+            return 0.0
+        if ref == 3.0:  # ⚠️ Caso specifico: test a punteggio soggettivo 0–3 (Wall Angel Test)
+            return float(val) / 3.0 * 10.0
         score = (float(val) / float(ref)) * 10.0
         return max(0.0, min(10.0, score))
     except:
         return 0.0
+
 
 def symmetry_score(dx, sx, unit):
     try:
@@ -87,37 +145,35 @@ def symmetry_score(dx, sx, unit):
         return 0.0
 
 # -----------------------------
-# Dizionario TESTS
+# Sezioni e TESTS aggiornati
 # -----------------------------
 ALL_SECTIONS = ["Squat", "Panca", "Deadlift", "Neurodinamica", "Valutazione Generale"]
 
 TESTS = {
     "Squat": [
-        ("Weight Bearing Lunge Test", "cm", 10.0, True,  "ankle",    "Dorsiflessione in carico (WB lunge)."),
-        ("Passive Hip Flexion",       "°",  120.0, True, "hip",      "Flessione d’anca passiva supina."),
-        ("Hip Rotation (flexed 90°)", "°",   40.0, True, "hip",      "Rotazione anca a 90° flessione."),
-        ("Thoracic Extension (T4-T12)", "°", 30.0, False,"thoracic", "Estensione toracica globale."),
+        ("Weight Bearing Lunge Test", "cm", 10.0, True,  "ankle", "Dorsiflessione in carico."),
+        ("Passive Hip Flexion",       "°",  120.0, True, "hip",   "Flessione d’anca passiva."),
+        ("Hip Rotation (flexed 90°)", "°",   40.0, True, "hip",   "Rotazione anca in flessione."),
+        ("Wall Angel Test",           "°",   10.0, False,"thoracic", "Valutazione wall angel."),
         ("Shoulder ER (adducted, low-bar)", "°", 70.0, True, "shoulder", "ER spalla per low-bar."),
     ],
     "Panca": [
-        ("Shoulder Flexion (supine)", "°", 180.0, True, "shoulder", "Flessione spalla, scapole stabili."),
-        ("External Rotation (90° abd)", "°", 90.0, True, "shoulder", "ER a 90° abd (capsula anteriore)."),
-        ("Thoracic Extension (T4-T12)", "°", 30.0, False, "thoracic", "Estensione toracica per setup."),
+        ("Shoulder Flexion (supine)", "°", 180.0, True, "shoulder", "Flessione spalla da supino."),
+        ("External Rotation (90° abd)", "°", 90.0, True, "shoulder", "ER a 90° abduzione."),
+        ("Wall Angel Test",           "°", 10.0, False, "thoracic", "Valutazione wall angel."),
         ("Pectoralis Minor Length", "cm", 10.0, True, "shoulder", "Lunghezza piccolo pettorale."),
-        ("Thomas Test (modified)", "°", 10.0, True, "hip", "Flesso-estensibilità flessori anca."),
+        ("Thomas Test (modified)", "°", 10.0, True, "hip", "Flessibilità flessori anca."),
     ],
     "Deadlift": [
         ("Active Knee Extension (AKE)", "°", 90.0, True, "knee", "Estensione attiva ginocchio."),
-        ("Straight Leg Raise (SLR)", "°", 90.0, True, "hip", "SLR catena posteriore."),
+        ("Straight Leg Raise (SLR)", "°", 90.0, True, "hip", "Test SLR."),
         ("Weight Bearing Lunge Test", "cm", 10.0, True, "ankle", "Dorsiflessione in carico."),
-        ("Modified Schober (lumbar)", "cm", 5.0, False, "lumbar", "Mobilità lombare in flessione."),
         ("Sorensen Endurance", "sec", 180.0, False, "lumbar", "Endurance estensori lombari."),
     ],
     "Neurodinamica": [
-        ("Straight Leg Raise (SLR)", "°", 90.0, True, "hip", "Catena neurodinamica posteriore LE."),
-        ("Popliteal Knee Bend (PKB)", "°", 90.0, True, "knee", "Scorrimento distale nervo sciatico."),
+        ("Straight Leg Raise (SLR)", "°", 90.0, True, "hip", "SLR neurodinamico."),
         ("ULNT1A (Median nerve)", "°", 90.0, True, "shoulder", "Upper Limb Neurodynamic Test 1A."),
-    ],
+    ]
 }
 # -----------------------------
 # Seed valori di default
@@ -170,17 +226,17 @@ def build_df(section):
             if bilat:
                 dx = float(rec.get("Dx", 0))
                 sx = float(rec.get("Sx", 0))
-                sc = ability_linear((dx + sx) / 2.0, ref)
-                sym = symmetry_score(dx, sx, unit)
+                sc = round(ability_linear((dx + sx) / 2.0, ref), 2)
+                sym = round(symmetry_score(dx, sx, unit), 2)
                 rows.append([
                     sec, name, unit, ref, f"{(dx+sx)/2:.1f}", sc,
-                    dx, sx, abs(dx - sx), sym,
+                    round(dx, 2), round(sx, 2), round(abs(dx - sx), 2), sym,
                     bool(rec.get("DoloreDx", False) or rec.get("DoloreSx", False)),
                     region
                 ])
             else:
                 val = float(rec.get("Val", 0))
-                sc = ability_linear(val, ref)
+                sc = round(ability_linear(val, ref), 2)
                 rows.append([
                     sec, name, unit, ref, f"{val:.1f}", sc,
                     "", "", "", "",
@@ -192,7 +248,7 @@ def build_df(section):
         "Dx", "Sx", "Delta", "SymScore", "Dolore", "Regione"
     ])
 # -----------------------------
-# Radar plot (score)
+# Radar plot (score per test)
 # -----------------------------
 def radar_plot(df, title="Punteggi (0–10)"):
     import matplotlib.pyplot as plt
@@ -219,10 +275,8 @@ def radar_plot(df, title="Punteggi (0–10)"):
 
     ax.set_yticks([2, 4, 6, 8, 10])
     ax.set_ylim(0, 10)
-
     ax.set_xticks(angles[:-1])
     ax.set_xticklabels(labels, fontsize=9)
-
     ax.set_title(title, y=1.1, fontsize=14)
 
     buf = io.BytesIO()
@@ -233,72 +287,20 @@ def radar_plot(df, title="Punteggi (0–10)"):
     return buf
 
 # -----------------------------
-# Asymmetry bar plot
+# Radar plot per sezione (media score)
 # -----------------------------
-def asymmetry_bar_plot(df, title="SymScore – Simmetria Dx/Sx"):
-    import matplotlib.pyplot as plt
-    import io
-
-    df_bilat = df[df["SymScore"].notnull()].copy()
-
-    try:
-        df_bilat["SymScore"] = pd.to_numeric(df_bilat["SymScore"], errors="coerce")
-        df_bilat = df_bilat.dropna(subset=["SymScore"])
-    except Exception as e:
-        print(f"Errore nella conversione di SymScore: {e}")
-        return None
-
-    if df_bilat.empty:
-        return None
-
-    labels = df_bilat["Test"].tolist()
-    scores = df_bilat["SymScore"].tolist()
-
-    # Colori basati sul punteggio
-    colors_map = []
-    for score in scores:
-        if score >= 7:
-            colors_map.append("#16A34A")  # Verde
-        elif score >= 4:
-            colors_map.append("#F59E0B")  # Giallo
-        else:
-            colors_map.append("#DC2626")  # Rosso
-
-    fig, ax = plt.subplots(figsize=(8, 4))
-    bars = ax.barh(labels, scores, color=colors_map)
-
-    ax.set_xlabel("SymScore (0–10)")
-    ax.set_title(title)
-    ax.set_xlim(0, 10)
-    ax.invert_yaxis()
-    ax.grid(True, axis='x', linestyle='--', alpha=0.5)
-
-    # Etichette numeriche sulle barre
-    for bar in bars:
-        width = bar.get_width()
-        ax.text(width + 0.2, bar.get_y() + bar.get_height()/2, f"{width:.1f}", va='center')
-
-    buf = io.BytesIO()
-    plt.tight_layout()
-    plt.savefig(buf, format="png")
-    buf.seek(0)
-    plt.close(fig)
-    return buf
 def radar_plot_per_section(df, title="Media punteggi per sezione"):
     import matplotlib.pyplot as plt
     import numpy as np
     import io
 
-    # Calcola media per sezione
     section_means = df.groupby("Sezione")["Score"].mean().dropna()
-
     labels = section_means.index.tolist()
     values = section_means.values.tolist()
 
     if len(labels) < 3:
-        return None  # Serve almeno 3 sezioni per disegno radar
+        return None
 
-    # Chiudi il cerchio
     values += values[:1]
     angles = np.linspace(0, 2 * np.pi, len(labels), endpoint=False).tolist()
     angles += angles[:1]
@@ -323,6 +325,56 @@ def radar_plot_per_section(df, title="Media punteggi per sezione"):
     buf.seek(0)
     return buf
 
+# -----------------------------
+# Asymmetry bar plot (SymScore)
+# -----------------------------
+def asymmetry_bar_plot(df, title="SymScore – Simmetria Dx/Sx"):
+    import matplotlib.pyplot as plt
+    import io
+
+    df_bilat = df[df["SymScore"].notnull()].copy()
+
+    try:
+        df_bilat["SymScore"] = pd.to_numeric(df_bilat["SymScore"], errors="coerce")
+        df_bilat = df_bilat.dropna(subset=["SymScore"])
+    except Exception as e:
+        print(f"Errore nella conversione di SymScore: {e}")
+        return None
+
+    if df_bilat.empty:
+        return None
+
+    labels = df_bilat["Test"].tolist()
+    scores = df_bilat["SymScore"].tolist()
+
+    colors_map = []
+    for score in scores:
+        if score >= 7:
+            colors_map.append("#16A34A")
+        elif score >= 4:
+            colors_map.append("#F59E0B")
+        else:
+            colors_map.append("#DC2626")
+
+    fig, ax = plt.subplots(figsize=(8, 4))
+    bars = ax.barh(labels, scores, color=colors_map)
+
+    ax.set_xlabel("SymScore (0–10)")
+    ax.set_title(title)
+    ax.set_xlim(0, 10)
+    ax.invert_yaxis()
+    ax.grid(True, axis='x', linestyle='--', alpha=0.5)
+
+    for bar in bars:
+        width = bar.get_width()
+        ax.text(width + 0.2, bar.get_y() + bar.get_height()/2, f"{width:.1f}", va='center')
+
+    buf = io.BytesIO()
+    plt.tight_layout()
+    plt.savefig(buf, format="png")
+    buf.seek(0)
+    plt.close(fig)
+    return buf
 # -----------------------------
 # Titolo app
 # -----------------------------
@@ -434,14 +486,14 @@ def render_inputs_for_section(section):
                 sc = ability_linear(val, ref)
                 st.caption(f"Score: **{sc:.1f}/10**")
 
+# Esegui rendering
 render_inputs_for_section(st.session_state["section"])
-
 # -----------------------------
 # Visualizzazione risultati
 # -----------------------------
 df_show = build_df(st.session_state["section"])
 st.markdown("#### Tabella risultati")
-st.dataframe(df_show, use_container_width=True)
+st.dataframe(df_show.round(2), use_container_width=True)
 
 # -----------------------------
 # Radar plot
@@ -451,7 +503,7 @@ try:
         radar_buf = radar_plot(df_show, title=f"{st.session_state['section']} – Punteggi (0–10)")
         radar_img = Image.open(radar_buf)
         st.image(radar_img)
-        st.caption("Radar – Punteggi (0–10)")
+        st.caption("📊 Radar – Punteggi (0–10)")
     else:
         radar_buf = None
 except Exception as e:
@@ -462,10 +514,10 @@ except Exception as e:
 # Body Chart – disattivata
 # -----------------------------
 st.info("📉 Body Chart disattivata in questa versione.")
+
 # -----------------------------
 # Asymmetry bar plot
 # -----------------------------
-# 19. Tabella Simmetria e Asymmetry bar plot
 try:
     if len(df_show) > 0 and "Delta" in df_show.columns:
         df_sym = df_show[df_show["Delta"].notnull()].copy()
@@ -478,7 +530,7 @@ try:
         if not df_sym.empty:
             st.markdown("#### Tabella Simmetria")
             st.dataframe(
-                df_sym[["Test", "Delta", "SymScore"]],
+                df_sym[["Test", "Delta", "SymScore"]].round(2),
                 use_container_width=True
             )
 
@@ -487,153 +539,173 @@ try:
             if asym_buf:
                 asym_img = Image.open(asym_buf)
                 st.image(asym_img)
-                st.caption("Grafico delle asimmetrie tra Dx e Sx")
-                # 20. Radar media per sezione (solo se "Valutazione Generale")
+                st.caption("📉 Grafico delle asimmetrie tra Dx e Sx")
+
+                # ▶️ Radar per sezione (solo se 'Valutazione Generale')
                 try:
                     if st.session_state["section"] == "Valutazione Generale":
-                        radar_sec_buf = radar_plot_per_section(df_show, title="Media punteggi per sezione")
+                        radar_sec_buf = radar_plot_per_section(df_show, title="📌 Media punteggi per sezione")
                         if radar_sec_buf:
                             radar_sec_img = Image.open(radar_sec_buf)
-                            st.image(radar_sec_img, caption="Radar – Media per sezione")
+                            st.image(radar_sec_img, caption="📌 Radar – Media per sezione")
                 except Exception as e:
                     st.warning(f"■ Radar sezione non disponibile ({e})")
-
         else:
             asym_buf = None
 except Exception as e:
     st.warning(f"■ Tabella simmetria non disponibile ({e})")
     asym_buf = None
-
 # -----------------------------
 # Commenti EBM
 # -----------------------------
-# 20. Commenti EBM (Evidence-Based Message)
-def ebm_from_df(df):
+def ebm_from_df(df, friendly=False):
     notes = []
-
     ebm_library = {
-        # Squat
         "Weight Bearing Lunge Test": {
             "ref": "Bennell KL et al., 1998; Konor MM et al., 2012",
-            "low_score": "Deficit dorsiflessione caviglia: rischio compensi, sollevamento tallone e stress femoro-rotuleo nello squat."
+            "low_score": "Mobilità della caviglia ridotta: rischio di compensi, sollevamento del tallone e stress femoro-rotuleo.",
+            "friendly": "Il test della caviglia è ridotto: potresti avere difficoltà nello squat profondo."
         },
         "Passive Hip Flexion": {
             "ref": "Reese NB, Bandy WD, 2020",
-            "low_score": "Flessione d’anca ridotta: può limitare la profondità dello squat e aumentare i compensi lombari."
-        },
-        "Hip Rotation (flexed 90°)": {
-            "ref": "Gajdosik RL et al., 1983; Norkin & White, 2016",
-            "low_score": "Limitata rotazione d’anca: associata a compensi pelvici e rischio di impingement."
-        },
-        "Thoracic Extension (T4-T12)": {
-            "ref": "Edmonston SJ et al., 2011",
-            "low_score": "Estensione toracica ridotta: compromette il setup in panca e l’allineamento nello squat."
+            "low_score": "Flessibilità anca ridotta: può limitare la profondità dello squat.",
+            "friendly": "La flessione dell’anca è un po’ limitata."
         },
         "Shoulder ER (adducted, low-bar)": {
             "ref": "Wilk KE et al., 2015",
-            "low_score": "Limitata ER spalla: può compromettere la posizione low-bar e aumentare lo stress anteriore."
+            "low_score": "Rotazione esterna spalla ridotta: può influenzare la posizione low-bar.",
+            "friendly": "La spalla ruota un po’ meno del normale."
         },
-        # Panca
-        "Shoulder Flexion (supine)": {
-            "ref": "Reese NB, Bandy WD, 2020",
-            "low_score": "Flessione spalla limitata: influisce sulla profondità in panca e stressa la spalla."
+        "Wall Angel Test": {
+            "ref": "Kibler WB et al., 2013; Ludewig PM et al., 2009",
+            "low_score": "Deficit nel controllo scapolare e nella mobilità toracica: possibili compensi nella postura o nei movimenti overhead."
         },
-        "External Rotation (90° abd)": {
-            "ref": "Wilk KE et al., 2015",
-            "low_score": "ER spalla a 90° ridotta: possibile rischio per instabilità anteriore in overhead."
-        },
-        "Pectoralis Minor Length": {
-            "ref": "Borstad JD, 2006",
-            "low_score": "PM corto: postura in protrazione scapolare, rischio impingement e setup panca compromesso."
-        },
-        "Thomas Test (modified)": {
-            "ref": "Harvey D, 1998",
-            "low_score": "Flessibilità anca ridotta: associata a compensi in estensione lombare in panca e squat."
-        },
-        # Deadlift
-        "Active Knee Extension (AKE)": {
-            "ref": "Sahrmann SA, 2002",
-            "low_score": "Estensione attiva ginocchio ridotta: può riflettere tensione posteriore e rischio compensi."
-        },
-        "Straight Leg Raise (SLR)": {
-            "ref": "Herrington L, 2011",
-            "low_score": "SLR ridotto: tensione catena posteriore, rischio compensi lombari nello stacco."
-        },
-        "Modified Schober (lumbar)": {
-            "ref": "Macrae IF et al., 1980",
-            "low_score": "Mobilità lombare ridotta: può influenzare la flessione corretta nello stacco."
-        },
-        "Sorensen Endurance": {
-            "ref": "Moreau CE et al., 2001",
-            "low_score": "Scarsa endurance lombare: rischio di cedimento precoce durante lo stacco o esercizi statici."
-        },
-        # Neurodinamica
-        "Popliteal Knee Bend (PKB)": {
-            "ref": "Shacklock M, 2005",
-            "low_score": "PKB ridotto: tensione del nervo sciatico, suggerisce alterata neurodinamica distale."
-        },
+
         "ULNT1A (Median nerve)": {
             "ref": "Nee RJ et al., 2012",
-            "low_score": "Test ULNT1A positivo: sensibilità aumentata del nervo mediano o deficit scorrimento brachiale."
+            "low_score": "Test positivo: possibile irritazione o tensione del nervo mediano.",
+            "friendly": "Test sul nervo del braccio positivo: potresti sentire tensione o fastidio."
         }
     }
 
-    # 🔹 Traccia test problematici (solo una volta)
     problematic_tests = {}
 
     for _, r in df.iterrows():
-        test = str(r["Test"]).strip()
+        test = str(r["Test"])
         score = float(r["Score"])
         pain = bool(r["Dolore"])
-        sym_score = r.get("SymScore", 10.0)
+        sym = float(r.get("SymScore", 10.0))
 
-        issue_found = False
         comment_lines = []
+        issue = False
 
-        # Score insufficiente
         if score < 4:
-            msg = ebm_library.get(test, {}).get("low_score", f"Deficit rilevato nel test '{test}'.")
+            msg = ebm_library.get(test, {}).get("friendly" if friendly else "low_score", f"Deficit rilevato nel test '{test}'.")
             comment_lines.append(f"❗ {msg}")
-            problematic_tests[test] = ebm_library.get(test, {}).get("ref", None)
-            issue_found = True
-
-        # Dolore
+            issue = True
+        if sym < 7:
+            comment_lines.append(f"↔ Asimmetria significativa nel test '{test}' (SymScore: {sym:.1f}/10).")
+            issue = True
         if pain:
-            comment_lines.append(f"⚠️ Dolore presente nel test '{test}': considerare irritabilità tissutale e gestione del carico.")
-            problematic_tests[test] = ebm_library.get(test, {}).get("ref", None)
-            issue_found = True
+            comment_lines.append("⚠️ Dolore riportato durante il test.")
 
-        # Asimmetria
-        try:
-            sym = float(sym_score)
-            if sym < 7:
-                comment_lines.append(f"↔️ Asimmetria significativa nel test '{test}' (SymScore: {sym:.1f}/10).")
-                problematic_tests[test] = ebm_library.get(test, {}).get("ref", None)
-                issue_found = True
-        except:
-            pass
-
-        # ✅ Test sufficiente
-        if not issue_found:
+        if not issue:
             comment_lines.append(f"✅ Il test '{test}' soddisfa la sufficienza.")
 
-        # Aggiungi righe per il test corrente
         notes.extend(comment_lines)
 
-    # 🔹 Aggiungi riferimenti SOLO una volta per i test con problemi
-    if problematic_tests:
-        notes.append("")  # spazio
+        if issue:
+            problematic_tests[test] = ebm_library.get(test, {}).get("ref")
+
+    if not friendly and problematic_tests:
+        notes.append("")
         for test, ref in problematic_tests.items():
             if ref:
                 notes.append(f"📚 Riferimento: {ref}")
 
     return notes
 
+# -----------------------------
+# Esportazione PDF
+# -----------------------------
+def genera_pdf(story_title, df, friendly=False):
+    try:
+        ebm_notes = ebm_from_df(df, friendly=friendly)
+        pdf = pdf_report_no_bodychart(
+            logo_bytes=LOGO,
+            athlete=st.session_state["athlete"],
+            evaluator=st.session_state["evaluator"],
+            date_str=st.session_state["date"],
+            section=st.session_state["section"],
+            df=df,
+            ebm_notes=ebm_notes,
+            radar_buf=radar_buf,
+            asym_buf=asym_buf
+        )
+        st.download_button(
+            f"📥 Scarica {story_title}",
+            data=pdf.getvalue(),
+            file_name=f"Fisiomove_{'client' if friendly else 'pro'}_{st.session_state['section']}_{st.session_state['date']}.pdf",
+            mime="application/pdf",
+            use_container_width=True
+        )
+    except Exception as e:
+        st.error(f"Errore durante generazione PDF: {e}")
 
+# -----------------------------
+# Bottoni PDF
+# -----------------------------
+# -----------------------------
+# Esportazione PDF (clinico + friendly) e CSV
+# -----------------------------
+colp1, colp2 = st.columns(2)
 
-ebm_notes = ebm_from_df(df_show)
+with colp1:
+    if st.button("📄 Esporta PDF Clinico", use_container_width=True):
+        try:
+            pdf = pdf_report_no_bodychart(
+                logo_bytes=LOGO,
+                athlete=st.session_state["athlete"],
+                evaluator=st.session_state["evaluator"],
+                date_str=st.session_state["date"],
+                section=st.session_state["section"],
+                df=df_show,
+                ebm_notes=ebm_notes,
+                radar_buf=radar_buf,
+                asym_buf=asym_buf
+            )
+            st.download_button(
+                "⬇️ Scarica PDF Clinico",
+                data=pdf.getvalue(),
+                file_name=f"Fisiomove_Report_Clinico_{st.session_state['date']}.pdf",
+                mime="application/pdf",
+                use_container_width=True
+            )
+        except Exception as e:
+            st.error(f"Errore durante generazione PDF clinico: {e}")
 
-# Aggiunta per generare pdf
+with colp2:
+    if st.button("🧾 Esporta PDF Client Friendly", use_container_width=True):
+        try:
+            pdf_client = pdf_report_client_friendly(
+                logo_bytes=LOGO,
+                athlete=st.session_state["athlete"],
+                evaluator=st.session_state["evaluator"],
+                date_str=st.session_state["date"],
+                section=st.session_state["section"],
+                df=df_show,
+                radar_buf=radar_buf,
+                asym_buf=asym_buf
+            )
+            st.download_button(
+                "⬇️ Scarica PDF Client Friendly",
+                data=pdf_client.getvalue(),
+                file_name=f"Fisiomove_Report_Facile_{st.session_state['date']}.pdf",
+                mime="application/pdf",
+                use_container_width=True
+            )
+        except Exception as e:
+            st.error(f"Errore durante generazione PDF semplificato: {e}")
 
 def pdf_report_no_bodychart(
     logo_bytes,
@@ -684,14 +756,16 @@ def pdf_report_no_bodychart(
     # Tabella risultati
     disp = df[["Sezione", "Test", "Unità", "Rif", "Valore", "Score", "Dx", "Sx", "Delta", "SymScore", "Dolore"]].copy()
 
-    # ✅ Arrotondamento per evitare overflow in PDF
+    # Rimozione test Schober
+    disp = disp[~disp["Test"].str.lower().str.contains("schober")]
+
+    # Arrotondamenti
     for col in ["Valore", "Score", "Dx", "Sx", "Delta", "SymScore"]:
         disp[col] = pd.to_numeric(disp[col], errors="coerce").round(2)
 
-
+    # Tabella
     table = Table([disp.columns.tolist()] + disp.values.tolist(), repeatRows=1,
-              colWidths=[2.2*cm, 6.5*cm, 1.2*cm, 1.2*cm, 1.6*cm, 1.6*cm, 1.4*cm, 1.4*cm, 1.2*cm, 1.6*cm, 1.6*cm])
-
+                  colWidths=[2.2*cm, 6.5*cm, 1.2*cm, 1.2*cm, 1.6*cm, 1.6*cm, 1.4*cm, 1.4*cm, 1.2*cm, 1.6*cm, 1.6*cm])
     table.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1E6CF4")),
         ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
@@ -705,28 +779,26 @@ def pdf_report_no_bodychart(
     story.append(table)
     story.append(Spacer(1, 10))
 
-    # ▶️ Radar plot
+    # Radar punteggi
     if radar_buf:
         story.append(Paragraph("<b>Radar – Punteggi (0–10)</b>", normal))
         story.append(Spacer(1, 4))
         story.append(RLImage(io.BytesIO(radar_buf.getvalue()), width=10*cm, height=10*cm))
         story.append(Spacer(1, 8))
 
-    # ▶️ Asymmetry bar plot
+    # Asimmetrie
     if asym_buf:
         story.append(Paragraph("<b>Grafico Asimmetrie Dx/Sx</b>", normal))
         story.append(Spacer(1, 4))
         story.append(RLImage(io.BytesIO(asym_buf.getvalue()), width=14*cm, height=6*cm))
         story.append(Spacer(1, 8))
 
-    # ▶️ Regioni dolorose
+    # Regioni dolorose
     pain_regions = []
-
     for _, row in df.iterrows():
         regione = row.get("Regione", "").capitalize()
         if not regione:
             continue
-
         if row.get("DoloreDx", False):
             pain_regions.append(f"{regione} destra")
         if row.get("DoloreSx", False):
@@ -735,20 +807,17 @@ def pdf_report_no_bodychart(
             pain_regions.append(f"{regione}")
 
     pain_regions = list(dict.fromkeys(pain_regions))
-
     story.append(Paragraph("<b>🩹 Regioni dolorose riscontrate durante il test:</b>", normal))
     if pain_regions:
         for reg in pain_regions:
             story.append(Paragraph(f"• {reg.capitalize()}", normal))
     else:
         story.append(Paragraph("Nessuna regione segnalata come dolorosa.", normal))
-
     story.append(Spacer(1, 12))
 
-    # ▶️ Commento clinico EBM
+    # Commento EBM
     story.append(Paragraph("<b>🧠 Commento clinico (EBM)</b>", normal))
     story.append(Spacer(1, 4))
-
     if ebm_notes:
         for note in ebm_notes:
             if isinstance(note, str):
@@ -762,55 +831,108 @@ def pdf_report_no_bodychart(
     return buf
 
 
+def pdf_report_client_friendly(
+    logo_bytes,
+    athlete,
+    evaluator,
+    date_str,
+    section,
+    df,
+    radar_buf=None,
+    asym_buf=None
+):
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image as RLImage, Table, TableStyle
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.units import cm
+    from reportlab.lib.styles import getSampleStyleSheet
 
-# -----------------------------
-# Esportazione PDF e CSV
-# -----------------------------
-colp1, colp2 = st.columns(2)
+    buf = io.BytesIO()
+    doc = SimpleDocTemplate(
+        buf, pagesize=A4,
+        leftMargin=1.4 * cm, rightMargin=1.4 * cm,
+        topMargin=1.2 * cm, bottomMargin=1.2 * cm
+    )
 
-with colp1:
-    if st.button("Genera PDF", use_container_width=True):
-        try:
-            pdf = pdf_report_no_bodychart(
-                logo_bytes=LOGO,
-                athlete=st.session_state["athlete"],
-                evaluator=st.session_state["evaluator"],
-                date_str=st.session_state["date"],
-                section=st.session_state["section"],
-                df=df_show,
-                ebm_notes=ebm_notes,
-                radar_buf=radar_buf,
-                asym_buf=asym_buf
-            )
-            st.download_button(
-                "Scarica PDF",
-                data=pdf.getvalue(),
-                file_name=f"Fisiomove_{st.session_state['section']}_{st.session_state['date']}.pdf",
-                mime="application/pdf",
-                use_container_width=True
-            )
-        except Exception as e:
-            st.error(f"Errore durante generazione PDF: {e}")
+    styles = getSampleStyleSheet()
+    normal = styles["Normal"]
+    title = styles["Title"]
 
-with colp2:
-    if st.button("Esporta CSV", use_container_width=True):
-        csv_data = df_show.to_csv(index=False).encode("utf-8")
-        st.download_button(
-            "Scarica CSV",
-            data=csv_data,
-            file_name=f"Fisiomove_{st.session_state['section']}_{st.session_state['date']}.csv",
-            mime="text/csv",
-            use_container_width=True
-        )
-# -----------------------------
-# FINE FILE - cleanup opzionale
-# -----------------------------
+    story = []
+    story.append(RLImage(io.BytesIO(logo_bytes), width=16*cm, height=4*cm))
+    story.append(Spacer(1, 6))
+    story.append(Paragraph(f"<b>Valutazione Funzionale – {section}</b>", title))
+    story.append(Spacer(1, 6))
 
-# 🔚 Segnalazione finale per debug o log
-st.markdown("---")
-st.caption("Fisiomove Pro 3.10 — © 2025")
+    story.append(Paragraph(f"👤 <b>Atleta:</b> {athlete}", normal))
+    story.append(Paragraph(f"🧑‍⚕️ <b>Valutatore:</b> {evaluator}", normal))
+    story.append(Paragraph(f"📅 <b>Data:</b> {date_str}", normal))
+    story.append(Spacer(1, 12))
 
-# (Opzionale) Debug info
-# st.write("DEBUG:", st.session_state)
+    # Radar
+    if radar_buf:
+        story.append(Paragraph("<b>Radar delle capacità funzionali</b>", normal))
+        story.append(Spacer(1, 4))
+        story.append(RLImage(io.BytesIO(radar_buf.getvalue()), width=10*cm, height=10*cm))
+        story.append(Spacer(1, 12))
 
-# ✅ Tutto il codice è stato caricato e completato
+    # Asimmetrie
+    if asym_buf:
+        story.append(Paragraph("<b>Simmetria tra lato destro e sinistro</b>", normal))
+        story.append(Spacer(1, 4))
+        story.append(RLImage(io.BytesIO(asym_buf.getvalue()), width=14*cm, height=6*cm))
+        story.append(Spacer(1, 12))
+
+    # Spiegazione punteggi
+    story.append(Paragraph("📌 Ogni test è valutato su un punteggio da 0 a 10.", normal))
+    story.append(Paragraph("🔴 0–3: da migliorare • 🟡 4–6: accettabile • 🟢 7–10: ottimale", normal))
+    story.append(Spacer(1, 10))
+
+    # Tabella semplificata
+    simple_rows = []
+    for _, r in df.iterrows():
+        score = round(float(r["Score"]), 1)
+        test_name = TEST_NAME_TRANSLATIONS.get(r["Test"], r["Test"])
+        simple_rows.append([test_name, f"{score}/10"])
+
+    t = Table([["Test", "Punteggio"]] + simple_rows, repeatRows=1, colWidths=[10*cm, 4*cm])
+    t.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1E6CF4")),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("ALIGN", (1, 1), (-1, -1), "CENTER"),
+        ("GRID", (0, 0), (-1, -1), 0.25, colors.lightgrey),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("FONTNAME", (0, 1), (-1, -1), "Helvetica"),
+        ("FONTSIZE", (0, 0), (-1, -1), 9),
+    ]))
+    story.append(t)
+
+    doc.build(story)
+    buf.seek(0)
+    return buf
+
+TESTS = {
+    "Squat": [
+        ("Weight Bearing Lunge Test", "cm", 10.0, True,  "ankle",    "Test caviglia: dorsiflessione in carico."),
+        ("Passive Hip Flexion",       "°",  120.0, True, "hip",      "Test anca: flessione passiva supina."),
+        ("Hip Rotation (flexed 90°)", "°",   40.0, True, "hip",      "Test anca: rotazione a 90° flessione."),
+        ("Wall Angel Test",           "score", 3.0, False, "thoracic", "Contatto scapolare/test posturale (0–3)."),
+        ("Shoulder ER (adducted, low-bar)", "°", 70.0, True, "shoulder", "Test spalla: extrarotazione low-bar."),
+    ],
+    "Panca": [
+        ("Shoulder Flexion (supine)", "°", 180.0, True, "shoulder", "Test spalla: flessione supina."),
+        ("External Rotation (90° abd)", "°", 90.0, True, "shoulder", "Test spalla: ER a 90° abduzione."),
+        ("Wall Angel Test", "score", 3.0, False, "thoracic", "Contatto scapolare/test posturale (0–3)."),
+        ("Pectoralis Minor Length", "cm", 10.0, True, "shoulder", "Test pettorale: distanza da lettino."),
+        ("Thomas Test (modified)", "°", 10.0, True, "hip", "Test flessori anca (modificato)."),
+    ],
+    "Deadlift": [
+        ("Active Knee Extension (AKE)", "°", 90.0, True, "knee", "Test hamstrings: estensione attiva."),
+        ("Straight Leg Raise (SLR)", "°", 90.0, True, "hip", "Test SLR catena posteriore."),
+        ("Weight Bearing Lunge Test", "cm", 10.0, True, "ankle", "Test caviglia: dorsiflessione in carico."),
+        ("Sorensen Endurance", "sec", 180.0, False, "lumbar", "Test endurance estensori lombari."),
+    ],
+    "Neurodinamica": [
+        ("Straight Leg Raise (SLR)", "°", 90.0, True, "hip", "Test neurodinamica posteriore LE."),
+        ("ULNT1A (Median nerve)", "°", 90.0, True, "shoulder", "Test neurodinamica arto superiore."),
+    ],
+}
