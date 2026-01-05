@@ -43,10 +43,10 @@ BODYCHART_PATHS = ["8741B9DF-86A6-45B2-AB4C-20E2D2AA3EC7.png", "body_chart.png"]
 
 
 def load_logo_bytes():
-for p in LOGO_PATHS:
-if os.path.exists(p):
-with open(p, "rb") as f:
-return f.read()
+    for p in LOGO_PATHS:
+        if os.path.exists(p):
+            with open(p, "rb") as f:
+                return f.read()
 img = Image.new("RGB", (1000, 260), (30, 108, 244))
 d = ImageDraw.Draw(img)
 d.text((30, 100), "Fisiomove", fill=(255,255,255))
