@@ -658,9 +658,9 @@ def genera_pdf(story_title, df, friendly=False):
 # -----------------------------
 # Esportazione PDF (clinico + friendly) e CSV
 # -----------------------------
-colp1, colp2 = st.columns(2)
+colpdf1, colpdf2 = st.columns(2)
 
-with colp1:
+with colpdf1:
     if st.button("📄 Esporta PDF Clinico", use_container_width=True):
         try:
             pdf = pdf_report_no_bodychart(
@@ -684,7 +684,7 @@ with colp1:
         except Exception as e:
             st.error(f"Errore durante generazione PDF clinico: {e}")
 
-with colp2:
+with colpdf2:
     if st.button("🧾 Esporta PDF Client Friendly", use_container_width=True):
         try:
             pdf_client = pdf_report_client_friendly(
