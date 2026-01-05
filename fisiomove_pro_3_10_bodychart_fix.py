@@ -611,84 +611,7 @@ def ebm_from_df(df, friendly=False):
 # -----------------------------
 # Esportazione PDF
 # -----------------------------
-def genera_pdf(story_title, df, friendly=False):
-    try:
-        ebm_notes = ebm_from_df(df, friendly=friendly)
-        pdf = pdf_report_no_bodychart(
-            logo_bytes=LOGO,
-            athlete=st.session_state["athlete"],
-            evaluator=st.session_state["evaluator"],
-            date_str=st.session_state["date"],
-            section=st.session_state["section"],
-            df=df,
-            ebm_notes=ebm_notes,
-            radar_buf=radar_buf,
-            asym_buf=asym_buf
-        )
-        st.download_button(
-            f"📥 Scarica {story_title}",
-            data=pdf.getvalue(),
-            file_name=f"Fisiomove_{'client' if friendly else 'pro'}_{st.session_state['section']}_{st.session_state['date']}.pdf",
-            mime="application/pdf",
-            use_container_width=True
-        )
-    except Exception as e:
-        st.error(f"Errore durante generazione PDF: {e}")
 
-# -----------------------------
-# Bottoni PDF
-# -----------------------------
-# -----------------------------
-# Esportazione PDF (clinico + friendly) e CSV
-# -----------------------------
-colpdf1, colpdf2 = st.columns(2)
-
-with colpdf1:
-    if st.button("📄 Esporta PDF Clinico", use_container_width=True):
-        try:
-            pdf = pdf_report_no_bodychart(
-                logo_bytes=LOGO,
-                athlete=st.session_state["athlete"],
-                evaluator=st.session_state["evaluator"],
-                date_str=st.session_state["date"],
-                section=st.session_state["section"],
-                df=df_show,
-                ebm_notes=ebm_notes,
-                radar_buf=radar_buf,
-                asym_buf=asym_buf
-            )
-            st.download_button(
-                "⬇️ Scarica PDF Clinico",
-                data=pdf.getvalue(),
-                file_name=f"Fisiomove_Report_Clinico_{st.session_state['date']}.pdf",
-                mime="application/pdf",
-                use_container_width=True
-            )
-        except Exception as e:
-            st.error(f"Errore durante generazione PDF clinico: {e}")
-
-with colpdf2:
-    if st.button("🧾 Esporta PDF Client Friendly", use_container_width=True):
-        try:
-            pdf_client = pdf_report_client_friendly(
-                logo_bytes=LOGO,
-                athlete=st.session_state["athlete"],
-                evaluator=st.session_state["evaluator"],
-                date_str=st.session_state["date"],
-                section=st.session_state["section"],
-                df=df_show,
-                radar_buf=radar_buf,
-                asym_buf=asym_buf
-            )
-            st.download_button(
-                "⬇️ Scarica PDF Client Friendly",
-                data=pdf_client.getvalue(),
-                file_name=f"Fisiomove_Report_Facile_{st.session_state['date']}.pdf",
-                mime="application/pdf",
-                use_container_width=True
-            )
-        except Exception as e:
-            st.error(f"Errore durante generazione PDF semplificato: {e}")
 
 def pdf_report_no_bodychart(
     logo_bytes,
@@ -813,7 +736,6 @@ def pdf_report_no_bodychart(
     buf.seek(0)
     return buf
 
-
 def pdf_report_client_friendly(
     logo_bytes,
     athlete,
@@ -892,6 +814,62 @@ def pdf_report_client_friendly(
     doc.build(story)
     buf.seek(0)
     return buf
+
+# -----------------------------
+# -----------------------------
+# Esportazione PDF (clinico + friendly) e CSV
+# -----------------------------
+colpdf1, colpdf2 = st.columns(2)
+
+with colpdf1:
+    if st.button("📄 Esporta PDF Clinico", use_container_width=True):
+        try:
+            pdf = pdf_report_no_bodychart(
+                logo_bytes=LOGO,
+                athlete=st.session_state["athlete"],
+                evaluator=st.session_state["evaluator"],
+                date_str=st.session_state["date"],
+                section=st.session_state["section"],
+                df=df_show,
+                ebm_notes=ebm_notes,
+                radar_buf=radar_buf,
+                asym_buf=asym_buf
+            )
+            st.download_button(
+                "⬇️ Scarica PDF Clinico",
+                data=pdf.getvalue(),
+                file_name=f"Fisiomove_Report_Clinico_{st.session_state['date']}.pdf",
+                mime="application/pdf",
+                use_container_width=True
+            )
+        except Exception as e:
+            st.error(f"Errore durante generazione PDF clinico: {e}")
+
+with colpdf2:
+    if st.button("🧾 Esporta PDF Client Friendly", use_container_width=True):
+        try:
+            pdf_client = pdf_report_client_friendly(
+                logo_bytes=LOGO,
+                athlete=st.session_state["athlete"],
+                evaluator=st.session_state["evaluator"],
+                date_str=st.session_state["date"],
+                section=st.session_state["section"],
+                df=df_show,
+                radar_buf=radar_buf,
+                asym_buf=asym_buf
+            )
+            st.download_button(
+                "⬇️ Scarica PDF Client Friendly",
+                data=pdf_client.getvalue(),
+                file_name=f"Fisiomove_Report_Facile_{st.session_state['date']}.pdf",
+                mime="application/pdf",
+                use_container_width=True
+            )
+        except Exception as e:
+            st.error(f"Errore durante generazione PDF semplificato: {e}")
+
+
+
 
 TESTS = {
     "Squat": [
