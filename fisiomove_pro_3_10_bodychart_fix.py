@@ -47,12 +47,14 @@ def load_logo_bytes():
         if os.path.exists(p):
             with open(p, "rb") as f:
                 return f.read()
-img = Image.new("RGB", (1000, 260), (30, 108, 244))
-d = ImageDraw.Draw(img)
-d.text((30, 100), "Fisiomove", fill=(255,255,255))
-bio = io.BytesIO()
-img.save(bio, format="PNG")
-return bio.getvalue()
+    # Se il file non esiste, crea un'immagine di fallback
+    img = Image.new("RGB", (1000, 260), (30, 108, 244))
+    d = ImageDraw.Draw(img)
+    d.text((30, 100), "Fisiomove", fill=(255, 255, 255))
+    bio = io.BytesIO()
+    img.save(bio, format="PNG")
+    return bio.getvalue()
+
 
 
 def load_bodychart_image():
