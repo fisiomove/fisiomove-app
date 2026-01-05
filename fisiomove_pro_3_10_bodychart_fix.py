@@ -58,16 +58,23 @@ def load_logo_bytes():
 
 
 def load_bodychart_image():
-for p in BODYCHART_PATHS:
-if os.path.exists(p):
-try:
-return Image.open(p).convert("RGBA")
-except Exception:
-pass
-img = Image.new("RGBA", (1200, 800), (245,245,245,255))
-d = ImageDraw.Draw(img)
-d.text((20,20), "Aggiungi body_chart.png (anteriore a sinistra, posteriore a destra)", fill=(10,10,10))
-return img
+    for p in BODYCHART_PATHS:
+        if os.path.exists(p):
+            try:
+                return Image.open(p).convert("RGBA")
+            except Exception:
+                pass
+
+    # Fallback se l'immagine non esiste
+    img = Image.new("RGBA", (1200, 800), (245, 245, 245, 255))
+    d = ImageDraw.Draw(img)
+    d.text(
+        (20, 20),
+        "Body chart non disponibile",
+        fill=(10, 10, 10)
+    )
+    return img
+
 
 
 LOGO = load_logo_bytes()
