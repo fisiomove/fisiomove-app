@@ -1,3 +1,4 @@
+# (ATTENZIONE: salva questo contenuto in streamlit_app.py, sostituendo il file esistente)
 import io
 import os
 import random
@@ -10,7 +11,7 @@ import pandas as pd
 import numpy as np
 from PIL import Image, ImageDraw
 import matplotlib
-matplotlib.use("Agg")  # backend headless-safe
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import plotly.express as px
 from reportlab.lib.pagesizes import A4
@@ -48,7 +49,6 @@ def sanitize_text_for_plot(s):
 
 
 def short_key(s: str) -> str:
-    # genera key breve e stabile per Streamlit
     h = hashlib.sha1(s.encode("utf-8")).hexdigest()[:10]
     return f"t_{h}"
 
@@ -74,7 +74,7 @@ TEST_NAME_TRANSLATIONS = {
     "Active Knee Extension (AKE)": "Estensione attiva ginocchio",
     "Straight Leg Raise (SLR)": "Sollevamento gamba tesa",
     "Sorensen Endurance": "Test endurance estensori lombari",
-    "ULNT1A (Median nerve)": "Test neurodinamico mediano (ULNT1A)",
+    "ULNT1A (Median nerve)": "Test neurodinamico mediano (ULNT1A)"
 }
 
 LOGO_PATHS = ["logo 2600x1000.jpg", "logo.png", "logo.jpg"]
@@ -341,7 +341,7 @@ def build_df(section):
 
 
 # -----------------------------
-# Plots: Matplotlib (per PDF) kept; UI uses Plotly for nicer visuals
+# Plots: Matplotlib (for PDF) and Plotly (UI)
 # -----------------------------
 def radar_plot_matplotlib(df, title="Punteggi (0–10)"):
     import numpy as np
@@ -422,9 +422,6 @@ def asymmetry_plot_matplotlib(df, title="SymScore – Simmetria Dx/Sx"):
     return buf
 
 
-# -----------------------------
-# UI Plotly (interactive, prettier)
-# -----------------------------
 @st.cache_data
 def plotly_radar(df):
     df_r = df[df["Score"].notnull()].copy()
@@ -450,38 +447,191 @@ def plotly_asymmetry(df):
 
 
 # -----------------------------
-# EBM comments
+# EBM library (text templates + source URLs)
+# Each test entry contains:
+#  - 'title': short title
+#  - 'text': template explanation (will be used if test fails)
+#  - 'refs': list of source strings (URLs or citation texts)
+# -----------------------------
+EBM_LIBRARY = {
+    "Weight Bearing Lunge Test": {
+        "title": "Ankle dorsiflexion (WBLT)",
+        "text": (
+            "Ridotta dorsiflessione in carico: il Weight Bearing Lunge Test (WBLT) è una misura affidabile e funzionale "
+            "per valutare la dorsiflessione sotto carico. Valori ridotti sono associati a compensi durante squat e cammino, "
+            "aumento del rischio di infortuni e limitata performance funzionale. Intervento: mobilizzazione talo-crurale, "
+            "lavoro eccentrico/controllo della caviglia e integrazione nella progressione di squat. "
+            "Evidenza: studi di validazione e review confermano affidabilità, valori normativi e rilevanza clinica [REFS]."
+        ),
+        "refs": [
+            "https://peerj.com/articles/10253.pdf",
+            "https://link.springer.com/article/10.1186/s12891-018-2113-8",
+            "https://www.physio-pedia.com/Knee_to_Wall_Test"
+        ],
+    },
+    "Passive Hip Flexion": {
+        "title": "Passive hip flexion (ROM)",
+        "text": (
+            "Ridotta flessione passiva d'anca: valori normativi sono circa 110–120°. Limitazioni possono compromettere la profondità "
+            "dello squat e favorire compensi lombo‑pelvici. Intervento: stretching specifico, mobilità articolare e controllo pelvico. "
+            "Evidenza: linee guida cliniche e studi di goniometria supportano la rilevanza funzionale del ROM d'anca [REFS]."
+        ),
+        "refs": [
+            "https://www.physiotutors.com/wiki/hip-passive-range-of-motion/",
+            "https://link.springer.com/rwe/10.1007/978-1-4614-7321-3_2-2",
+            "https://www.orthopt.org/uploads/content_files/files/Hip%20OA%20Revision%202017.pdf"
+        ],
+    },
+    "Hip Rotation (flexed 90°)": {
+        "title": "Hip rotation (90° flexion)",
+        "text": (
+            "Limitata rotazione anca in flessione: la rotazione interna/esterna a 90° è rilevante per movimenti di squat, "
+            "pivot e per la biomeccanica dell'arto inferiore. Asimmetrie o deficit possono indicare rischio di infortuni o "
+            "patologie femoro‑acetabolari; interventi includono mobilità specifica e controllo neuromuscolare [REFS]."
+        ),
+        "refs": [
+            "https://www.jstage.jst.go.jp/article/jpts/27/2/27_jpts-2014-454/_pdf",
+            "https://www.mdpi.com/2673-8392/5/4/170"
+        ],
+    },
+    "Wall Angel Test": {
+        "title": "Wall Angel (scapular control / thoracic mobility)",
+        "text": (
+            "Punteggio ridotto al Wall Angel: suggerisce deficit di controllo scapolare e mobilità toracica, potenziali compensi agli overhead "
+            "movimenti e dolore riferito. Intervento: esercizi di estensione toracica, rinforzo dei stabilizzatori scapolari e retraining del pattern motorio. "
+            "Evidenza: ricerche recenti supportano l'utilità clinica del Wall Angel come test funzionale correlato a outcome riabilitativi [REFS]."
+        ),
+        "refs": [
+            "https://ijspt.scholasticahq.com/article/123512-the-clinical-utility-of-the-seated-wall-angel-as-a-test-with-scoring",
+            "https://www.physitrack.com/exercise-library/how-to-perform-the-wall-angels-exercise"
+        ],
+    },
+    "Shoulder ER (adducted, low-bar)": {
+        "title": "Shoulder ER (adducted, low-bar)",
+        "text": (
+            "Ridotta rotazione esterna spalla in adduzione: può impedire una corretta posizione \"low‑bar\" nella sollevamento del bilanciere, "
+            "causando compensi a polso/avambraccio o una sistemazione più alta del bilanciere. Intervento: mobilità capsulare, esercizi di ER progressive, "
+            "control della scapola. Evidenza: guide cliniche e testi di goniometria indicano che deficit di ER hanno impatto funzionale rilevante [REFS]."
+        ),
+        "refs": [
+            "https://www.physio-pedia.com/Goniometry:_Shoulder_Internal_%26_External_Rotation",
+            "https://www.orthopaedicsone.com/orthopaedicsone-articles-shoulder-external-rotation-assessment/"
+        ],
+    },
+    "Shoulder Flexion (supine)": {
+        "title": "Shoulder flexion (supine)",
+        "text": (
+            "Ridotta flessione spalla: limita attività overhead e può indicare deficit attivi o passivi (cuffia, capsula). Interventi: mobilità passiva, "
+            "rinforzo e recupero del pattern scapolo‑omerale. Evidenza: studi di norma e linee guida descrivono l'importanza della misurazione del ROM [REFS]."
+        ),
+        "refs": [
+            "https://link.springer.com/article/10.1186/s12891-020-03665-9",
+            "https://www.massgeneral.org/assets/mgh/pdf/orthopaedics/sports-medicine/physical-therapy/functional-movement-assessment-upper-extremity.pdf"
+        ],
+    },
+    "External Rotation (90° abd)": {
+        "title": "Shoulder ER at 90° abduction",
+        "text": (
+            "Limitazione a ER a 90° di abduzione: importante per overhead e per stabilità dinamica; deficit ha implicazioni per prevenzione infortuni e performance. "
+            "Esercizi specifici di ER e rinforzo scapolare sono raccomandati [REFS]."
+        ),
+        "refs": [
+            "https://www.mdpi.com/2227-9032/11/14/1977",
+            "https://iaom-us.com/restoring-external-rotation-in-the-shoulder/"
+        ],
+    },
+    "Pectoralis Minor Length": {
+        "title": "Pectoralis minor length",
+        "text": (
+            "Accorciamento del piccolo pettorale: associato a proiezione scapolare anteriore, diminuita rotazione superiore e posterior tilt ridotto, contribuendo a sindromi da impingement. "
+            "Intervento: stretching mirato del PM, riequilibrio muscolare e rinforzo dei muscoli antagonisti. Evidenza: studi mostrano associazione; utilizzare in combinazione con altri test [REFS]."
+        ),
+        "refs": [
+            "https://pdfs.semanticscholar.org/3d47/2b3c59ffda2f7f7e97e7d6388114e4237d11.pdf",
+            "https://uhra.herts.ac.uk/id/eprint/3916/"
+        ],
+    },
+    "Thomas Test (modified)": {
+        "title": "Modified Thomas Test (hip flexor tightness)",
+        "text": (
+            "Test di Thomas positivo: indica accorciamento dei flessori d'anca (iliopsoas, retto femorale). Può contribuire a limitazione dell'estensione dell'anca e compensi lombari. "
+            "Intervento: rilascio, mobilità e lavoro di controllo pelvico. Studi recenti segnalano buona affidabilità con protocolli standardizzati [REFS]."
+        ),
+        "refs": [
+            "https://ijspt.scholasticahq.com/article/120899-reliability-of-goniometric-techniques-for-measuring-hip-flexor-length-using-the-modified-thomas-test",
+            "https://www.physio-pedia.com/Thomas_Test"
+        ],
+    },
+    "Active Knee Extension (AKE)": {
+        "title": "Active Knee Extension (AKE)",
+        "text": (
+            "AKE positivo: ridotta lunghezza degli hamstrings; associato a rischio di infortunio e alterata meccanica lombo‑pelvica. Interventi: stretching funzionale, "
+            "eccentrico e integrazione neuromuscolare. AKE è un test affidabile per hamstring length [REFS]."
+        ),
+        "refs": [
+            "https://www.physiotutors.com/wiki/90-90-straight-leg-raise-test/",
+            "https://www.jstage.jst.go.jp/article/jpts/25/8/25_jpts-2013-059/_pdf"
+        ],
+    },
+    "Straight Leg Raise (SLR)": {
+        "title": "Straight Leg Raise (SLR)",
+        "text": (
+            "SLR positivo: attenzione a distinzione tra limitazione muscolare e sensibilità neurodinamica (sciatica/irritazione radicolare). Usare differenziazione strutturale "
+            "(dorsiflessione caviglia, flessione collo) per discriminare. Intervento: se neurodinamico, trattamenti specifici per nervo; se muscolare, lavoro di flessibilità [REFS]."
+        ),
+        "refs": [
+            "https://www.physio-pedia.com/Straight_Leg_Raise_Test",
+            "https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0298257"
+        ],
+    },
+    "Sorensen Endurance": {
+        "title": "Sorensen (lumbar endurance)",
+        "text": (
+            "Basso tempo al test di Sorensen: deficit di endurance estensori lombari associato a rischio e presenza di lombalgia. Interventi: progessioni di endurance lombare e integrazione "
+            "di controllo motorio. Interpretare con cautela e considerare fattori psico‑sociali e motivazionali [REFS]."
+        ),
+        "refs": [
+            "https://www.sralab.org/rehabilitation-measures/biering-sorensen-test",
+            "https://www.sciencedirect.com/science/article/pii/S1297319X04001708"
+        ],
+    },
+    "ULNT1A (Median nerve)": {
+        "title": "ULNT1A (median nerve)",
+        "text": (
+            "ULNT1A: test neurodinamico del nervo mediano. Valori prossimi a 0° (o riproduzione sintomatica precoce) indicano meccanica neurale alterata o irritazione; miglioramenti nella mobilità neurale "
+            "possono essere ottenuti con tecniche neurali e mobilità perimetrica. Interpretare con structural differentiation. [REFS]"
+        ),
+        "refs": [
+            "https://www.physiotutors.com/research/upper-limb-neurodynamic-test-1-sequencing/",
+            "https://www.mdpi.com/2075-4418/14/24/2881"
+        ],
+    },
+}
+
+
+# -----------------------------
+# Costruzione commenti EBM + bibliografia
+# - Restituisce (notes_list, bibliography_list)
+# - notes_list: list of strings (narrative paragraphs with inline [n] markers)
+# - bibliography_list: list of citation strings (numbered later)
 # -----------------------------
 def ebm_from_df(df, friendly=False):
     notes = []
-    ebm_library = {
-        "Weight Bearing Lunge Test": {
-            "ref": "Bennell KL et al., 1998; Konor MM et al., 2012",
-            "low_score": "Mobilità della caviglia ridotta: rischio di compensi, sollevamento del tallone e stress femoro-rotuleo.",
-            "friendly": "Il test della caviglia è ridotto: potresti avere difficoltà nello squat profondo.",
-        },
-        "Passive Hip Flexion": {
-            "ref": "Reese NB, Bandy WD, 2020",
-            "low_score": "Flessibilità anca ridotta: può limitare la profondità dello squat.",
-            "friendly": "La flessione dell’anca è un po’ limitata.",
-        },
-        "Shoulder ER (adducted, low-bar)": {
-            "ref": "Wilk KE et al., 2015",
-            "low_score": "Rotazione esterna spalla ridotta: può influenzare la posizione low-bar.",
-            "friendly": "La spalla ruota un po’ meno del normale.",
-        },
-        "Wall Angel Test": {
-            "ref": "Kibler WB et al., 2013; Ludewig PM et al., 2009",
-            "low_score": "Deficit nel controllo scapolare e nella mobilità toracica: possibili compensi nella postura o nei movimenti overhead.",
-        },
-        "ULNT1A (Median nerve)": {
-            "ref": "Nee RJ et al., 2012",
-            "low_score": "Test positivo: possibile irritazione o tensione del nervo mediano.",
-            "friendly": "Test sul nervo del braccio positivo: potresti sentire tensione o fastidio.",
-        },
-    }
+    biblio_urls = []
+    # map URL -> index in bibliography
+    bib_index = {}
 
-    problematic_tests = {}
+    def add_ref(url):
+        if not url:
+            return None
+        if url in bib_index:
+            return bib_index[url]
+        idx = len(biblio_urls) + 1
+        bib_index[url] = idx
+        biblio_urls.append(url)
+        return idx
+
+    problematic = []
 
     for _, r in df.iterrows():
         test = str(r["Test"])
@@ -489,114 +639,190 @@ def ebm_from_df(df, friendly=False):
         pain = bool(r["Dolore"])
         sym = float(r.get("SymScore", 10.0) if not pd.isna(r.get("SymScore", np.nan)) else 10.0)
 
-        comment_lines = []
+        entry = EBM_LIBRARY.get(test)
+        if not entry:
+            continue
+
+        para_lines = []
         issue = False
 
-        if score < 4:
-            msg = ebm_library.get(test, {}).get("friendly" if friendly else "low_score",
-                                                f"Deficit rilevato nel test '{test}'.")
-            comment_lines.append(f"❗ {msg}")
+        # if score low -> detailed paragraph
+        if score < 7:
+            # build paragraph using entry text and attach inline refs
+            refs = entry.get("refs", [])
+            ref_nums = []
+            for u in refs:
+                n = add_ref(u)
+                if n:
+                    ref_nums.append(f"[{n}]")
+            # insert refs into text where placeholder [REFS] appears
+            text = entry["text"].replace("[REFS]", " ".join(ref_nums))
+            para_lines.append(text)
             issue = True
+
+        # asymmetry
         if sym < 7:
-            comment_lines.append(f"Asimmetria significativa nel test '{test}' (SymScore: {sym:.1f}/10).")
+            para_lines.append(
+                f"Asimmetria significativa tra Dx/Sx (SymScore {sym:.1f}/10): suggerisce differenze laterali che possono richiedere priorità di intervento sul lato peggiore."
+            )
             issue = True
+
+        # pain
         if pain:
-            comment_lines.append("Dolore riportato durante il test.")
+            para_lines.append("Dolore riportato durante il test: valutare intensità, distribuzione e relazione con il movimento rilevato.")
+            issue = True
 
         if not issue:
-            comment_lines.append(f"Il test '{test}' soddisfa la sufficienza.")
+            para_lines.append(f"Il test '{test}' risulta nella norma (score {score:.1f}/10).")
 
-        notes.extend(comment_lines)
-
+        notes.append(" ".join(para_lines))
         if issue:
-            problematic_tests[test] = ebm_library.get(test, {}).get("ref")
+            problematic.append(test)
 
-    if not friendly and problematic_tests:
-        notes.append("")
-        for test, ref in problematic_tests.items():
-            if ref:
-                notes.append(f"Riferimento: {ref}")
+    # Build bibliography list (human readable)
+    bibliography = []
+    for i, url in enumerate(biblio_urls, start=1):
+        # try to shorten: use URL as citation; user can expand later
+        bibliography.append(f"[{i}] {url}")
 
-    return notes
+    return notes, bibliography
 
 
 # -----------------------------
-# PDF generation (keeps matplotlib buffers)
+# PDF generation (restyled)
+# - Now accepts ebm_bibliography (list of strings)
 # -----------------------------
-def pdf_report_no_bodychart(logo_bytes, athlete, evaluator, date_str, section, df, ebm_notes, radar_buf=None, asym_buf=None):
+def pdf_report_no_bodychart(logo_bytes, athlete, evaluator, date_str, section, df, ebm_notes, ebm_bibliography=None, radar_buf=None, asym_buf=None):
     import io
-    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image as RLImage, Table, TableStyle
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image as RLImage, Table, TableStyle, KeepTogether
     from reportlab.lib.pagesizes import A4
     from reportlab.lib.units import cm
     from reportlab.lib import colors
-    from reportlab.lib.styles import getSampleStyleSheet
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_RIGHT
 
     buf = io.BytesIO()
     doc = SimpleDocTemplate(
-        buf, pagesize=A4, leftMargin=1.4 * cm, rightMargin=1.4 * cm, topMargin=1.2 * cm, bottomMargin=1.2 * cm
+        buf, pagesize=A4, leftMargin=1.6 * cm, rightMargin=1.6 * cm, topMargin=1.2 * cm, bottomMargin=1.2 * cm
     )
     styles = getSampleStyleSheet()
     normal = styles["Normal"]
     title = styles["Title"]
+    small = ParagraphStyle("small", parent=styles["Normal"], fontSize=8, leading=10)
+    heading = ParagraphStyle("heading", parent=styles["Heading2"], alignment=TA_LEFT, textColor=colors.HexColor(PRIMARY))
+    centerb = ParagraphStyle("centerb", parent=styles["Heading3"], alignment=TA_CENTER)
 
     story = []
-    story.append(RLImage(io.BytesIO(logo_bytes), width=14 * cm, height=3.5 * cm))
+
+    # Header: logo + title
+    story.append(RLImage(io.BytesIO(logo_bytes), width=14 * cm, height=3.2 * cm))
     story.append(Spacer(1, 6))
-    story.append(Paragraph(f"<b>Report Valutazione – {sanitize_text_for_plot(section)}</b>", title))
+    story.append(Paragraph(f"<b>Report Valutazione — {sanitize_text_for_plot(section)}</b>", title))
     story.append(Spacer(1, 6))
 
-    info_data = [["Atleta", athlete, "Valutatore", evaluator, "Data", date_str]]
-    info_table = Table(info_data, colWidths=[2.2 * cm, 5.0 * cm, 2.8 * cm, 5.0 * cm, 1.8 * cm, 2.0 * cm])
+    # Info band
+    info_data = [
+        ["Atleta", athlete, "Valutatore", evaluator, "Data", date_str],
+    ]
+    info_table = Table(info_data, colWidths=[2.2 * cm, 6.0 * cm, 2.8 * cm, 5.0 * cm, 1.6 * cm, 2.0 * cm])
     info_table.setStyle(
         TableStyle(
             [
+                ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#F4F8FF")),
                 ("BOX", (0, 0), (-1, -1), 0.6, colors.lightgrey),
-                ("INNERGRID", (0, 0), (-1, -1), 0.3, colors.lightgrey),
-                ("BACKGROUND", (0, 0), (-1, -1), colors.whitesmoke),
+                ("INNERGRID", (0, 0), (-1, -1), 0.25, colors.whitesmoke),
                 ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-                ("FONTNAME", (0, 0), (-1, -1), "Helvetica"),
             ]
         )
     )
     story.append(info_table)
     story.append(Spacer(1, 8))
 
+    # Summary metrics
+    avg_score = df["Score"].mean() if "Score" in df.columns and not df["Score"].isna().all() else 0.0
+    n_dolore = int(df["Dolore"].sum()) if "Dolore" in df.columns else 0
+    sym_mean = df["SymScore"].mean() if "SymScore" in df.columns else np.nan
+    metrics = Table(
+        [
+            ["Score medio", f"{avg_score:.1f}/10", "Test con dolore", str(n_dolore), "Symmetry medio", f"{sym_mean:.1f}/10" if not pd.isna(sym_mean) else "n/a"]
+        ],
+        colWidths=[3 * cm, 3 * cm, 3 * cm, 2.6 * cm, 3 * cm, 3 * cm],
+    )
+    metrics.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#FFFFFF")),
+                ("GRID", (0, 0), (-1, -1), 0.25, colors.lightgrey),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                ("FONTNAME", (0, 0), (-1, -1), "Helvetica-Bold"),
+            ]
+        )
+    )
+    story.append(metrics)
+    story.append(Spacer(1, 12))
+
+    # Results table (styled)
     disp = df[["Sezione", "Test", "Unità", "Rif", "Valore", "Score", "Dx", "Sx", "Delta", "SymScore", "Dolore"]].copy()
+    # Rimuovi eventuali test non desiderati
     disp = disp[~disp["Test"].str.lower().str.contains("schober", na=False)]
     for col in ["Valore", "Score", "Dx", "Sx", "Delta", "SymScore"]:
         disp[col] = pd.to_numeric(disp[col], errors="coerce").round(2)
 
-    table = Table([disp.columns.tolist()] + disp.values.tolist(), repeatRows=1,
-                  colWidths=[2.2 * cm, 6.5 * cm, 1.2 * cm, 1.2 * cm, 1.6 * cm, 1.6 * cm, 1.4 * cm, 1.4 * cm, 1.2 * cm, 1.6 * cm, 1.6 * cm])
+    # Color score cell: convert to strings for Table
+    table_data = [disp.columns.tolist()]
+    for _, row in disp.iterrows():
+        row_list = row.tolist()
+        table_data.append(row_list)
+
+    # Column widths
+    colWidths = [2.2 * cm, 6.0 * cm, 1.2 * cm, 1.2 * cm, 1.6 * cm, 1.6 * cm, 1.4 * cm, 1.4 * cm, 1.2 * cm, 1.6 * cm, 1.6 * cm]
+    table = Table(table_data, repeatRows=1, colWidths=colWidths)
+    # style header + grid
     table.setStyle(
         TableStyle(
             [
                 ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor(PRIMARY)),
                 ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-                ("ALIGN", (0, 0), (-1, 0), "CENTER"),
                 ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-                ("FONTNAME", (0, 1), (-1, -1), "Helvetica"),
                 ("FONTSIZE", (0, 0), (-1, -1), 8),
                 ("GRID", (0, 0), (-1, -1), 0.25, colors.lightgrey),
                 ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
             ]
         )
     )
+    # add conditional background for Score column (col index 5)
+    for i, row in enumerate(table_data[1:], start=1):
+        try:
+            score = float(row[5]) if row[5] != "" and row[5] is not None else None
+            if score is not None:
+                if score < 4:
+                    bg = colors.HexColor("#fff1f2")
+                elif score < 7:
+                    bg = colors.HexColor("#fffaf0")
+                else:
+                    bg = colors.HexColor("#ecfdf5")
+                table.setStyle([("BACKGROUND", (5, i), (5, i), bg)])
+        except Exception:
+            pass
+
+    story.append(Paragraph("<b>Tabella risultati</b>", heading))
+    story.append(Spacer(1, 6))
     story.append(table)
-    story.append(Spacer(1, 10))
+    story.append(Spacer(1, 12))
 
+    # Charts area
+    charts = []
     if radar_buf:
-        story.append(Paragraph("<b>Radar – Punteggi (0–10)</b>", normal))
-        story.append(Spacer(1, 4))
-        story.append(RLImage(io.BytesIO(radar_buf.getvalue()), width=10 * cm, height=10 * cm))
-        story.append(Spacer(1, 8))
-
+        charts.append(RLImage(io.BytesIO(radar_buf.getvalue()), width=10 * cm, height=10 * cm))
     if asym_buf:
-        story.append(Paragraph("<b>Grafico Asimmetrie Dx/Sx</b>", normal))
-        story.append(Spacer(1, 4))
-        story.append(RLImage(io.BytesIO(asym_buf.getvalue()), width=14 * cm, height=6 * cm))
-        story.append(Spacer(1, 8))
+        charts.append(RLImage(io.BytesIO(asym_buf.getvalue()), width=14 * cm, height=6 * cm))
+    # Place charts: radar then asymmetry
+    if charts:
+        for ch in charts:
+            story.append(ch)
+            story.append(Spacer(1, 8))
 
+    # Painful regions
     pain_regions = []
     for _, row in df.iterrows():
         regione = str(row.get("Regione", "") or "").strip()
@@ -614,7 +840,8 @@ def pdf_report_no_bodychart(logo_bytes, athlete, evaluator, date_str, section, d
                 pain_regions.append(f"{regione}")
 
     pain_regions = list(dict.fromkeys(pain_regions))
-    story.append(Paragraph("<b>Regioni dolorose riscontrate durante il test:</b>", normal))
+    story.append(Paragraph("<b>Regioni dolorose riscontrate durante il test</b>", heading))
+    story.append(Spacer(1, 6))
     if pain_regions:
         for reg in pain_regions:
             story.append(Paragraph(f"• {reg.capitalize()}", normal))
@@ -622,15 +849,32 @@ def pdf_report_no_bodychart(logo_bytes, athlete, evaluator, date_str, section, d
         story.append(Paragraph("Nessuna regione segnalata come dolorosa.", normal))
     story.append(Spacer(1, 12))
 
-    story.append(Paragraph("<b>Commento clinico (EBM)</b>", normal))
-    story.append(Spacer(1, 4))
+    # EBM Comments (narrative)
+    story.append(Paragraph("<b>Commento clinico (EBM)</b>", heading))
+    story.append(Spacer(1, 6))
     if ebm_notes:
-        for note in ebm_notes:
-            if isinstance(note, str):
-                story.append(Paragraph(f"• {sanitize_text_for_plot(note)}", normal))
-                story.append(Spacer(1, 4))
+        for para in ebm_notes:
+            # sanitize
+            story.append(Paragraph(sanitize_text_for_plot(para), normal))
+            story.append(Spacer(1, 6))
     else:
         story.append(Paragraph("Nessun commento disponibile.", normal))
+
+    story.append(Spacer(1, 14))
+
+    # Bibliography final
+    if ebm_bibliography:
+        story.append(Paragraph("<b>Bibliografia</b>", heading))
+        story.append(Spacer(1, 6))
+        for ref in ebm_bibliography:
+            story.append(Paragraph(sanitize_text_for_plot(ref), small))
+            story.append(Spacer(1, 4))
+
+    # Footer with signature
+    story.append(Spacer(1, 12))
+    story.append(Paragraph(f"Valutatore: {evaluator}", small))
+    story.append(Paragraph("Firma: ______________________", small))
+    story.append(Spacer(1, 6))
 
     doc.build(story)
     buf.seek(0)
@@ -645,7 +889,7 @@ def pdf_report_client_friendly(logo_bytes, athlete, evaluator, date_str, section
 
     buf = io.BytesIO()
     doc = SimpleDocTemplate(
-        buf, pagesize=A4, leftMargin=1.4 * cm, rightMargin=1.4 * cm, topMargin=1.2 * cm, bottomMargin=1.2 * cm
+        buf, pagesize=A4, leftMargin=1.6 * cm, rightMargin=1.6 * cm, topMargin=1.2 * cm, bottomMargin=1.2 * cm
     )
 
     styles = getSampleStyleSheet()
@@ -653,7 +897,7 @@ def pdf_report_client_friendly(logo_bytes, athlete, evaluator, date_str, section
     title = styles["Title"]
 
     story = []
-    story.append(RLImage(io.BytesIO(logo_bytes), width=14 * cm, height=3.5 * cm))
+    story.append(RLImage(io.BytesIO(logo_bytes), width=14 * cm, height=3.2 * cm))
     story.append(Spacer(1, 6))
     story.append(Paragraph(f"<b>Valutazione Funzionale – {sanitize_text_for_plot(section)}</b>", title))
     story.append(Spacer(1, 6))
@@ -707,7 +951,7 @@ def pdf_report_client_friendly(logo_bytes, athlete, evaluator, date_str, section
 
 
 # -----------------------------
-# UI: Styling & Header
+# UI Styling & Header
 # -----------------------------
 st.markdown(
     f"""
@@ -731,12 +975,11 @@ with col1:
 with col2:
     st.markdown(f"<div class='header-card'><h2 style='color:{PRIMARY};margin:0'>{APP_TITLE}</h2><div class='small-muted'>{SUBTITLE}</div></div>", unsafe_allow_html=True)
 with col3:
-    # placeholder metrics: will be updated after df_show is computed
     metric_container = st.container()
 
 
 # -----------------------------
-# Sidebar – dati atleta e sezione (solo Valutazione Generale)
+# Sidebar UI
 # -----------------------------
 ALL_SECTIONS = ["Valutazione Generale"]
 
@@ -775,7 +1018,7 @@ with st.sidebar:
 
 
 # -----------------------------
-# Rendering input: grouped by regione inside expanders, each test as small card
+# Render inputs grouped by region
 # -----------------------------
 def get_all_unique_tests():
     unique = {}
@@ -789,7 +1032,6 @@ def get_all_unique_tests():
 
 def render_inputs_for_section(section):
     tests = get_all_unique_tests() if section == "Valutazione Generale" else [(section, *t) for t in TESTS.get(section, [])]
-    # group by region for nicer UI
     region_map = {}
     for sec, name, unit, ref, bilat, region, desc in tests:
         region_map.setdefault(region or "other", []).append((sec, name, unit, ref, bilat, region, desc))
@@ -800,11 +1042,9 @@ def render_inputs_for_section(section):
                 rec = st.session_state["vals"].get(name)
                 if not rec:
                     continue
-                # card wrapper (HTML)
                 st.markdown("<div class='card'>", unsafe_allow_html=True)
                 st.markdown(f"**{name}**  \n*{desc}*  \n*Rif:* {ref} {unit}")
                 key = short_key(name)
-                # special max for ULNT1A
                 max_val = ref if name == "ULNT1A (Median nerve)" else (ref * 1.5 if ref > 0 else 10.0)
 
                 if bilat:
@@ -818,7 +1058,6 @@ def render_inputs_for_section(section):
                     rec.update({"Dx": dx, "Sx": sx, "DoloreDx": pdx, "DoloreSx": psx})
                     sc = ability_linear((dx + sx) / 2.0, ref)
                     sym = symmetry_score(dx, sx, unit)
-                    # status badge
                     status = "badge-ok" if sc >= 7 else ("badge-warn" if sc >= 4 else "badge-bad")
                     st.markdown(f"<div style='margin-top:8px'><span class='{status}'>Score {sc:.1f}/10</span>  — Δ {abs(dx - sx):.1f} {unit} — Sym: <b>{sym:.1f}/10</b></div>", unsafe_allow_html=True)
                 else:
@@ -831,33 +1070,16 @@ def render_inputs_for_section(section):
                 st.markdown("</div>", unsafe_allow_html=True)
 
 
-# render inputs
 render_inputs_for_section(st.session_state["section"])
 
 
 # -----------------------------
-# Build DF and main visualizations
+# Build DF and visuals
 # -----------------------------
 df_show = build_df(st.session_state["section"])
 st.markdown("### Risultati")
-# styled table: color rows by score
-def style_scores_df(df):
-    def color_row(v):
-        if pd.isna(v):
-            return ""
-        if v < 4:
-            return "background-color:#fff1f2"  # redish
-        if v < 7:
-            return "background-color:#fffbeb"  # yellowish
-        return "background-color:#ecfdf5"  # greenish
-
-    sty = df.style.applymap(lambda x: color_row(x) if isinstance(x, (int, float)) else "", subset=["Score"])
-    return sty
-
 st.write(df_show.style.format(precision=1))
 
-
-# update header metrics
 with metric_container:
     avg_score = df_show["Score"].mean() if not df_show["Score"].isna().all() else 0.0
     painful = int(df_show["Dolore"].sum()) if "Dolore" in df_show.columns else 0
@@ -867,7 +1089,6 @@ with metric_container:
     st.metric("Symmetry medio", f"{sym_mean:.1f}/10" if not pd.isna(sym_mean) else "n/a")
 
 
-# interactive plots
 col_a, col_b = st.columns(2)
 with col_a:
     radar_fig = plotly_radar(df_show)
@@ -884,7 +1105,7 @@ with col_b:
 
 
 # -----------------------------
-# Prepare PDF buffers (matplotlib) for download
+# Prepare PDF buffers
 # -----------------------------
 radar_buf = None
 asym_buf = None
@@ -902,13 +1123,13 @@ except Exception:
 
 
 # -----------------------------
-# EBM notes (calcolate prima di PDF)
+# EBM notes + bibliography
 # -----------------------------
-ebm_notes = ebm_from_df(df_show, friendly=False)
+ebm_notes, ebm_bibliography = ebm_from_df(df_show, friendly=False)
 
 
 # -----------------------------
-# Export PDF buttons
+# Export PDFs
 # -----------------------------
 colpdf1, colpdf2 = st.columns(2)
 with colpdf1:
@@ -922,6 +1143,7 @@ with colpdf1:
                 section=st.session_state["section"],
                 df=df_show,
                 ebm_notes=ebm_notes,
+                ebm_bibliography=ebm_bibliography,
                 radar_buf=radar_buf,
                 asym_buf=asym_buf,
             )
