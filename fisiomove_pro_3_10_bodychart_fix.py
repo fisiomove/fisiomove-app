@@ -1,14 +1,13 @@
 import io
 import os
 import random
-import math
-import base64
+import re
 from datetime import datetime
 
 import streamlit as st
 import pandas as pd
 import numpy as np
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw
 import matplotlib.pyplot as plt
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import cm
@@ -17,6 +16,31 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image as RL
 from reportlab.lib.styles import getSampleStyleSheet
 
 st.set_page_config(page_title="Fisiomove MobilityPro v. 1.0", layout="centered")
+
+
+# -----------------------------
+# Utility: sanitize testo (rimuove emoji e simboli non-ASCII pesanti)
+# -----------------------------
+emoji_pattern = re.compile(
+    "["
+    u"\U0001F300-\U0001F5FF"  # simboli & icone
+    u"\U0001F600-\U0001F64F"  # emoticon
+    u"\U0001F680-\U0001F6FF"  # trasporti & mappe
+    u"\U0001F700-\U0001F77F"
+    u"\U0001F780-\U0001F7FF"
+    u"\U0001F800-\U0001F8FF"
+    u"\U0001F900-\U0001F9FF"
+    u"\U0001FA00-\U0001FA6F"
+    u"\u2600-\u26FF"          # simboli varie
+    "]+",
+    flags=re.UNICODE,
+)
+
+
+def sanitize_text_for_plot(s):
+    if not isinstance(s, str):
+        return s
+    return emoji_pattern.sub("", s)
 
 
 # -----------------------------
@@ -69,11 +93,7 @@ def load_bodychart_image():
     # Fallback se l'immagine non esiste
     img = Image.new("RGBA", (1200, 800), (245, 245, 245, 255))
     d = ImageDraw.Draw(img)
-    d.text(
-        (20, 20),
-        "Body chart non disponibile",
-        fill=(10, 10, 10)
-    )
+    d.text((20, 20), "Body chart non disponibile", fill=(10, 10, 10))
     return img
 
 
@@ -95,6 +115,7 @@ def init_state():
         st.session_state["date"] = datetime.now().strftime("%Y-%m-%d")
     if "section" not in st.session_state:
         st.session_state["section"] = "Valutazione Generale"
+
 
 init_state()
 
@@ -131,7 +152,6 @@ def symmetry_score(dx, sx, unit):
 # -----------------------------
 # Sezioni e TESTS (UNICA DEFINIZIONE)
 # -----------------------------
-# Nota: abbiamo mantenuto una singola definizione di TESTS per evitare sovrascritture
 TESTS = {
     "Squat": [
         ("Weight Bearing Lunge Test", "cm", 10.0, True, "ankle", "Test caviglia: dorsiflessione in carico."),
@@ -155,7 +175,6 @@ TESTS = {
     ],
     "Neurodinamica": [
         ("Straight Leg Raise (SLR)", "°", 90.0, True, "hip", "Test neurodinamica posteriore LE."),
-        # ULNT1A: configurato come bilaterale con ref 90°; default nei seed sarà 0°
         ("ULNT1A (Median nerve)", "°", 90.0, True, "shoulder", "Test neurodinamica arto superiore."),
     ],
 }
@@ -170,7 +189,6 @@ def seed_defaults():
         # assicuriamoci che ULNT1A abbia valori coerenti se presente ma vuota
         if "ULNT1A (Median nerve)" in st.session_state["vals"]:
             rec = st.session_state["vals"]["ULNT1A (Median nerve)"]
-            # se non ha Dx/Sx, impostali a 0
             if rec.get("bilat", False):
                 rec.setdefault("Dx", 0.0)
                 rec.setdefault("Sx", 0.0)
@@ -194,7 +212,7 @@ def seed_defaults():
                             "bilat": True,
                             "region": region,
                             "desc": desc,
-                            "section": sec
+                            "section": sec,
                         }
                     else:
                         st.session_state["vals"][name] = {
@@ -205,7 +223,7 @@ def seed_defaults():
                             "bilat": False,
                             "region": region,
                             "desc": desc,
-                            "section": sec
+                            "section": sec,
                         }
                 else:
                     if bilat:
@@ -219,7 +237,7 @@ def seed_defaults():
                             "bilat": True,
                             "region": region,
                             "desc": desc,
-                            "section": sec
+                            "section": sec,
                         }
                     else:
                         st.session_state["vals"][name] = {
@@ -230,7 +248,7 @@ def seed_defaults():
                             "bilat": False,
                             "region": region,
                             "desc": desc,
-                            "section": sec
+                            "section": sec,
                         }
 
 
@@ -268,24 +286,49 @@ def build_df(section):
                 dolore_dx = bool(rec.get("DoloreDx", False))
                 dolore_sx = bool(rec.get("DoloreSx", False))
                 dolore_any = dolore_dx or dolore_sx
-                rows.append([
-                    sec, name, unit, ref, f"{avg:.1f}", sc,
-                    round(dx, 2), round(sx, 2), delta, sym,
-                    dolore_any, region, dolore_dx, dolore_sx
-                ])
+                rows.append(
+                    [
+                        sec,
+                        name,
+                        unit,
+                        ref,
+                        f"{avg:.1f}",
+                        sc,
+                        round(dx, 2),
+                        round(sx, 2),
+                        delta,
+                        sym,
+                        dolore_any,
+                        region,
+                        dolore_dx,
+                        dolore_sx,
+                    ]
+                )
             else:
                 val = pd.to_numeric(rec.get("Val", 0.0), errors="coerce")
                 val = 0.0 if pd.isna(val) else float(val)
                 sc = round(ability_linear(val, ref), 2)
                 dolore = bool(rec.get("Dolore", False))
-                rows.append([
-                    sec, name, unit, ref, f"{val:.1f}", sc,
-                    "", "", "", "", dolore, region, False, False
-                ])
-    df = pd.DataFrame(rows, columns=[
-        "Sezione", "Test", "Unità", "Rif", "Valore", "Score",
-        "Dx", "Sx", "Delta", "SymScore", "Dolore", "Regione", "DoloreDx", "DoloreSx"
-    ])
+                rows.append([sec, name, unit, ref, f"{val:.1f}", sc, "", "", "", "", dolore, region, False, False])
+    df = pd.DataFrame(
+        rows,
+        columns=[
+            "Sezione",
+            "Test",
+            "Unità",
+            "Rif",
+            "Valore",
+            "Score",
+            "Dx",
+            "Sx",
+            "Delta",
+            "SymScore",
+            "Dolore",
+            "Regione",
+            "DoloreDx",
+            "DoloreSx",
+        ],
+    )
     # Normalizza tipi numerici
     for col in ["Score", "Dx", "Sx", "Delta", "SymScore"]:
         df[col] = pd.to_numeric(df[col], errors="coerce")
@@ -296,9 +339,7 @@ def build_df(section):
 # Radar plot (score per test)
 # -----------------------------
 def radar_plot(df, title="Punteggi (0–10)"):
-    import matplotlib.pyplot as plt
     import numpy as np
-    import io
 
     labels = df["Test"].tolist()
     values = df["Score"].astype(float).tolist()
@@ -315,14 +356,14 @@ def radar_plot(df, title="Punteggi (0–10)"):
     ax.set_theta_offset(np.pi / 2)
     ax.set_theta_direction(-1)
 
-    ax.plot(angles, values, linewidth=2, linestyle='solid', color="#1E6CF4")
+    ax.plot(angles, values, linewidth=2, linestyle="solid", color="#1E6CF4")
     ax.fill(angles, values, alpha=0.25, color="#1E6CF4")
 
     ax.set_yticks([2, 4, 6, 8, 10])
     ax.set_ylim(0, 10)
     ax.set_xticks(angles[:-1])
     ax.set_xticklabels(labels, fontsize=9)
-    ax.set_title(title, y=1.1, fontsize=14)
+    ax.set_title(sanitize_text_for_plot(title), y=1.1, fontsize=14)
 
     buf = io.BytesIO()
     plt.tight_layout()
@@ -336,9 +377,7 @@ def radar_plot(df, title="Punteggi (0–10)"):
 # Radar plot per sezione (media score)
 # -----------------------------
 def radar_plot_per_section(df, title="Media punteggi per sezione"):
-    import matplotlib.pyplot as plt
     import numpy as np
-    import io
 
     section_means = df.groupby("Sezione")["Score"].mean().dropna()
     labels = section_means.index.tolist()
@@ -362,7 +401,7 @@ def radar_plot_per_section(df, title="Media punteggi per sezione"):
     ax.set_ylim(0, 10)
     ax.set_xticks(angles[:-1])
     ax.set_xticklabels(labels, fontsize=10)
-    ax.set_title(title, fontsize=14, y=1.1)
+    ax.set_title(sanitize_text_for_plot(title), fontsize=14, y=1.1)
 
     buf = io.BytesIO()
     plt.tight_layout()
@@ -376,9 +415,6 @@ def radar_plot_per_section(df, title="Media punteggi per sezione"):
 # Asymmetry bar plot (SymScore)
 # -----------------------------
 def asymmetry_bar_plot(df, title="SymScore – Simmetria Dx/Sx"):
-    import matplotlib.pyplot as plt
-    import io
-
     df_bilat = df[df["SymScore"].notnull()].copy()
 
     try:
@@ -407,14 +443,14 @@ def asymmetry_bar_plot(df, title="SymScore – Simmetria Dx/Sx"):
     bars = ax.barh(labels, scores, color=colors_map)
 
     ax.set_xlabel("SymScore (0–10)")
-    ax.set_title(title)
+    ax.set_title(sanitize_text_for_plot(title))
     ax.set_xlim(0, 10)
     ax.invert_yaxis()
-    ax.grid(True, axis='x', linestyle='--', alpha=0.5)
+    ax.grid(True, axis="x", linestyle="--", alpha=0.5)
 
     for bar in bars:
         width = bar.get_width()
-        ax.text(width + 0.2, bar.get_y() + bar.get_height() / 2, f"{width:.1f}", va='center')
+        ax.text(width + 0.2, bar.get_y() + bar.get_height() / 2, f"{width:.1f}", va="center")
 
     buf = io.BytesIO()
     plt.tight_layout()
@@ -429,6 +465,7 @@ def asymmetry_bar_plot(df, title="SymScore – Simmetria Dx/Sx"):
 # -----------------------------
 st.markdown(f"<h2 style='color:{PRIMARY};margin-bottom:0'>{APP_TITLE}</h2>", unsafe_allow_html=True)
 
+
 # -----------------------------
 # Sidebar – dati atleta e sezione
 # -----------------------------
@@ -438,7 +475,9 @@ with st.sidebar:
     st.markdown("### Dati atleta")
     st.session_state["athlete"] = st.text_input("Atleta", st.session_state["athlete"])
     st.session_state["evaluator"] = st.text_input("Valutatore", st.session_state["evaluator"])
-    st.session_state["date"] = st.date_input("Data", datetime.strptime(st.session_state["date"], "%Y-%m-%d")).strftime("%Y-%m-%d")
+    st.session_state["date"] = st.date_input("Data", datetime.strptime(st.session_state["date"], "%Y-%m-%d")).strftime(
+        "%Y-%m-%d"
+    )
 
     st.markdown("---")
     st.session_state["section"] = st.selectbox("Sezione", ALL_SECTIONS, index=0)
@@ -481,7 +520,6 @@ def render_inputs_for_section(section):
                 name = item[0]
                 if name not in unique:
                     unique[name] = (s, *item)
-        # ordina per sezione originale/alfabetico per stabilità
         items = list(unique.values())
     else:
         for item in TESTS.get(section, []):
@@ -500,52 +538,43 @@ def render_inputs_for_section(section):
                 with c1:
                     dx = st.slider(
                         f"{name} — Dx ({unit})",
-                        0.0, ref * 1.5 if ref > 0 else 10.0,
+                        0.0,
+                        ref * 1.5 if ref > 0 else 10.0,
                         float(rec.get("Dx", 0.0)),
                         0.1,
-                        key=f"{key_safe}_Dx"
+                        key=f"{key_safe}_Dx",
                     )
                     pdx = st.checkbox(
-                        "Dolore Dx",
-                        value=bool(rec.get("DoloreDx", False)),
-                        key=f"{key_safe}_pDx"
+                        "Dolore Dx", value=bool(rec.get("DoloreDx", False)), key=f"{key_safe}_pDx"
                     )
                 with c2:
                     sx = st.slider(
                         f"{name} — Sx ({unit})",
-                        0.0, ref * 1.5 if ref > 0 else 10.0,
+                        0.0,
+                        ref * 1.5 if ref > 0 else 10.0,
                         float(rec.get("Sx", 0.0)),
                         0.1,
-                        key=f"{key_safe}_Sx"
+                        key=f"{key_safe}_Sx",
                     )
                     psx = st.checkbox(
-                        "Dolore Sx",
-                        value=bool(rec.get("DoloreSx", False)),
-                        key=f"{key_safe}_pSx"
+                        "Dolore Sx", value=bool(rec.get("DoloreSx", False)), key=f"{key_safe}_pSx"
                     )
 
-                rec.update({
-                    "Dx": dx, "Sx": sx,
-                    "DoloreDx": pdx,
-                    "DoloreSx": psx
-                })
+                rec.update({"Dx": dx, "Sx": sx, "DoloreDx": pdx, "DoloreSx": psx})
                 sc = ability_linear((dx + sx) / 2.0, ref)
                 sym = symmetry_score(dx, sx, unit)
-                st.caption(f"Score: **{sc:.1f}/10** — Δ {abs(dx - sx):.1f} {unit} — Sym: **{sym:.1f}/10**")
+                st.caption(f"Score: **{sc:.1f}/10** — Δ {abs(dx - sx):.1f} {unit} — Sym: **{sym:.1f}/10")
 
             else:
                 val = st.slider(
                     f"{name} — Valore ({unit})",
-                    0.0, ref * 1.5 if ref > 0 else 10.0,
+                    0.0,
+                    ref * 1.5 if ref > 0 else 10.0,
                     float(rec.get("Val", 0.0)),
                     0.1,
-                    key=f"{key_safe}_Val"
+                    key=f"{key_safe}_Val",
                 )
-                p = st.checkbox(
-                    "Dolore",
-                    value=bool(rec.get("Dolore", False)),
-                    key=f"{key_safe}_p"
-                )
+                p = st.checkbox("Dolore", value=bool(rec.get("Dolore", False)), key=f"{key_safe}_p")
                 rec.update({"Val": val, "Dolore": p})
                 sc = ability_linear(val, ref)
                 st.caption(f"Score: **{sc:.1f}/10**")
@@ -569,13 +598,12 @@ st.dataframe(df_show.round(2), use_container_width=True)
 radar_buf = None
 try:
     if len(df_show) > 0:
-        # per radar prendi solo i test con Score non NaN
         df_radar = df_show[df_show["Score"].notnull()].copy()
         if len(df_radar) >= 3:
-            radar_buf = radar_plot(df_radar, title=f"{st.session_state['section']} – Punteggi (0–10)")
+            radar_buf = radar_plot(df_radar, title=f"{st.session_state['section']} - Punteggi (0-10)")
             radar_img = Image.open(radar_buf)
             st.image(radar_img)
-            st.caption("📊 Radar – Punteggi (0–10)")
+            st.caption("Radar – Punteggi (0–10)")
         else:
             st.info("Radar non disponibile: servono almeno 3 test con punteggio.")
     else:
@@ -588,7 +616,7 @@ except Exception as e:
 # -----------------------------
 # Body Chart – disattivata
 # -----------------------------
-st.info("📉 Body Chart disattivata in questa versione.")
+st.info("Body Chart disattivata in questa versione.")
 
 
 # -----------------------------
@@ -606,25 +634,22 @@ try:
         # Mostra tabella
         if not df_sym.empty:
             st.markdown("#### Tabella Simmetria")
-            st.dataframe(
-                df_sym[["Test", "Delta", "SymScore"]].round(2),
-                use_container_width=True
-            )
+            st.dataframe(df_sym[["Test", "Delta", "SymScore"]].round(2), use_container_width=True)
 
             # Plot barre
-            asym_buf = asymmetry_bar_plot(df_show, title=f"Asimmetrie – {st.session_state['section']}")
+            asym_buf = asymmetry_bar_plot(df_show, title=f"Asimmetrie - {st.session_state['section']}")
             if asym_buf:
                 asym_img = Image.open(asym_buf)
                 st.image(asym_img)
-                st.caption("📉 Grafico delle asimmetrie tra Dx e Sx")
+                st.caption("Grafico delle asimmetrie tra Dx e Sx")
 
                 # Radar per sezione (solo se 'Valutazione Generale' e se ha dati per sezione)
                 try:
                     if st.session_state["section"] == "Valutazione Generale":
-                        radar_sec_buf = radar_plot_per_section(df_show, title="📌 Media punteggi per sezione")
+                        radar_sec_buf = radar_plot_per_section(df_show, title="Media punteggi per sezione")
                         if radar_sec_buf:
                             radar_sec_img = Image.open(radar_sec_buf)
-                            st.image(radar_sec_img, caption="📌 Radar – Media per sezione")
+                            st.image(radar_sec_img, caption="Radar – Media per sezione")
                 except Exception as e:
                     st.warning(f"■ Radar sezione non disponibile ({e})")
         else:
@@ -643,28 +668,27 @@ def ebm_from_df(df, friendly=False):
         "Weight Bearing Lunge Test": {
             "ref": "Bennell KL et al., 1998; Konor MM et al., 2012",
             "low_score": "Mobilità della caviglia ridotta: rischio di compensi, sollevamento del tallone e stress femoro-rotuleo.",
-            "friendly": "Il test della caviglia è ridotto: potresti avere difficoltà nello squat profondo."
+            "friendly": "Il test della caviglia è ridotto: potresti avere difficoltà nello squat profondo.",
         },
         "Passive Hip Flexion": {
             "ref": "Reese NB, Bandy WD, 2020",
             "low_score": "Flessibilità anca ridotta: può limitare la profondità dello squat.",
-            "friendly": "La flessione dell’anca è un po’ limitata."
+            "friendly": "La flessione dell’anca è un po’ limitata.",
         },
         "Shoulder ER (adducted, low-bar)": {
             "ref": "Wilk KE et al., 2015",
             "low_score": "Rotazione esterna spalla ridotta: può influenzare la posizione low-bar.",
-            "friendly": "La spalla ruota un po’ meno del normale."
+            "friendly": "La spalla ruota un po’ meno del normale.",
         },
         "Wall Angel Test": {
             "ref": "Kibler WB et al., 2013; Ludewig PM et al., 2009",
-            "low_score": "Deficit nel controllo scapolare e nella mobilità toracica: possibili compensi nella postura o nei movimenti overhead."
+            "low_score": "Deficit nel controllo scapolare e nella mobilità toracica: possibili compensi nella postura o nei movimenti overhead.",
         },
-
         "ULNT1A (Median nerve)": {
             "ref": "Nee RJ et al., 2012",
             "low_score": "Test positivo: possibile irritazione o tensione del nervo mediano.",
-            "friendly": "Test sul nervo del braccio positivo: potresti sentire tensione o fastidio."
-        }
+            "friendly": "Test sul nervo del braccio positivo: potresti sentire tensione o fastidio.",
+        },
     }
 
     problematic_tests = {}
@@ -708,17 +732,7 @@ def ebm_from_df(df, friendly=False):
 # -----------------------------
 # Esportazione PDF
 # -----------------------------
-def pdf_report_no_bodychart(
-    logo_bytes,
-    athlete,
-    evaluator,
-    date_str,
-    section,
-    df,
-    ebm_notes,
-    radar_buf=None,
-    asym_buf=None
-):
+def pdf_report_no_bodychart(logo_bytes, athlete, evaluator, date_str, section, df, ebm_notes, radar_buf=None, asym_buf=None):
     import io
     from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image as RLImage, Table, TableStyle
     from reportlab.lib.pagesizes import A4
@@ -728,9 +742,7 @@ def pdf_report_no_bodychart(
 
     buf = io.BytesIO()
     doc = SimpleDocTemplate(
-        buf, pagesize=A4,
-        leftMargin=1.4 * cm, rightMargin=1.4 * cm,
-        topMargin=1.2 * cm, bottomMargin=1.2 * cm
+        buf, pagesize=A4, leftMargin=1.4 * cm, rightMargin=1.4 * cm, topMargin=1.2 * cm, bottomMargin=1.2 * cm
     )
     styles = getSampleStyleSheet()
     normal = styles["Normal"]
@@ -740,18 +752,22 @@ def pdf_report_no_bodychart(
     # logo
     story.append(RLImage(io.BytesIO(logo_bytes), width=16 * cm, height=4 * cm))
     story.append(Spacer(1, 6))
-    story.append(Paragraph(f"<b>Report Valutazione – {section}</b>", title))
+    story.append(Paragraph(f"<b>Report Valutazione – {sanitize_text_for_plot(section)}</b>", title))
     story.append(Spacer(1, 6))
 
     info_data = [["Atleta", athlete, "Valutatore", evaluator, "Data", date_str]]
     info_table = Table(info_data, colWidths=[2.2 * cm, 5.0 * cm, 2.8 * cm, 5.0 * cm, 1.8 * cm, 2.0 * cm])
-    info_table.setStyle(TableStyle([
-        ("BOX", (0, 0), (-1, -1), 0.6, colors.lightgrey),
-        ("INNERGRID", (0, 0), (-1, -1), 0.3, colors.lightgrey),
-        ("BACKGROUND", (0, 0), (-1, -1), colors.whitesmoke),
-        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-        ("FONTNAME", (0, 0), (-1, -1), "Helvetica"),
-    ]))
+    info_table.setStyle(
+        TableStyle(
+            [
+                ("BOX", (0, 0), (-1, -1), 0.6, colors.lightgrey),
+                ("INNERGRID", (0, 0), (-1, -1), 0.3, colors.lightgrey),
+                ("BACKGROUND", (0, 0), (-1, -1), colors.whitesmoke),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                ("FONTNAME", (0, 0), (-1, -1), "Helvetica"),
+            ]
+        )
+    )
     story.append(info_table)
     story.append(Spacer(1, 8))
 
@@ -768,16 +784,20 @@ def pdf_report_no_bodychart(
     # Tabella
     table = Table([disp.columns.tolist()] + disp.values.tolist(), repeatRows=1,
                   colWidths=[2.2 * cm, 6.5 * cm, 1.2 * cm, 1.2 * cm, 1.6 * cm, 1.6 * cm, 1.4 * cm, 1.4 * cm, 1.2 * cm, 1.6 * cm, 1.6 * cm])
-    table.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1E6CF4")),
-        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-        ("ALIGN", (0, 0), (-1, 0), "CENTER"),
-        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-        ("FONTNAME", (0, 1), (-1, -1), "Helvetica"),
-        ("FONTSIZE", (0, 0), (-1, -1), 8),
-        ("GRID", (0, 0), (-1, -1), 0.25, colors.lightgrey),
-        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-    ]))
+    table.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1E6CF4")),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+                ("ALIGN", (0, 0), (-1, 0), "CENTER"),
+                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                ("FONTNAME", (0, 1), (-1, -1), "Helvetica"),
+                ("FONTSIZE", (0, 0), (-1, -1), 8),
+                ("GRID", (0, 0), (-1, -1), 0.25, colors.lightgrey),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ]
+        )
+    )
     story.append(table)
     story.append(Spacer(1, 10))
 
@@ -809,12 +829,11 @@ def pdf_report_no_bodychart(
             if bool(row.get("Dolore", False)) and not (row.get("DoloreDx") or row.get("DoloreSx")):
                 pain_regions.append(f"{regione}")
         except Exception:
-            # fallback generico
             if bool(row.get("Dolore", False)):
                 pain_regions.append(f"{regione}")
 
     pain_regions = list(dict.fromkeys(pain_regions))
-    story.append(Paragraph("<b>🩹 Regioni dolorose riscontrate durante il test:</b>", normal))
+    story.append(Paragraph("<b>Regioni dolorose riscontrate durante il test:</b>", normal))
     if pain_regions:
         for reg in pain_regions:
             story.append(Paragraph(f"• {reg.capitalize()}", normal))
@@ -823,12 +842,13 @@ def pdf_report_no_bodychart(
     story.append(Spacer(1, 12))
 
     # Commento EBM
-    story.append(Paragraph("<b>🧠 Commento clinico (EBM)</b>", normal))
+    story.append(Paragraph("<b>Commento clinico (EBM)</b>", normal))
     story.append(Spacer(1, 4))
     if ebm_notes:
         for note in ebm_notes:
             if isinstance(note, str):
-                story.append(Paragraph(f"• {note}", normal))
+                # sanitizza in caso contenga emoji
+                story.append(Paragraph(f"• {sanitize_text_for_plot(note)}", normal))
                 story.append(Spacer(1, 4))
     else:
         story.append(Paragraph("Nessun commento disponibile.", normal))
@@ -838,16 +858,7 @@ def pdf_report_no_bodychart(
     return buf
 
 
-def pdf_report_client_friendly(
-    logo_bytes,
-    athlete,
-    evaluator,
-    date_str,
-    section,
-    df,
-    radar_buf=None,
-    asym_buf=None
-):
+def pdf_report_client_friendly(logo_bytes, athlete, evaluator, date_str, section, df, radar_buf=None, asym_buf=None):
     from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image as RLImage, Table, TableStyle
     from reportlab.lib.pagesizes import A4
     from reportlab.lib.units import cm
@@ -855,9 +866,7 @@ def pdf_report_client_friendly(
 
     buf = io.BytesIO()
     doc = SimpleDocTemplate(
-        buf, pagesize=A4,
-        leftMargin=1.4 * cm, rightMargin=1.4 * cm,
-        topMargin=1.2 * cm, bottomMargin=1.2 * cm
+        buf, pagesize=A4, leftMargin=1.4 * cm, rightMargin=1.4 * cm, topMargin=1.2 * cm, bottomMargin=1.2 * cm
     )
 
     styles = getSampleStyleSheet()
@@ -867,12 +876,12 @@ def pdf_report_client_friendly(
     story = []
     story.append(RLImage(io.BytesIO(logo_bytes), width=16 * cm, height=4 * cm))
     story.append(Spacer(1, 6))
-    story.append(Paragraph(f"<b>Valutazione Funzionale – {section}</b>", title))
+    story.append(Paragraph(f"<b>Valutazione Funzionale – {sanitize_text_for_plot(section)}</b>", title))
     story.append(Spacer(1, 6))
 
-    story.append(Paragraph(f"     <b>Atleta:</b> {athlete}", normal))
-    story.append(Paragraph(f"🧑‍⚕️ <b>Valutatore:</b> {evaluator}", normal))
-    story.append(Paragraph(f"📅 <b>Data:</b> {date_str}", normal))
+    story.append(Paragraph(f"Atleta: {athlete}", normal))
+    story.append(Paragraph(f"Valutatore: {evaluator}", normal))
+    story.append(Paragraph(f"Data: {date_str}", normal))
     story.append(Spacer(1, 12))
 
     # Radar
@@ -890,8 +899,8 @@ def pdf_report_client_friendly(
         story.append(Spacer(1, 12))
 
     # Spiegazione punteggi
-    story.append(Paragraph("📌 Ogni test è valutato su un punteggio da 0 a 10.", normal))
-    story.append(Paragraph("🔴 0–3: da migliorare • 🟡 4–6: accettabile • 🟢 7–10: ottimale", normal))
+    story.append(Paragraph("Ogni test è valutato su un punteggio da 0 a 10.", normal))
+    story.append(Paragraph("0–3: da migliorare • 4–6: accettabile • 7–10: ottimale", normal))
     story.append(Spacer(1, 10))
 
     # Tabella semplificata
@@ -902,15 +911,19 @@ def pdf_report_client_friendly(
         simple_rows.append([test_name, f"{score}/10"])
 
     t = Table([["Test", "Punteggio"]] + simple_rows, repeatRows=1, colWidths=[10 * cm, 4 * cm])
-    t.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1E6CF4")),
-        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-        ("ALIGN", (1, 1), (-1, -1), "CENTER"),
-        ("GRID", (0, 0), (-1, -1), 0.25, colors.lightgrey),
-        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-        ("FONTNAME", (0, 1), (-1, -1), "Helvetica"),
-        ("FONTSIZE", (0, 0), (-1, -1), 9),
-    ]))
+    t.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1E6CF4")),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+                ("ALIGN", (1, 1), (-1, -1), "CENTER"),
+                ("GRID", (0, 0), (-1, -1), 0.25, colors.lightgrey),
+                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                ("FONTNAME", (0, 1), (-1, -1), "Helvetica"),
+                ("FONTSIZE", (0, 0), (-1, -1), 9),
+            ]
+        )
+    )
     story.append(t)
 
     doc.build(story)
@@ -921,7 +934,7 @@ def pdf_report_client_friendly(
 # -----------------------------
 # Calcola ebm_notes PRIMA di chiamare il PDF clinico
 # -----------------------------
-ebm_notes = ebm_from_df(df_show, friendly=False)
+ebm_notes = ebm_from_df(build_df(st.session_state["section"]), friendly=False)
 
 
 # -----------------------------
@@ -930,7 +943,7 @@ ebm_notes = ebm_from_df(df_show, friendly=False)
 colpdf1, colpdf2 = st.columns(2)
 
 with colpdf1:
-    if st.button("📄 Esporta PDF Clinico", use_container_width=True):
+    if st.button("Esporta PDF Clinico", use_container_width=True):
         try:
             pdf = pdf_report_no_bodychart(
                 logo_bytes=LOGO,
@@ -941,20 +954,20 @@ with colpdf1:
                 df=df_show,
                 ebm_notes=ebm_notes,
                 radar_buf=radar_buf,
-                asym_buf=asym_buf
+                asym_buf=asym_buf,
             )
             st.download_button(
-                "⬇️ Scarica PDF Clinico",
+                "Scarica PDF Clinico",
                 data=pdf.getvalue(),
                 file_name=f"Fisiomove_Report_Clinico_{st.session_state['date']}.pdf",
                 mime="application/pdf",
-                use_container_width=True
+                use_container_width=True,
             )
         except Exception as e:
             st.error(f"Errore durante generazione PDF clinico: {e}")
 
 with colpdf2:
-    if st.button("🧾 Esporta PDF Client Friendly", use_container_width=True):
+    if st.button("Esporta PDF Client Friendly", use_container_width=True):
         try:
             pdf_client = pdf_report_client_friendly(
                 logo_bytes=LOGO,
@@ -964,14 +977,14 @@ with colpdf2:
                 section=st.session_state["section"],
                 df=df_show,
                 radar_buf=radar_buf,
-                asym_buf=asym_buf
+                asym_buf=asym_buf,
             )
             st.download_button(
-                "⬇️ Scarica PDF Client Friendly",
+                "Scarica PDF Client Friendly",
                 data=pdf_client.getvalue(),
                 file_name=f"Fisiomove_Report_Facile_{st.session_state['date']}.pdf",
                 mime="application/pdf",
-                use_container_width=True
+                use_container_width=True,
             )
         except Exception as e:
             st.error(f"Errore durante generazione PDF semplificato: {e}")
