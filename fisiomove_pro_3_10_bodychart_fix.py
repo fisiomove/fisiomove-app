@@ -533,13 +533,19 @@ def render_inputs_for_section(section):
         with st.container():
             st.markdown(f"**{name}** — {desc}  \n*Rif:* {ref} {unit}")
             key_safe = name.replace(" ", "_").replace("/", "_").replace("(", "").replace(")", "")
+            # Setto max_val speciale per ULNT1A: massimo deve essere esattamente il rif (90°)
+            if name == "ULNT1A (Median nerve)":
+                max_val = ref if ref > 0 else 10.0
+            else:
+                max_val = ref * 1.5 if ref > 0 else 10.0
+
             if bilat:
                 c1, c2 = st.columns(2)
                 with c1:
                     dx = st.slider(
                         f"{name} — Dx ({unit})",
                         0.0,
-                        ref * 1.5 if ref > 0 else 10.0,
+                        max_val,
                         float(rec.get("Dx", 0.0)),
                         0.1,
                         key=f"{key_safe}_Dx",
@@ -551,7 +557,7 @@ def render_inputs_for_section(section):
                     sx = st.slider(
                         f"{name} — Sx ({unit})",
                         0.0,
-                        ref * 1.5 if ref > 0 else 10.0,
+                        max_val,
                         float(rec.get("Sx", 0.0)),
                         0.1,
                         key=f"{key_safe}_Sx",
@@ -569,7 +575,7 @@ def render_inputs_for_section(section):
                 val = st.slider(
                     f"{name} — Valore ({unit})",
                     0.0,
-                    ref * 1.5 if ref > 0 else 10.0,
+                    max_val,
                     float(rec.get("Val", 0.0)),
                     0.1,
                     key=f"{key_safe}_Val",
