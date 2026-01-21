@@ -1,4 +1,4 @@
-# (ATTENZIONE: salva questo contenuto in streamlit_app.py, sostituendo il file esistente)
+
 import io
 import os
 import random
@@ -65,16 +65,16 @@ TEST_NAME_TRANSLATIONS = {
     "Weight Bearing Lunge Test": "Test dorsiflessione caviglia",
     "Passive Hip Flexion": "Flessione anca passiva",
     "Hip Rotation (flexed 90°)": "Rotazione anca (flessione 90°)",
-    "Wall Angel Test": "Test Wall Angel",
-    "Shoulder ER (adducted, low-bar)": "Rotazione esterna spalla (low bar)",
-    "Shoulder Flexion (supine)": "Flessione spalla supina",
+    "Wall Angel Test": "Wall Angel",
+    "Shoulder ER (adducted, low-bar)": "Rotazione esterna spalla (low-bar)",
+    "Shoulder Flexion (supine)": "Flessione spalla (supina)",
     "External Rotation (90° abd)": "Rotazione esterna a 90° abduzione",
     "Pectoralis Minor Length": "Lunghezza piccolo pettorale",
-    "Thomas Test (modified)": "Test di Thomas modificato",
-    "Active Knee Extension (AKE)": "Estensione attiva ginocchio",
-    "Straight Leg Raise (SLR)": "Sollevamento gamba tesa",
-    "Sorensen Endurance": "Test endurance estensori lombari",
-    "ULNT1A (Median nerve)": "Test neurodinamico mediano (ULNT1A)"
+    "Thomas Test (modified)": "Test di Thomas (modificato)",
+    "Active Knee Extension (AKE)": "Estensione attiva ginocchio (AKE)",
+    "Straight Leg Raise (SLR)": "Straight Leg Raise (SLR)",
+    "Sorensen Endurance": "Test Sorensen (endurance lombare)",
+    "ULNT1A (Median nerve)": "ULNT1A (nervo mediano)",
 }
 
 LOGO_PATHS = ["logo 2600x1000.jpg", "logo.png", "logo.jpg"]
@@ -447,192 +447,123 @@ def plotly_asymmetry(df):
 
 
 # -----------------------------
-# EBM library (text templates + source URLs)
-# Each test entry contains:
-#  - 'title': short title
-#  - 'text': template explanation (will be used if test fails)
-#  - 'refs': list of source strings (URLs or citation texts)
+# EBM library (italian text templates)
+# Each entry contains a 'title' and a 'text' (Italian, polished)
 # -----------------------------
 EBM_LIBRARY = {
     "Weight Bearing Lunge Test": {
-        "title": "Ankle dorsiflexion (WBLT)",
+        "title": "Dorsiflessione caviglia (WBLT)",
         "text": (
-            "Ridotta dorsiflessione in carico: il Weight Bearing Lunge Test (WBLT) è una misura affidabile e funzionale "
-            "per valutare la dorsiflessione sotto carico. Valori ridotti sono associati a compensi durante squat e cammino, "
-            "aumento del rischio di infortuni e limitata performance funzionale. Intervento: mobilizzazione talo-crurale, "
-            "lavoro eccentrico/controllo della caviglia e integrazione nella progressione di squat. "
-            "Evidenza: studi di validazione e review confermano affidabilità, valori normativi e rilevanza clinica [REFS]."
+            "Test: Weight Bearing Lunge Test — Dorsiflessione della caviglia ridotta.\n"
+            "Interpretazione: una limitata dorsiflessione in carico può compromettere la profondità dello squat e indurre compensi a livello del ginocchio e dell'anca; è anche associata a maggiore rischio di problematiche biomeccaniche nella catena cinetica inferiore.\n"
+            "Cosa fare: valutare mobilità talo‑crurale ed eventuali restrizioni muscolari, programmare mobilizzazioni articolari, esercizi di controllo del movimento e integrazione funzionale nello squat. Monitorare progressi con il WBLT."
         ),
-        "refs": [
-            "https://peerj.com/articles/10253.pdf",
-            "https://link.springer.com/article/10.1186/s12891-018-2113-8",
-            "https://www.physio-pedia.com/Knee_to_Wall_Test"
-        ],
     },
     "Passive Hip Flexion": {
-        "title": "Passive hip flexion (ROM)",
+        "title": "Flessione d'anca passiva",
         "text": (
-            "Ridotta flessione passiva d'anca: valori normativi sono circa 110–120°. Limitazioni possono compromettere la profondità "
-            "dello squat e favorire compensi lombo‑pelvici. Intervento: stretching specifico, mobilità articolare e controllo pelvico. "
-            "Evidenza: linee guida cliniche e studi di goniometria supportano la rilevanza funzionale del ROM d'anca [REFS]."
+            "Test: Flessione d'anca passiva ridotta.\n"
+            "Interpretazione: limiti nella flessione passiva possono ridurre la capacità di raggiungere profondità funzionali nello squat e indurre compensi lombo‑pelvici o alterazioni dell'assetto pelvico.\n"
+            "Cosa fare: valutare struttura articolare e tensione muscolare (glutei, ileopsoas), includere mobilità specifica e lavoro sul controllo pelvico durante esercizi di profondità."
         ),
-        "refs": [
-            "https://www.physiotutors.com/wiki/hip-passive-range-of-motion/",
-            "https://link.springer.com/rwe/10.1007/978-1-4614-7321-3_2-2",
-            "https://www.orthopt.org/uploads/content_files/files/Hip%20OA%20Revision%202017.pdf"
-        ],
     },
     "Hip Rotation (flexed 90°)": {
-        "title": "Hip rotation (90° flexion)",
+        "title": "Rotazione anca (flessione 90°)",
         "text": (
-            "Limitata rotazione anca in flessione: la rotazione interna/esterna a 90° è rilevante per movimenti di squat, "
-            "pivot e per la biomeccanica dell'arto inferiore. Asimmetrie o deficit possono indicare rischio di infortuni o "
-            "patologie femoro‑acetabolari; interventi includono mobilità specifica e controllo neuromuscolare [REFS]."
+            "Test: Rotazione anca in flessione 90° ridotta o asimmetrica.\n"
+            "Interpretazione: deficit di rotazione interna/esterna in flessione possono influenzare pivot, squat profondo e aumentare il carico su ginocchio e colonna; possono essere segnali di conflitto femoro‑acetabolare o limitazioni miofasciali.\n"
+            "Cosa fare: approfondire con valutazione clinica, lavorare su mobilità capsulare e controllo neuromuscolare, correggere asimmetrie."
         ),
-        "refs": [
-            "https://www.jstage.jst.go.jp/article/jpts/27/2/27_jpts-2014-454/_pdf",
-            "https://www.mdpi.com/2673-8392/5/4/170"
-        ],
     },
     "Wall Angel Test": {
-        "title": "Wall Angel (scapular control / thoracic mobility)",
+        "title": "Wall Angel — controllo scapolare e mobilità toracica",
         "text": (
-            "Punteggio ridotto al Wall Angel: suggerisce deficit di controllo scapolare e mobilità toracica, potenziali compensi agli overhead "
-            "movimenti e dolore riferito. Intervento: esercizi di estensione toracica, rinforzo dei stabilizzatori scapolari e retraining del pattern motorio. "
-            "Evidenza: ricerche recenti supportano l'utilità clinica del Wall Angel come test funzionale correlato a outcome riabilitativi [REFS]."
+            "Test: Wall Angel con punteggio ridotto.\n"
+            "Interpretazione: suggerisce deficit di controllo scapolare, limitazione di estensione toracica o pattern di movimento compensatorio; può influenzare i movimenti overhead e la postura.\n"
+            "Cosa fare: inserire esercizi di mobilità toracica, rinforzo selettivo dei stabilizzatori scapolari (lower trapezius, serratus anterior) e training del pattern motorio in posizione funzionale."
         ),
-        "refs": [
-            "https://ijspt.scholasticahq.com/article/123512-the-clinical-utility-of-the-seated-wall-angel-as-a-test-with-scoring",
-            "https://www.physitrack.com/exercise-library/how-to-perform-the-wall-angels-exercise"
-        ],
     },
     "Shoulder ER (adducted, low-bar)": {
-        "title": "Shoulder ER (adducted, low-bar)",
+        "title": "Rotazione esterna spalla (adducted, low-bar)",
         "text": (
-            "Ridotta rotazione esterna spalla in adduzione: può impedire una corretta posizione \"low‑bar\" nella sollevamento del bilanciere, "
-            "causando compensi a polso/avambraccio o una sistemazione più alta del bilanciere. Intervento: mobilità capsulare, esercizi di ER progressive, "
-            "control della scapola. Evidenza: guide cliniche e testi di goniometria indicano che deficit di ER hanno impatto funzionale rilevante [REFS]."
+            "Test: Ridotta rotazione esterna in adduzione.\n"
+            "Interpretazione: può impedire una corretta posizione low‑bar nello squat, provocando compensi a carico dei polsi o della colonna toracica e aumentando il rischio di discomfort o sovraccarico articolare.\n"
+            "Cosa fare: lavorare su mobilità capsulare, esercizi attivi di rotazione esterna e posizionamento scapolare; adattare la tecnica di sollevamento fino a recupero funzionale."
         ),
-        "refs": [
-            "https://www.physio-pedia.com/Goniometry:_Shoulder_Internal_%26_External_Rotation",
-            "https://www.orthopaedicsone.com/orthopaedicsone-articles-shoulder-external-rotation-assessment/"
-        ],
     },
     "Shoulder Flexion (supine)": {
-        "title": "Shoulder flexion (supine)",
+        "title": "Flessione spalla (supina)",
         "text": (
-            "Ridotta flessione spalla: limita attività overhead e può indicare deficit attivi o passivi (cuffia, capsula). Interventi: mobilità passiva, "
-            "rinforzo e recupero del pattern scapolo‑omerale. Evidenza: studi di norma e linee guida descrivono l'importanza della misurazione del ROM [REFS]."
+            "Test: Flessione di spalla ridotta.\n"
+            "Interpretazione: può limitare attività overhead e indicare deficit muscolari o restrizioni capsulari.\n"
+            "Cosa fare: valutare differenza tra deficit attivo e passivo, applicare mobilità e rinforzo progressivo, integrare esercizi overhead con controllo scapolare."
         ),
-        "refs": [
-            "https://link.springer.com/article/10.1186/s12891-020-03665-9",
-            "https://www.massgeneral.org/assets/mgh/pdf/orthopaedics/sports-medicine/physical-therapy/functional-movement-assessment-upper-extremity.pdf"
-        ],
     },
     "External Rotation (90° abd)": {
-        "title": "Shoulder ER at 90° abduction",
+        "title": "Rotazione esterna spalla a 90° di abduzione",
         "text": (
-            "Limitazione a ER a 90° di abduzione: importante per overhead e per stabilità dinamica; deficit ha implicazioni per prevenzione infortuni e performance. "
-            "Esercizi specifici di ER e rinforzo scapolare sono raccomandati [REFS]."
+            "Test: Ridotta ER a 90° di abduzione.\n"
+            "Interpretazione: importante per funzioni overhead e per la stabilità dinamica; deficit può predisporre a sovraccarichi e dolore durante attività sollevamento o sport.\n"
+            "Cosa fare: rinforzo selettivo, esercizi di stabilità e progressione verso movimenti specifici di sport/attività."
         ),
-        "refs": [
-            "https://www.mdpi.com/2227-9032/11/14/1977",
-            "https://iaom-us.com/restoring-external-rotation-in-the-shoulder/"
-        ],
     },
     "Pectoralis Minor Length": {
-        "title": "Pectoralis minor length",
+        "title": "Lunghezza piccolo pettorale",
         "text": (
-            "Accorciamento del piccolo pettorale: associato a proiezione scapolare anteriore, diminuita rotazione superiore e posterior tilt ridotto, contribuendo a sindromi da impingement. "
-            "Intervento: stretching mirato del PM, riequilibrio muscolare e rinforzo dei muscoli antagonisti. Evidenza: studi mostrano associazione; utilizzare in combinazione con altri test [REFS]."
+            "Test: piccolo pettorale accorciato.\n"
+            "Interpretazione: l'accorciamento tende a proiettare in avanti la scapola, riducendo la rotazione superiore e la posterior tilt; può contribuire a impingement o disfunzione scapolare.\n"
+            "Cosa fare: stretching mirato del piccolo pettorale, esercizi di riequilibrio scapolare e rinforzo degli antagonisti; valutare in combinazione con altri test scapolari."
         ),
-        "refs": [
-            "https://pdfs.semanticscholar.org/3d47/2b3c59ffda2f7f7e97e7d6388114e4237d11.pdf",
-            "https://uhra.herts.ac.uk/id/eprint/3916/"
-        ],
     },
     "Thomas Test (modified)": {
-        "title": "Modified Thomas Test (hip flexor tightness)",
+        "title": "Test di Thomas (modificato)",
         "text": (
-            "Test di Thomas positivo: indica accorciamento dei flessori d'anca (iliopsoas, retto femorale). Può contribuire a limitazione dell'estensione dell'anca e compensi lombari. "
-            "Intervento: rilascio, mobilità e lavoro di controllo pelvico. Studi recenti segnalano buona affidabilità con protocolli standardizzati [REFS]."
+            "Test: Thomas modificato positivo (flessori di anca tesi).\n"
+            "Interpretazione: accorciamento degli iliopsoas o del retto femorale che limita l'estensione d'anca e può aumentare il compenso lombare.\n"
+            "Cosa fare: stretching mirato, rilascio miofasciale e lavoro sul controllo pelvico e sulla estensione dell'anca."
         ),
-        "refs": [
-            "https://ijspt.scholasticahq.com/article/120899-reliability-of-goniometric-techniques-for-measuring-hip-flexor-length-using-the-modified-thomas-test",
-            "https://www.physio-pedia.com/Thomas_Test"
-        ],
     },
     "Active Knee Extension (AKE)": {
-        "title": "Active Knee Extension (AKE)",
+        "title": "Estensione attiva ginocchio (AKE)",
         "text": (
-            "AKE positivo: ridotta lunghezza degli hamstrings; associato a rischio di infortunio e alterata meccanica lombo‑pelvica. Interventi: stretching funzionale, "
-            "eccentrico e integrazione neuromuscolare. AKE è un test affidabile per hamstring length [REFS]."
+            "Test: AKE indica ridotta lunghezza degli hamstring.\n"
+            "Interpretazione: gli hamstring corti possono modificare la meccanica del bacino e aumentare il rischio di infortuni durante sprint o movimenti esplosivi.\n"
+            "Cosa fare: piano di mobilità e allenamento eccentrico/funzionale specifico per gli hamstring, monitorando simmetrie laterali."
         ),
-        "refs": [
-            "https://www.physiotutors.com/wiki/90-90-straight-leg-raise-test/",
-            "https://www.jstage.jst.go.jp/article/jpts/25/8/25_jpts-2013-059/_pdf"
-        ],
     },
     "Straight Leg Raise (SLR)": {
         "title": "Straight Leg Raise (SLR)",
         "text": (
-            "SLR positivo: attenzione a distinzione tra limitazione muscolare e sensibilità neurodinamica (sciatica/irritazione radicolare). Usare differenziazione strutturale "
-            "(dorsiflessione caviglia, flessione collo) per discriminare. Intervento: se neurodinamico, trattamenti specifici per nervo; se muscolare, lavoro di flessibilità [REFS]."
+            "Test: SLR positivo.\n"
+            "Interpretazione: va fatta distinzione tra limitazione muscolare e sensibilità neurodinamica. Se la manovra riproduce sintomi radicolari o aumenta con dorsiflessione della caviglia o flessione cervicale, è probabile componente neurale; se il dolore resta locale alla parte posteriore della coscia, più probabile componente muscolare.\n"
+            "Cosa fare: applicare manovre di differenziazione strutturale, considerare interventi neurodinamici o di flessibilità a secondo dell'origine del sintomo."
         ),
-        "refs": [
-            "https://www.physio-pedia.com/Straight_Leg_Raise_Test",
-            "https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0298257"
-        ],
     },
     "Sorensen Endurance": {
-        "title": "Sorensen (lumbar endurance)",
+        "title": "Test di Sorensen (endurance lombare)",
         "text": (
-            "Basso tempo al test di Sorensen: deficit di endurance estensori lombari associato a rischio e presenza di lombalgia. Interventi: progessioni di endurance lombare e integrazione "
-            "di controllo motorio. Interpretare con cautela e considerare fattori psico‑sociali e motivazionali [REFS]."
+            "Test: bassa resistenza al test di Sorensen.\n"
+            "Interpretazione: può indicare deficit di endurance degli estensori lombari e essere associato a rischio o persistenza di lombalgia; tuttavia il dato va interpretato insieme a fattori motivazionali e capacità condizionali generali.\n"
+            "Cosa fare: inserire progressioni di endurance e controllo motorio lombare, valutare fattori comportamentali e di condizionamento generale."
         ),
-        "refs": [
-            "https://www.sralab.org/rehabilitation-measures/biering-sorensen-test",
-            "https://www.sciencedirect.com/science/article/pii/S1297319X04001708"
-        ],
     },
     "ULNT1A (Median nerve)": {
-        "title": "ULNT1A (median nerve)",
+        "title": "ULNT1A (nervo mediano)",
         "text": (
-            "ULNT1A: test neurodinamico del nervo mediano. Valori prossimi a 0° (o riproduzione sintomatica precoce) indicano meccanica neurale alterata o irritazione; miglioramenti nella mobilità neurale "
-            "possono essere ottenuti con tecniche neurali e mobilità perimetrica. Interpretare con structural differentiation. [REFS]"
+            "Test: ULNT1A positivo o mobilità neurale ridotta (valori molto bassi vicino a 0°).\n"
+            "Interpretazione: suggerisce aumentata meccanica o irritabilità del nervo mediano. È fondamentale usare la differenziazione strutturale per confermare l'origine neurale dei sintomi.\n"
+            "Cosa fare: tecniche di neurodinamica, mobilità neurale e integrazione con trattamenti per la causa primaria (ad es. compressione periferica o cervicale)."
         ),
-        "refs": [
-            "https://www.physiotutors.com/research/upper-limb-neurodynamic-test-1-sequencing/",
-            "https://www.mdpi.com/2075-4418/14/24/2881"
-        ],
     },
 }
 
 
 # -----------------------------
-# Costruzione commenti EBM + bibliografia
-# - Restituisce (notes_list, bibliography_list)
-# - notes_list: list of strings (narrative paragraphs with inline [n] markers)
-# - bibliography_list: list of citation strings (numbered later)
+# Costruzione commenti EBM (italiano chiaro, un commento per test con titolo)
+# - restituisce lista di paragrafi già chiari a quale test si riferiscono
 # -----------------------------
 def ebm_from_df(df, friendly=False):
     notes = []
-    biblio_urls = []
-    # map URL -> index in bibliography
-    bib_index = {}
-
-    def add_ref(url):
-        if not url:
-            return None
-        if url in bib_index:
-            return bib_index[url]
-        idx = len(biblio_urls) + 1
-        bib_index[url] = idx
-        biblio_urls.append(url)
-        return idx
-
-    problematic = []
-
     for _, r in df.iterrows():
         test = str(r["Test"])
         score = float(r["Score"]) if not pd.isna(r["Score"]) else 10.0
@@ -643,63 +574,44 @@ def ebm_from_df(df, friendly=False):
         if not entry:
             continue
 
-        para_lines = []
+        title_it = TEST_NAME_TRANSLATIONS.get(test, test)
+        para_parts = []
+
+        # include a clear heading per test
+        heading = f"{title_it}:"
+
+        # decide se il test merita commento approfondito
         issue = False
-
-        # if score low -> detailed paragraph
-        if score < 7:
-            # build paragraph using entry text and attach inline refs
-            refs = entry.get("refs", [])
-            ref_nums = []
-            for u in refs:
-                n = add_ref(u)
-                if n:
-                    ref_nums.append(f"[{n}]")
-            # insert refs into text where placeholder [REFS] appears
-            text = entry["text"].replace("[REFS]", " ".join(ref_nums))
-            para_lines.append(text)
+        if score < 7 or sym < 7 or pain:
             issue = True
 
-        # asymmetry
-        if sym < 7:
-            para_lines.append(
-                f"Asimmetria significativa tra Dx/Sx (SymScore {sym:.1f}/10): suggerisce differenze laterali che possono richiedere priorità di intervento sul lato peggiore."
-            )
-            issue = True
-
-        # pain
-        if pain:
-            para_lines.append("Dolore riportato durante il test: valutare intensità, distribuzione e relazione con il movimento rilevato.")
-            issue = True
-
-        if not issue:
-            para_lines.append(f"Il test '{test}' risulta nella norma (score {score:.1f}/10).")
-
-        notes.append(" ".join(para_lines))
         if issue:
-            problematic.append(test)
+            # use the prepared text (already in italian, polished)
+            text = entry["text"]
+            # ensure the paragraph begins with the test name for clarity
+            paragraph = f"{heading} {text}"
+            para_parts.append(paragraph)
+        else:
+            paragraph = f"{heading} Risultato nella norma (score {score:.1f}/10)."
+            para_parts.append(paragraph)
 
-    # Build bibliography list (human readable)
-    bibliography = []
-    for i, url in enumerate(biblio_urls, start=1):
-        # try to shorten: use URL as citation; user can expand later
-        bibliography.append(f"[{i}] {url}")
+        # join and append
+        notes.append("\n".join(para_parts))
 
-    return notes, bibliography
+    return notes
 
 
 # -----------------------------
-# PDF generation (restyled)
-# - Now accepts ebm_bibliography (list of strings)
+# PDF generation (senza bibliografia finale)
 # -----------------------------
-def pdf_report_no_bodychart(logo_bytes, athlete, evaluator, date_str, section, df, ebm_notes, ebm_bibliography=None, radar_buf=None, asym_buf=None):
+def pdf_report_no_bodychart(logo_bytes, athlete, evaluator, date_str, section, df, ebm_notes, radar_buf=None, asym_buf=None):
     import io
-    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image as RLImage, Table, TableStyle, KeepTogether
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image as RLImage, Table, TableStyle
     from reportlab.lib.pagesizes import A4
     from reportlab.lib.units import cm
     from reportlab.lib import colors
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-    from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_RIGHT
+    from reportlab.lib.enums import TA_LEFT
 
     buf = io.BytesIO()
     doc = SimpleDocTemplate(
@@ -710,7 +622,6 @@ def pdf_report_no_bodychart(logo_bytes, athlete, evaluator, date_str, section, d
     title = styles["Title"]
     small = ParagraphStyle("small", parent=styles["Normal"], fontSize=8, leading=10)
     heading = ParagraphStyle("heading", parent=styles["Heading2"], alignment=TA_LEFT, textColor=colors.HexColor(PRIMARY))
-    centerb = ParagraphStyle("centerb", parent=styles["Heading3"], alignment=TA_CENTER)
 
     story = []
 
@@ -721,9 +632,7 @@ def pdf_report_no_bodychart(logo_bytes, athlete, evaluator, date_str, section, d
     story.append(Spacer(1, 6))
 
     # Info band
-    info_data = [
-        ["Atleta", athlete, "Valutatore", evaluator, "Data", date_str],
-    ]
+    info_data = [["Atleta", athlete, "Valutatore", evaluator, "Data", date_str]]
     info_table = Table(info_data, colWidths=[2.2 * cm, 6.0 * cm, 2.8 * cm, 5.0 * cm, 1.6 * cm, 2.0 * cm])
     info_table.setStyle(
         TableStyle(
@@ -743,9 +652,7 @@ def pdf_report_no_bodychart(logo_bytes, athlete, evaluator, date_str, section, d
     n_dolore = int(df["Dolore"].sum()) if "Dolore" in df.columns else 0
     sym_mean = df["SymScore"].mean() if "SymScore" in df.columns else np.nan
     metrics = Table(
-        [
-            ["Score medio", f"{avg_score:.1f}/10", "Test con dolore", str(n_dolore), "Symmetry medio", f"{sym_mean:.1f}/10" if not pd.isna(sym_mean) else "n/a"]
-        ],
+        [["Score medio", f"{avg_score:.1f}/10", "Test con dolore", str(n_dolore), "Symmetry medio", f"{sym_mean:.1f}/10" if not pd.isna(sym_mean) else "n/a"]],
         colWidths=[3 * cm, 3 * cm, 3 * cm, 2.6 * cm, 3 * cm, 3 * cm],
     )
     metrics.setStyle(
@@ -761,23 +668,15 @@ def pdf_report_no_bodychart(logo_bytes, athlete, evaluator, date_str, section, d
     story.append(metrics)
     story.append(Spacer(1, 12))
 
-    # Results table (styled)
+    # Results table
     disp = df[["Sezione", "Test", "Unità", "Rif", "Valore", "Score", "Dx", "Sx", "Delta", "SymScore", "Dolore"]].copy()
-    # Rimuovi eventuali test non desiderati
     disp = disp[~disp["Test"].str.lower().str.contains("schober", na=False)]
     for col in ["Valore", "Score", "Dx", "Sx", "Delta", "SymScore"]:
         disp[col] = pd.to_numeric(disp[col], errors="coerce").round(2)
 
-    # Color score cell: convert to strings for Table
-    table_data = [disp.columns.tolist()]
-    for _, row in disp.iterrows():
-        row_list = row.tolist()
-        table_data.append(row_list)
-
-    # Column widths
+    table_data = [disp.columns.tolist()] + disp.values.tolist()
     colWidths = [2.2 * cm, 6.0 * cm, 1.2 * cm, 1.2 * cm, 1.6 * cm, 1.6 * cm, 1.4 * cm, 1.4 * cm, 1.2 * cm, 1.6 * cm, 1.6 * cm]
     table = Table(table_data, repeatRows=1, colWidths=colWidths)
-    # style header + grid
     table.setStyle(
         TableStyle(
             [
@@ -790,7 +689,6 @@ def pdf_report_no_bodychart(logo_bytes, athlete, evaluator, date_str, section, d
             ]
         )
     )
-    # add conditional background for Score column (col index 5)
     for i, row in enumerate(table_data[1:], start=1):
         try:
             score = float(row[5]) if row[5] != "" and row[5] is not None else None
@@ -810,19 +708,15 @@ def pdf_report_no_bodychart(logo_bytes, athlete, evaluator, date_str, section, d
     story.append(table)
     story.append(Spacer(1, 12))
 
-    # Charts area
-    charts = []
+    # Charts
     if radar_buf:
-        charts.append(RLImage(io.BytesIO(radar_buf.getvalue()), width=10 * cm, height=10 * cm))
+        story.append(RLImage(io.BytesIO(radar_buf.getvalue()), width=10 * cm, height=10 * cm))
+        story.append(Spacer(1, 8))
     if asym_buf:
-        charts.append(RLImage(io.BytesIO(asym_buf.getvalue()), width=14 * cm, height=6 * cm))
-    # Place charts: radar then asymmetry
-    if charts:
-        for ch in charts:
-            story.append(ch)
-            story.append(Spacer(1, 8))
+        story.append(RLImage(io.BytesIO(asym_buf.getvalue()), width=14 * cm, height=6 * cm))
+        story.append(Spacer(1, 8))
 
-    # Painful regions
+    # Pain regions
     pain_regions = []
     for _, row in df.iterrows():
         regione = str(row.get("Regione", "") or "").strip()
@@ -849,28 +743,18 @@ def pdf_report_no_bodychart(logo_bytes, athlete, evaluator, date_str, section, d
         story.append(Paragraph("Nessuna regione segnalata come dolorosa.", normal))
     story.append(Spacer(1, 12))
 
-    # EBM Comments (narrative)
+    # EBM Comments (italian, each clearly tied to a test)
     story.append(Paragraph("<b>Commento clinico (EBM)</b>", heading))
     story.append(Spacer(1, 6))
     if ebm_notes:
         for para in ebm_notes:
-            # sanitize
-            story.append(Paragraph(sanitize_text_for_plot(para), normal))
-            story.append(Spacer(1, 6))
+            # each para already starts with the test name
+            story.append(Paragraph(sanitize_text_for_plot(para).replace("\n", "<br/>"), normal))
+            story.append(Spacer(1, 8))
     else:
         story.append(Paragraph("Nessun commento disponibile.", normal))
 
-    story.append(Spacer(1, 14))
-
-    # Bibliography final
-    if ebm_bibliography:
-        story.append(Paragraph("<b>Bibliografia</b>", heading))
-        story.append(Spacer(1, 6))
-        for ref in ebm_bibliography:
-            story.append(Paragraph(sanitize_text_for_plot(ref), small))
-            story.append(Spacer(1, 4))
-
-    # Footer with signature
+    # Footer
     story.append(Spacer(1, 12))
     story.append(Paragraph(f"Valutatore: {evaluator}", small))
     story.append(Paragraph("Firma: ______________________", small))
@@ -1123,9 +1007,9 @@ except Exception:
 
 
 # -----------------------------
-# EBM notes + bibliography
+# EBM notes (italian, clear per test)
 # -----------------------------
-ebm_notes, ebm_bibliography = ebm_from_df(df_show, friendly=False)
+ebm_notes = ebm_from_df(df_show, friendly=False)
 
 
 # -----------------------------
@@ -1143,7 +1027,6 @@ with colpdf1:
                 section=st.session_state["section"],
                 df=df_show,
                 ebm_notes=ebm_notes,
-                ebm_bibliography=ebm_bibliography,
                 radar_buf=radar_buf,
                 asym_buf=asym_buf,
             )
