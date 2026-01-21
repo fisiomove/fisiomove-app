@@ -2,13 +2,17 @@ import io
 import os
 import random
 import re
+import hashlib
 from datetime import datetime
 
 import streamlit as st
 import pandas as pd
 import numpy as np
 from PIL import Image, ImageDraw
+import matplotlib
+matplotlib.use("Agg")  # backend headless-safe
 import matplotlib.pyplot as plt
+import plotly.express as px
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import cm
 from reportlab.lib import colors
@@ -23,15 +27,15 @@ st.set_page_config(page_title="Fisiomove MobilityPro v. 1.0", layout="centered")
 # -----------------------------
 emoji_pattern = re.compile(
     "["
-    u"\U0001F300-\U0001F5FF"  # simboli & icone
-    u"\U0001F600-\U0001F64F"  # emoticon
-    u"\U0001F680-\U0001F6FF"  # trasporti & mappe
+    u"\U0001F300-\U0001F5FF"
+    u"\U0001F600-\U0001F64F"
+    u"\U0001F680-\U0001F6FF"
     u"\U0001F700-\U0001F77F"
     u"\U0001F780-\U0001F7FF"
     u"\U0001F800-\U0001F8FF"
     u"\U0001F900-\U0001F9FF"
     u"\U0001FA00-\U0001FA6F"
-    u"\u2600-\u26FF"          # simboli varie
+    u"\u2600-\u26FF"
     "]+",
     flags=re.UNICODE,
 )
@@ -43,11 +47,20 @@ def sanitize_text_for_plot(s):
     return emoji_pattern.sub("", s)
 
 
+def short_key(s: str) -> str:
+    # genera key breve e stabile per Streamlit
+    h = hashlib.sha1(s.encode("utf-8")).hexdigest()[:10]
+    return f"t_{h}"
+
+
 # -----------------------------
 # Constants & Assets
 # -----------------------------
-APP_TITLE = "Fisiomove MobilityPro v. 1.0"
+APP_TITLE = "Fisiomove MobilityPro"
+SUBTITLE = "Valutazione Funzionale — versione 1.0"
 PRIMARY = "#1E6CF4"
+ACCENT = "#10A37F"
+
 TEST_NAME_TRANSLATIONS = {
     "Weight Bearing Lunge Test": "Test dorsiflessione caviglia",
     "Passive Hip Flexion": "Flessione anca passiva",
@@ -61,7 +74,7 @@ TEST_NAME_TRANSLATIONS = {
     "Active Knee Extension (AKE)": "Estensione attiva ginocchio",
     "Straight Leg Raise (SLR)": "Sollevamento gamba tesa",
     "Sorensen Endurance": "Test endurance estensori lombari",
-    "ULNT1A (Median nerve)": "Test neurodinamico mediano (ULNT1A)"
+    "ULNT1A (Median nerve)": "Test neurodinamico mediano (ULNT1A)",
 }
 
 LOGO_PATHS = ["logo 2600x1000.jpg", "logo.png", "logo.jpg"]
@@ -73,7 +86,6 @@ def load_logo_bytes():
         if os.path.exists(p):
             with open(p, "rb") as f:
                 return f.read()
-    # Se il file non esiste, crea un'immagine di fallback
     img = Image.new("RGB", (1000, 260), (30, 108, 244))
     d = ImageDraw.Draw(img)
     d.text((30, 100), "Fisiomove", fill=(255, 255, 255))
@@ -89,8 +101,6 @@ def load_bodychart_image():
                 return Image.open(p).convert("RGBA")
             except Exception:
                 pass
-
-    # Fallback se l'immagine non esiste
     img = Image.new("RGBA", (1200, 800), (245, 245, 245, 255))
     d = ImageDraw.Draw(img)
     d.text((20, 20), "Body chart non disponibile", fill=(10, 10, 10))
@@ -127,7 +137,7 @@ def ability_linear(val, ref):
     try:
         if ref <= 0:
             return 0.0
-        if ref == 3.0:  # Caso specifico: test a punteggio soggettivo 0–3 (Wall Angel Test)
+        if ref == 3.0:
             return float(val) / 3.0 * 10.0
         score = (float(val) / float(ref)) * 10.0
         return max(0.0, min(10.0, score))
@@ -184,9 +194,7 @@ TESTS = {
 # Seed valori di default
 # -----------------------------
 def seed_defaults():
-    # se già presenti, non sovrascrivere (ma assicurati che ULNT1A esista)
     if st.session_state["vals"]:
-        # assicuriamoci che ULNT1A abbia valori coerenti se presente ma vuota
         if "ULNT1A (Median nerve)" in st.session_state["vals"]:
             rec = st.session_state["vals"]["ULNT1A (Median nerve)"]
             if rec.get("bilat", False):
@@ -199,7 +207,6 @@ def seed_defaults():
     for sec, items in TESTS.items():
         for (name, unit, ref, bilat, region, desc) in items:
             if name not in st.session_state["vals"]:
-                # Specifica per ULNT1A: default 0°
                 if name == "ULNT1A (Median nerve)":
                     if bilat:
                         st.session_state["vals"][name] = {
@@ -256,7 +263,7 @@ seed_defaults()
 
 
 # -----------------------------
-# Costruzione DataFrame (con normalizzazione e colonne dolore Dx/Sx)
+# Costruzione DataFrame (unico per Valutazione Generale, senza duplicati)
 # -----------------------------
 def build_df(section):
     rows = []
@@ -265,7 +272,6 @@ def build_df(section):
         if section != "Valutazione Generale" and sec != section:
             continue
         for (name, unit, ref, bilat, region, desc) in items:
-            # Se siamo in Valutazione Generale, vogliamo ogni test UNA SOLA VOLTA
             if section == "Valutazione Generale":
                 if name in seen_tests:
                     continue
@@ -329,16 +335,15 @@ def build_df(section):
             "DoloreSx",
         ],
     )
-    # Normalizza tipi numerici
     for col in ["Score", "Dx", "Sx", "Delta", "SymScore"]:
         df[col] = pd.to_numeric(df[col], errors="coerce")
     return df
 
 
 # -----------------------------
-# Radar plot (score per test)
+# Plots: Matplotlib (per PDF) kept; UI uses Plotly for nicer visuals
 # -----------------------------
-def radar_plot(df, title="Punteggi (0–10)"):
+def radar_plot_matplotlib(df, title="Punteggi (0–10)"):
     import numpy as np
 
     labels = df["Test"].tolist()
@@ -356,8 +361,8 @@ def radar_plot(df, title="Punteggi (0–10)"):
     ax.set_theta_offset(np.pi / 2)
     ax.set_theta_direction(-1)
 
-    ax.plot(angles, values, linewidth=2, linestyle="solid", color="#1E6CF4")
-    ax.fill(angles, values, alpha=0.25, color="#1E6CF4")
+    ax.plot(angles, values, linewidth=2, linestyle="solid", color=PRIMARY)
+    ax.fill(angles, values, alpha=0.25, color=PRIMARY)
 
     ax.set_yticks([2, 4, 6, 8, 10])
     ax.set_ylim(0, 10)
@@ -373,50 +378,8 @@ def radar_plot(df, title="Punteggi (0–10)"):
     return buf
 
 
-# -----------------------------
-# Radar plot per sezione (media score)
-# -----------------------------
-def radar_plot_per_section(df, title="Media punteggi per sezione"):
-    import numpy as np
-
-    section_means = df.groupby("Sezione")["Score"].mean().dropna()
-    labels = section_means.index.tolist()
-    values = section_means.values.tolist()
-
-    if len(labels) < 3:
-        return None
-
-    values += values[:1]
-    angles = np.linspace(0, 2 * np.pi, len(labels), endpoint=False).tolist()
-    angles += angles[:1]
-
-    fig, ax = plt.subplots(figsize=(6, 6), subplot_kw=dict(polar=True))
-    ax.set_theta_offset(np.pi / 2)
-    ax.set_theta_direction(-1)
-
-    ax.plot(angles, values, color="#10A37F", linewidth=2)
-    ax.fill(angles, values, color="#10A37F", alpha=0.25)
-
-    ax.set_yticks([2, 4, 6, 8, 10])
-    ax.set_ylim(0, 10)
-    ax.set_xticks(angles[:-1])
-    ax.set_xticklabels(labels, fontsize=10)
-    ax.set_title(sanitize_text_for_plot(title), fontsize=14, y=1.1)
-
-    buf = io.BytesIO()
-    plt.tight_layout()
-    plt.savefig(buf, format="png")
-    plt.close(fig)
-    buf.seek(0)
-    return buf
-
-
-# -----------------------------
-# Asymmetry bar plot (SymScore)
-# -----------------------------
-def asymmetry_bar_plot(df, title="SymScore – Simmetria Dx/Sx"):
+def asymmetry_plot_matplotlib(df, title="SymScore – Simmetria Dx/Sx"):
     df_bilat = df[df["SymScore"].notnull()].copy()
-
     try:
         df_bilat["SymScore"] = pd.to_numeric(df_bilat["SymScore"], errors="coerce")
         df_bilat = df_bilat.dropna(subset=["SymScore"])
@@ -439,9 +402,8 @@ def asymmetry_bar_plot(df, title="SymScore – Simmetria Dx/Sx"):
         else:
             colors_map.append("#DC2626")
 
-    fig, ax = plt.subplots(figsize=(8, 4))
+    fig, ax = plt.subplots(figsize=(10, 4))
     bars = ax.barh(labels, scores, color=colors_map)
-
     ax.set_xlabel("SymScore (0–10)")
     ax.set_title(sanitize_text_for_plot(title))
     ax.set_xlim(0, 10)
@@ -461,212 +423,34 @@ def asymmetry_bar_plot(df, title="SymScore – Simmetria Dx/Sx"):
 
 
 # -----------------------------
-# Titolo app
+# UI Plotly (interactive, prettier)
 # -----------------------------
-st.markdown(f"<h2 style='color:{PRIMARY};margin-bottom:0'>{APP_TITLE}</h2>", unsafe_allow_html=True)
+@st.cache_data
+def plotly_radar(df):
+    df_r = df[df["Score"].notnull()].copy()
+    if len(df_r) < 3:
+        return None
+    fig = px.line_polar(df_r, r="Score", theta="Test", line_close=True, template="plotly_white",
+                        color_discrete_sequence=[PRIMARY])
+    fig.update_traces(fill="toself", marker=dict(size=6))
+    fig.update_layout(margin=dict(l=20, r=20, t=30, b=20), polar=dict(radialaxis=dict(range=[0, 10])))
+    return fig
 
 
-# -----------------------------
-# Sidebar – dati atleta e sezione
-# -----------------------------
-ALL_SECTIONS = ["Valutazione Generale"]  # menu ridotto come richiesto
-
-with st.sidebar:
-    st.markdown("### Dati atleta")
-    st.session_state["athlete"] = st.text_input("Atleta", st.session_state["athlete"])
-    st.session_state["evaluator"] = st.text_input("Valutatore", st.session_state["evaluator"])
-    st.session_state["date"] = st.date_input("Data", datetime.strptime(st.session_state["date"], "%Y-%m-%d")).strftime(
-        "%Y-%m-%d"
-    )
-
-    st.markdown("---")
-    st.session_state["section"] = st.selectbox("Sezione", ALL_SECTIONS, index=0)
-
-    colb1, colb2 = st.columns(2)
-    with colb1:
-        if st.button("Reset valori", use_container_width=True):
-            st.session_state["vals"].clear()
-            seed_defaults()
-            st.experimental_rerun()
-    with colb2:
-        if st.button("Randomizza", use_container_width=True):
-            for name, rec in st.session_state["vals"].items():
-                # Non randomizzare ULNT1A: lasciarlo a 0 per default clinico
-                if name == "ULNT1A (Median nerve)":
-                    # mantieni 0
-                    continue
-                ref = rec.get("ref", 10.0)
-                if rec.get("bilat", False):
-                    rec["Dx"] = max(0.0, ref * random.uniform(0.5, 1.2))
-                    rec["Sx"] = max(0.0, ref * random.uniform(0.5, 1.2))
-                    rec["DoloreDx"] = random.random() < 0.15
-                    rec["DoloreSx"] = random.random() < 0.15
-                else:
-                    rec["Val"] = max(0.0, ref * random.uniform(0.5, 1.2))
-                    rec["Dolore"] = random.random() < 0.15
-            st.success("Valori random impostati.")
+@st.cache_data
+def plotly_asymmetry(df):
+    df_bilat = df[df["SymScore"].notnull()].copy()
+    if df_bilat.empty:
+        return None
+    df_bilat["SymScore"] = pd.to_numeric(df_bilat["SymScore"], errors="coerce")
+    fig = px.bar(df_bilat, x="SymScore", y="Test", orientation="h", template="plotly_white",
+                 color="SymScore", color_continuous_scale=["#DC2626", "#F59E0B", "#16A34A"], range_x=[0, 10])
+    fig.update_layout(margin=dict(l=20, r=20, t=30, b=20))
+    return fig
 
 
 # -----------------------------
-# Rendering input dinamico (Valutazione Generale: un test unico)
-# -----------------------------
-def render_inputs_for_section(section):
-    items = []
-    if section == "Valutazione Generale":
-        # raccogli tutti i test ma una sola volta (unique by name), mantieni prima sezione d'origine
-        unique = {}
-        for s, its in TESTS.items():
-            for item in its:
-                name = item[0]
-                if name not in unique:
-                    unique[name] = (s, *item)
-        items = list(unique.values())
-    else:
-        for item in TESTS.get(section, []):
-            items.append((section, *item))
-
-    for sec, name, unit, ref, bilat, region, desc in items:
-        rec = st.session_state["vals"].get(name)
-        if not rec:
-            continue
-
-        with st.container():
-            st.markdown(f"**{name}** — {desc}  \n*Rif:* {ref} {unit}")
-            key_safe = name.replace(" ", "_").replace("/", "_").replace("(", "").replace(")", "")
-            # Setto max_val speciale per ULNT1A: massimo deve essere esattamente il rif (90°)
-            if name == "ULNT1A (Median nerve)":
-                max_val = ref if ref > 0 else 10.0
-            else:
-                max_val = ref * 1.5 if ref > 0 else 10.0
-
-            if bilat:
-                c1, c2 = st.columns(2)
-                with c1:
-                    dx = st.slider(
-                        f"{name} — Dx ({unit})",
-                        0.0,
-                        max_val,
-                        float(rec.get("Dx", 0.0)),
-                        0.1,
-                        key=f"{key_safe}_Dx",
-                    )
-                    pdx = st.checkbox(
-                        "Dolore Dx", value=bool(rec.get("DoloreDx", False)), key=f"{key_safe}_pDx"
-                    )
-                with c2:
-                    sx = st.slider(
-                        f"{name} — Sx ({unit})",
-                        0.0,
-                        max_val,
-                        float(rec.get("Sx", 0.0)),
-                        0.1,
-                        key=f"{key_safe}_Sx",
-                    )
-                    psx = st.checkbox(
-                        "Dolore Sx", value=bool(rec.get("DoloreSx", False)), key=f"{key_safe}_pSx"
-                    )
-
-                rec.update({"Dx": dx, "Sx": sx, "DoloreDx": pdx, "DoloreSx": psx})
-                sc = ability_linear((dx + sx) / 2.0, ref)
-                sym = symmetry_score(dx, sx, unit)
-                st.caption(f"Score: **{sc:.1f}/10** — Δ {abs(dx - sx):.1f} {unit} — Sym: **{sym:.1f}/10")
-
-            else:
-                val = st.slider(
-                    f"{name} — Valore ({unit})",
-                    0.0,
-                    max_val,
-                    float(rec.get("Val", 0.0)),
-                    0.1,
-                    key=f"{key_safe}_Val",
-                )
-                p = st.checkbox("Dolore", value=bool(rec.get("Dolore", False)), key=f"{key_safe}_p")
-                rec.update({"Val": val, "Dolore": p})
-                sc = ability_linear(val, ref)
-                st.caption(f"Score: **{sc:.1f}/10**")
-
-
-# Esegui rendering
-render_inputs_for_section(st.session_state["section"])
-
-
-# -----------------------------
-# Visualizzazione risultati
-# -----------------------------
-df_show = build_df(st.session_state["section"])
-st.markdown("#### Tabella risultati")
-st.dataframe(df_show.round(2), use_container_width=True)
-
-
-# -----------------------------
-# Radar plot
-# -----------------------------
-radar_buf = None
-try:
-    if len(df_show) > 0:
-        df_radar = df_show[df_show["Score"].notnull()].copy()
-        if len(df_radar) >= 3:
-            radar_buf = radar_plot(df_radar, title=f"{st.session_state['section']} - Punteggi (0-10)")
-            radar_img = Image.open(radar_buf)
-            st.image(radar_img)
-            st.caption("Radar – Punteggi (0–10)")
-        else:
-            st.info("Radar non disponibile: servono almeno 3 test con punteggio.")
-    else:
-        radar_buf = None
-except Exception as e:
-    radar_buf = None
-    st.warning(f"■ Radar non disponibile ({e})")
-
-
-# -----------------------------
-# Body Chart – disattivata
-# -----------------------------
-st.info("Body Chart disattivata in questa versione.")
-
-
-# -----------------------------
-# Asymmetry bar plot
-# -----------------------------
-asym_buf = None
-try:
-    if len(df_show) > 0 and "Delta" in df_show.columns:
-        df_sym = df_show[df_show["Delta"].notnull()].copy()
-
-        # Converti i campi
-        df_sym["Delta"] = pd.to_numeric(df_sym["Delta"], errors="coerce").round(2)
-        df_sym["SymScore"] = pd.to_numeric(df_sym["SymScore"], errors="coerce").round(2)
-
-        # Mostra tabella
-        if not df_sym.empty:
-            st.markdown("#### Tabella Simmetria")
-            st.dataframe(df_sym[["Test", "Delta", "SymScore"]].round(2), use_container_width=True)
-
-            # Plot barre
-            asym_buf = asymmetry_bar_plot(df_show, title=f"Asimmetrie - {st.session_state['section']}")
-            if asym_buf:
-                asym_img = Image.open(asym_buf)
-                st.image(asym_img)
-                st.caption("Grafico delle asimmetrie tra Dx e Sx")
-
-                # Radar per sezione (solo se 'Valutazione Generale' e se ha dati per sezione)
-                try:
-                    if st.session_state["section"] == "Valutazione Generale":
-                        radar_sec_buf = radar_plot_per_section(df_show, title="Media punteggi per sezione")
-                        if radar_sec_buf:
-                            radar_sec_img = Image.open(radar_sec_buf)
-                            st.image(radar_sec_img, caption="Radar – Media per sezione")
-                except Exception as e:
-                    st.warning(f"■ Radar sezione non disponibile ({e})")
-        else:
-            asym_buf = None
-except Exception as e:
-    st.warning(f"■ Tabella simmetria non disponibile ({e})")
-    asym_buf = None
-
-
-# -----------------------------
-# Commenti EBM
+# EBM comments
 # -----------------------------
 def ebm_from_df(df, friendly=False):
     notes = []
@@ -709,17 +493,18 @@ def ebm_from_df(df, friendly=False):
         issue = False
 
         if score < 4:
-            msg = ebm_library.get(test, {}).get("friendly" if friendly else "low_score", f"Deficit rilevato nel test '{test}'.")
+            msg = ebm_library.get(test, {}).get("friendly" if friendly else "low_score",
+                                                f"Deficit rilevato nel test '{test}'.")
             comment_lines.append(f"❗ {msg}")
             issue = True
         if sym < 7:
-            comment_lines.append(f"↔ Asimmetria significativa nel test '{test}' (SymScore: {sym:.1f}/10).")
+            comment_lines.append(f"Asimmetria significativa nel test '{test}' (SymScore: {sym:.1f}/10).")
             issue = True
         if pain:
-            comment_lines.append("⚠️ Dolore riportato durante il test.")
+            comment_lines.append("Dolore riportato durante il test.")
 
         if not issue:
-            comment_lines.append(f"✅ Il test '{test}' soddisfa la sufficienza.")
+            comment_lines.append(f"Il test '{test}' soddisfa la sufficienza.")
 
         notes.extend(comment_lines)
 
@@ -730,13 +515,13 @@ def ebm_from_df(df, friendly=False):
         notes.append("")
         for test, ref in problematic_tests.items():
             if ref:
-                notes.append(f"📚 Riferimento: {ref}")
+                notes.append(f"Riferimento: {ref}")
 
     return notes
 
 
 # -----------------------------
-# Esportazione PDF
+# PDF generation (keeps matplotlib buffers)
 # -----------------------------
 def pdf_report_no_bodychart(logo_bytes, athlete, evaluator, date_str, section, df, ebm_notes, radar_buf=None, asym_buf=None):
     import io
@@ -755,8 +540,7 @@ def pdf_report_no_bodychart(logo_bytes, athlete, evaluator, date_str, section, d
     title = styles["Title"]
 
     story = []
-    # logo
-    story.append(RLImage(io.BytesIO(logo_bytes), width=16 * cm, height=4 * cm))
+    story.append(RLImage(io.BytesIO(logo_bytes), width=14 * cm, height=3.5 * cm))
     story.append(Spacer(1, 6))
     story.append(Paragraph(f"<b>Report Valutazione – {sanitize_text_for_plot(section)}</b>", title))
     story.append(Spacer(1, 6))
@@ -777,23 +561,17 @@ def pdf_report_no_bodychart(logo_bytes, athlete, evaluator, date_str, section, d
     story.append(info_table)
     story.append(Spacer(1, 8))
 
-    # Tabella risultati
     disp = df[["Sezione", "Test", "Unità", "Rif", "Valore", "Score", "Dx", "Sx", "Delta", "SymScore", "Dolore"]].copy()
-
-    # Rimozione test Schober (se esistesse)
     disp = disp[~disp["Test"].str.lower().str.contains("schober", na=False)]
-
-    # Arrotondamenti / conversioni
     for col in ["Valore", "Score", "Dx", "Sx", "Delta", "SymScore"]:
         disp[col] = pd.to_numeric(disp[col], errors="coerce").round(2)
 
-    # Tabella
     table = Table([disp.columns.tolist()] + disp.values.tolist(), repeatRows=1,
                   colWidths=[2.2 * cm, 6.5 * cm, 1.2 * cm, 1.2 * cm, 1.6 * cm, 1.6 * cm, 1.4 * cm, 1.4 * cm, 1.2 * cm, 1.6 * cm, 1.6 * cm])
     table.setStyle(
         TableStyle(
             [
-                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1E6CF4")),
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor(PRIMARY)),
                 ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
                 ("ALIGN", (0, 0), (-1, 0), "CENTER"),
                 ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
@@ -807,21 +585,18 @@ def pdf_report_no_bodychart(logo_bytes, athlete, evaluator, date_str, section, d
     story.append(table)
     story.append(Spacer(1, 10))
 
-    # Radar punteggi
     if radar_buf:
         story.append(Paragraph("<b>Radar – Punteggi (0–10)</b>", normal))
         story.append(Spacer(1, 4))
         story.append(RLImage(io.BytesIO(radar_buf.getvalue()), width=10 * cm, height=10 * cm))
         story.append(Spacer(1, 8))
 
-    # Asimmetrie
     if asym_buf:
         story.append(Paragraph("<b>Grafico Asimmetrie Dx/Sx</b>", normal))
         story.append(Spacer(1, 4))
         story.append(RLImage(io.BytesIO(asym_buf.getvalue()), width=14 * cm, height=6 * cm))
         story.append(Spacer(1, 8))
 
-    # Regioni dolorose (utilizza le colonne DoloreDx/DoloreSx se presenti)
     pain_regions = []
     for _, row in df.iterrows():
         regione = str(row.get("Regione", "") or "").strip()
@@ -847,13 +622,11 @@ def pdf_report_no_bodychart(logo_bytes, athlete, evaluator, date_str, section, d
         story.append(Paragraph("Nessuna regione segnalata come dolorosa.", normal))
     story.append(Spacer(1, 12))
 
-    # Commento EBM
     story.append(Paragraph("<b>Commento clinico (EBM)</b>", normal))
     story.append(Spacer(1, 4))
     if ebm_notes:
         for note in ebm_notes:
             if isinstance(note, str):
-                # sanitizza in caso contenga emoji
                 story.append(Paragraph(f"• {sanitize_text_for_plot(note)}", normal))
                 story.append(Spacer(1, 4))
     else:
@@ -880,7 +653,7 @@ def pdf_report_client_friendly(logo_bytes, athlete, evaluator, date_str, section
     title = styles["Title"]
 
     story = []
-    story.append(RLImage(io.BytesIO(logo_bytes), width=16 * cm, height=4 * cm))
+    story.append(RLImage(io.BytesIO(logo_bytes), width=14 * cm, height=3.5 * cm))
     story.append(Spacer(1, 6))
     story.append(Paragraph(f"<b>Valutazione Funzionale – {sanitize_text_for_plot(section)}</b>", title))
     story.append(Spacer(1, 6))
@@ -890,26 +663,22 @@ def pdf_report_client_friendly(logo_bytes, athlete, evaluator, date_str, section
     story.append(Paragraph(f"Data: {date_str}", normal))
     story.append(Spacer(1, 12))
 
-    # Radar
     if radar_buf:
         story.append(Paragraph("<b>Radar delle capacità funzionali</b>", normal))
         story.append(Spacer(1, 4))
         story.append(RLImage(io.BytesIO(radar_buf.getvalue()), width=10 * cm, height=10 * cm))
         story.append(Spacer(1, 12))
 
-    # Asimmetrie
     if asym_buf:
         story.append(Paragraph("<b>Simmetria tra lato destro e sinistro</b>", normal))
         story.append(Spacer(1, 4))
         story.append(RLImage(io.BytesIO(asym_buf.getvalue()), width=14 * cm, height=6 * cm))
         story.append(Spacer(1, 12))
 
-    # Spiegazione punteggi
     story.append(Paragraph("Ogni test è valutato su un punteggio da 0 a 10.", normal))
     story.append(Paragraph("0–3: da migliorare • 4–6: accettabile • 7–10: ottimale", normal))
     story.append(Spacer(1, 10))
 
-    # Tabella semplificata
     simple_rows = []
     for _, r in df.iterrows():
         score = round(float(r["Score"]) if not pd.isna(r["Score"]) else 0.0, 1)
@@ -920,7 +689,7 @@ def pdf_report_client_friendly(logo_bytes, athlete, evaluator, date_str, section
     t.setStyle(
         TableStyle(
             [
-                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1E6CF4")),
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor(PRIMARY)),
                 ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
                 ("ALIGN", (1, 1), (-1, -1), "CENTER"),
                 ("GRID", (0, 0), (-1, -1), 0.25, colors.lightgrey),
@@ -938,16 +707,210 @@ def pdf_report_client_friendly(logo_bytes, athlete, evaluator, date_str, section
 
 
 # -----------------------------
-# Calcola ebm_notes PRIMA di chiamare il PDF clinico
+# UI: Styling & Header
 # -----------------------------
-ebm_notes = ebm_from_df(build_df(st.session_state["section"]), friendly=False)
+st.markdown(
+    f"""
+<style>
+:root {{ --primary: {PRIMARY}; --accent: {ACCENT}; }}
+body {{ background: #f6f8fb; }}
+.header-card {{ background: linear-gradient(90deg, #ffffff, #f1f7ff); padding:12px; border-radius:12px; box-shadow: 0 6px 18px rgba(16,24,40,0.04); }}
+.card {{ background: white; padding:12px; border-radius:10px; box-shadow: 0 3px 10px rgba(16,24,40,0.04); margin-bottom:10px; }}
+.small-muted {{ color:#6b7280; font-size:0.9rem; }}
+.badge-ok {{ background: #ecfdf5; color: #166534; padding:4px 8px; border-radius:999px; font-weight:600; }}
+.badge-warn {{ background:#fff7ed; color:#92400e; padding:4px 8px; border-radius:999px; font-weight:600; }}
+.badge-bad {{ background:#fff1f2; color:#7f1d1d; padding:4px 8px; border-radius:999px; font-weight:600; }}
+</style>
+""",
+    unsafe_allow_html=True,
+)
+
+col1, col2, col3 = st.columns([1, 3, 1])
+with col1:
+    st.image(LOGO, width=120)
+with col2:
+    st.markdown(f"<div class='header-card'><h2 style='color:{PRIMARY};margin:0'>{APP_TITLE}</h2><div class='small-muted'>{SUBTITLE}</div></div>", unsafe_allow_html=True)
+with col3:
+    # placeholder metrics: will be updated after df_show is computed
+    metric_container = st.container()
 
 
 # -----------------------------
-# Esportazione PDF (clinico + friendly) e CSV
+# Sidebar – dati atleta e sezione (solo Valutazione Generale)
+# -----------------------------
+ALL_SECTIONS = ["Valutazione Generale"]
+
+with st.sidebar:
+    st.markdown("### Dati atleta")
+    st.session_state["athlete"] = st.text_input("Atleta", st.session_state["athlete"])
+    st.session_state["evaluator"] = st.text_input("Valutatore", st.session_state["evaluator"])
+    st.session_state["date"] = st.date_input("Data", datetime.strptime(st.session_state["date"], "%Y-%m-%d")).strftime(
+        "%Y-%m-%d"
+    )
+
+    st.markdown("---")
+    st.session_state["section"] = st.selectbox("Sezione", ALL_SECTIONS, index=0)
+
+    colb1, colb2 = st.columns(2)
+    with colb1:
+        if st.button("Reset valori", use_container_width=True):
+            st.session_state["vals"].clear()
+            seed_defaults()
+            st.experimental_rerun()
+    with colb2:
+        if st.button("Randomizza", use_container_width=True):
+            for name, rec in st.session_state["vals"].items():
+                if name == "ULNT1A (Median nerve)":
+                    continue
+                ref = rec.get("ref", 10.0)
+                if rec.get("bilat", False):
+                    rec["Dx"] = max(0.0, ref * random.uniform(0.5, 1.2))
+                    rec["Sx"] = max(0.0, ref * random.uniform(0.5, 1.2))
+                    rec["DoloreDx"] = random.random() < 0.15
+                    rec["DoloreSx"] = random.random() < 0.15
+                else:
+                    rec["Val"] = max(0.0, ref * random.uniform(0.5, 1.2))
+                    rec["Dolore"] = random.random() < 0.15
+            st.success("Valori random impostati.")
+
+
+# -----------------------------
+# Rendering input: grouped by regione inside expanders, each test as small card
+# -----------------------------
+def get_all_unique_tests():
+    unique = {}
+    for s, its in TESTS.items():
+        for item in its:
+            name = item[0]
+            if name not in unique:
+                unique[name] = (s, *item)
+    return list(unique.values())
+
+
+def render_inputs_for_section(section):
+    tests = get_all_unique_tests() if section == "Valutazione Generale" else [(section, *t) for t in TESTS.get(section, [])]
+    # group by region for nicer UI
+    region_map = {}
+    for sec, name, unit, ref, bilat, region, desc in tests:
+        region_map.setdefault(region or "other", []).append((sec, name, unit, ref, bilat, region, desc))
+
+    for region, items in region_map.items():
+        with st.expander(region.capitalize(), expanded=False):
+            for sec, name, unit, ref, bilat, region, desc in items:
+                rec = st.session_state["vals"].get(name)
+                if not rec:
+                    continue
+                # card wrapper (HTML)
+                st.markdown("<div class='card'>", unsafe_allow_html=True)
+                st.markdown(f"**{name}**  \n*{desc}*  \n*Rif:* {ref} {unit}")
+                key = short_key(name)
+                # special max for ULNT1A
+                max_val = ref if name == "ULNT1A (Median nerve)" else (ref * 1.5 if ref > 0 else 10.0)
+
+                if bilat:
+                    c1, c2 = st.columns([1, 1])
+                    with c1:
+                        dx = st.slider(f"Dx ({unit})", 0.0, max_val, float(rec.get("Dx", 0.0)), 0.1, key=f"{key}_Dx")
+                        pdx = st.checkbox("Dolore Dx", value=bool(rec.get("DoloreDx", False)), key=f"{key}_pDx")
+                    with c2:
+                        sx = st.slider(f"Sx ({unit})", 0.0, max_val, float(rec.get("Sx", 0.0)), 0.1, key=f"{key}_Sx")
+                        psx = st.checkbox("Dolore Sx", value=bool(rec.get("DoloreSx", False)), key=f"{key}_pSx")
+                    rec.update({"Dx": dx, "Sx": sx, "DoloreDx": pdx, "DoloreSx": psx})
+                    sc = ability_linear((dx + sx) / 2.0, ref)
+                    sym = symmetry_score(dx, sx, unit)
+                    # status badge
+                    status = "badge-ok" if sc >= 7 else ("badge-warn" if sc >= 4 else "badge-bad")
+                    st.markdown(f"<div style='margin-top:8px'><span class='{status}'>Score {sc:.1f}/10</span>  — Δ {abs(dx - sx):.1f} {unit} — Sym: <b>{sym:.1f}/10</b></div>", unsafe_allow_html=True)
+                else:
+                    val = st.slider(f"Valore ({unit})", 0.0, max_val, float(rec.get("Val", 0.0)), 0.1, key=f"{key}_Val")
+                    p = st.checkbox("Dolore", value=bool(rec.get("Dolore", False)), key=f"{key}_p")
+                    rec.update({"Val": val, "Dolore": p})
+                    sc = ability_linear(val, ref)
+                    status = "badge-ok" if sc >= 7 else ("badge-warn" if sc >= 4 else "badge-bad")
+                    st.markdown(f"<div style='margin-top:8px'><span class='{status}'>Score {sc:.1f}/10</span></div>", unsafe_allow_html=True)
+                st.markdown("</div>", unsafe_allow_html=True)
+
+
+# render inputs
+render_inputs_for_section(st.session_state["section"])
+
+
+# -----------------------------
+# Build DF and main visualizations
+# -----------------------------
+df_show = build_df(st.session_state["section"])
+st.markdown("### Risultati")
+# styled table: color rows by score
+def style_scores_df(df):
+    def color_row(v):
+        if pd.isna(v):
+            return ""
+        if v < 4:
+            return "background-color:#fff1f2"  # redish
+        if v < 7:
+            return "background-color:#fffbeb"  # yellowish
+        return "background-color:#ecfdf5"  # greenish
+
+    sty = df.style.applymap(lambda x: color_row(x) if isinstance(x, (int, float)) else "", subset=["Score"])
+    return sty
+
+st.write(df_show.style.format(precision=1))
+
+
+# update header metrics
+with metric_container:
+    avg_score = df_show["Score"].mean() if not df_show["Score"].isna().all() else 0.0
+    painful = int(df_show["Dolore"].sum()) if "Dolore" in df_show.columns else 0
+    sym_mean = df_show["SymScore"].mean() if "SymScore" in df_show.columns else np.nan
+    st.metric("Score medio", f"{avg_score:.1f}/10")
+    st.metric("Test con dolore", f"{painful}")
+    st.metric("Symmetry medio", f"{sym_mean:.1f}/10" if not pd.isna(sym_mean) else "n/a")
+
+
+# interactive plots
+col_a, col_b = st.columns(2)
+with col_a:
+    radar_fig = plotly_radar(df_show)
+    if radar_fig:
+        st.plotly_chart(radar_fig, use_container_width=True)
+    else:
+        st.info("Radar non disponibile: servono almeno 3 test con punteggio.")
+with col_b:
+    asym_fig = plotly_asymmetry(df_show)
+    if asym_fig:
+        st.plotly_chart(asym_fig, use_container_width=True)
+    else:
+        st.info("Grafico asimmetria non disponibile.")
+
+
+# -----------------------------
+# Prepare PDF buffers (matplotlib) for download
+# -----------------------------
+radar_buf = None
+asym_buf = None
+try:
+    df_radar = df_show[df_show["Score"].notnull()].copy()
+    if len(df_radar) >= 3:
+        radar_buf = radar_plot_matplotlib(df_radar, title=f"{st.session_state['section']} - Punteggi (0-10)")
+except Exception:
+    radar_buf = None
+
+try:
+    asym_buf = asymmetry_plot_matplotlib(df_show, title=f"Asimmetrie - {st.session_state['section']}")
+except Exception:
+    asym_buf = None
+
+
+# -----------------------------
+# EBM notes (calcolate prima di PDF)
+# -----------------------------
+ebm_notes = ebm_from_df(df_show, friendly=False)
+
+
+# -----------------------------
+# Export PDF buttons
 # -----------------------------
 colpdf1, colpdf2 = st.columns(2)
-
 with colpdf1:
     if st.button("Esporta PDF Clinico", use_container_width=True):
         try:
