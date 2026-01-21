@@ -1,5 +1,10 @@
-import io, os, random, math, base64
+import io
+import os
+import random
+import math
+import base64
 from datetime import datetime
+
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -10,7 +15,6 @@ from reportlab.lib.units import cm
 from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image as RLImage, Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet
-
 
 st.set_page_config(page_title="Fisiomove MobilityPro v. 1.0", layout="centered")
 
@@ -36,8 +40,6 @@ TEST_NAME_TRANSLATIONS = {
     "ULNT1A (Median nerve)": "Test neurodinamico mediano (ULNT1A)"
 }
 
-
-
 LOGO_PATHS = ["logo 2600x1000.jpg", "logo.png", "logo.jpg"]
 BODYCHART_PATHS = ["8741B9DF-86A6-45B2-AB4C-20E2D2AA3EC7.png", "body_chart.png"]
 
@@ -54,7 +56,6 @@ def load_logo_bytes():
     bio = io.BytesIO()
     img.save(bio, format="PNG")
     return bio.getvalue()
-
 
 
 def load_bodychart_image():
@@ -76,7 +77,6 @@ def load_bodychart_image():
     return img
 
 
-
 LOGO = load_logo_bytes()
 BODYCHART_BASE = load_bodychart_image()
 
@@ -94,7 +94,7 @@ def init_state():
     if "date" not in st.session_state:
         st.session_state["date"] = datetime.now().strftime("%Y-%m-%d")
     if "section" not in st.session_state:
-        st.session_state["section"] = "Squat"
+        st.session_state["section"] = "Valutazione Generale"
 
 init_state()
 
@@ -106,7 +106,7 @@ def ability_linear(val, ref):
     try:
         if ref <= 0:
             return 0.0
-        if ref == 3.0:  # ⚠️ Caso specifico: test a punteggio soggettivo 0–3 (Wall Angel Test)
+        if ref == 3.0:  # Caso specifico: test a punteggio soggettivo 0–3 (Wall Angel Test)
             return float(val) / 3.0 * 10.0
         score = (float(val) / float(ref)) * 10.0
         return max(0.0, min(10.0, score))
@@ -123,113 +123,175 @@ def symmetry_score(dx, sx, unit):
             scale = 8.0
         else:
             scale = 10.0
-        return 10.0 * max(0.0, 1.0 - min(diff, scale)/scale)
+        return 10.0 * max(0.0, 1.0 - min(diff, scale) / scale)
     except:
         return 0.0
 
-# -----------------------------
-# Sezioni e TESTS aggiornati
-# -----------------------------
-ALL_SECTIONS = ["Squat", "Panca", "Deadlift", "Neurodinamica", "Valutazione Generale"]
 
+# -----------------------------
+# Sezioni e TESTS (UNICA DEFINIZIONE)
+# -----------------------------
+# Nota: abbiamo mantenuto una singola definizione di TESTS per evitare sovrascritture
 TESTS = {
     "Squat": [
-        ("Weight Bearing Lunge Test", "cm", 10.0, True,  "ankle", "Dorsiflessione in carico."),
-        ("Passive Hip Flexion",       "°",  120.0, True, "hip",   "Flessione d’anca passiva."),
-        ("Hip Rotation (flexed 90°)", "°",   40.0, True, "hip",   "Rotazione anca in flessione."),
-        ("Wall Angel Test",           "°",   10.0, False,"thoracic", "Valutazione wall angel."),
-        ("Shoulder ER (adducted, low-bar)", "°", 70.0, True, "shoulder", "ER spalla per low-bar."),
+        ("Weight Bearing Lunge Test", "cm", 10.0, True, "ankle", "Test caviglia: dorsiflessione in carico."),
+        ("Passive Hip Flexion", "°", 120.0, True, "hip", "Test anca: flessione passiva supina."),
+        ("Hip Rotation (flexed 90°)", "°", 40.0, True, "hip", "Test anca: rotazione a 90° flessione."),
+        ("Wall Angel Test", "score", 3.0, False, "thoracic", "Contatto scapolare/test posturale (0–3)."),
+        ("Shoulder ER (adducted, low-bar)", "°", 70.0, True, "shoulder", "Test spalla: extrarotazione low-bar."),
     ],
     "Panca": [
-        ("Shoulder Flexion (supine)", "°", 180.0, True, "shoulder", "Flessione spalla da supino."),
-        ("External Rotation (90° abd)", "°", 90.0, True, "shoulder", "ER a 90° abduzione."),
-        ("Wall Angel Test",           "°", 10.0, False, "thoracic", "Valutazione wall angel."),
-        ("Pectoralis Minor Length", "cm", 10.0, True, "shoulder", "Lunghezza piccolo pettorale."),
-        ("Thomas Test (modified)", "°", 10.0, True, "hip", "Flessibilità flessori anca."),
+        ("Shoulder Flexion (supine)", "°", 180.0, True, "shoulder", "Test spalla: flessione supina."),
+        ("External Rotation (90° abd)", "°", 90.0, True, "shoulder", "Test spalla: ER a 90° abduzione."),
+        ("Wall Angel Test", "score", 3.0, False, "thoracic", "Contatto scapolare/test posturale (0–3)."),
+        ("Pectoralis Minor Length", "cm", 10.0, True, "shoulder", "Test pettorale: distanza da lettino."),
+        ("Thomas Test (modified)", "°", 10.0, True, "hip", "Test flessori anca (modificato)."),
     ],
     "Deadlift": [
-        ("Active Knee Extension (AKE)", "°", 90.0, True, "knee", "Estensione attiva ginocchio."),
-        ("Straight Leg Raise (SLR)", "°", 90.0, True, "hip", "Test SLR."),
-        ("Weight Bearing Lunge Test", "cm", 10.0, True, "ankle", "Dorsiflessione in carico."),
-        ("Sorensen Endurance", "sec", 180.0, False, "lumbar", "Endurance estensori lombari."),
+        ("Active Knee Extension (AKE)", "°", 90.0, True, "knee", "Test hamstrings: estensione attiva."),
+        ("Straight Leg Raise (SLR)", "°", 90.0, True, "hip", "Test SLR catena posteriore."),
+        ("Weight Bearing Lunge Test", "cm", 10.0, True, "ankle", "Test caviglia: dorsiflessione in carico."),
+        ("Sorensen Endurance", "sec", 180.0, False, "lumbar", "Test endurance estensori lombari."),
     ],
     "Neurodinamica": [
-        ("Straight Leg Raise (SLR)", "°", 90.0, True, "hip", "SLR neurodinamico."),
-        ("ULNT1A (Median nerve)", "°", 90.0, True, "shoulder", "Upper Limb Neurodynamic Test 1A."),
-    ]
+        ("Straight Leg Raise (SLR)", "°", 90.0, True, "hip", "Test neurodinamica posteriore LE."),
+        # ULNT1A: configurato come bilaterale con ref 90°; default nei seed sarà 0°
+        ("ULNT1A (Median nerve)", "°", 90.0, True, "shoulder", "Test neurodinamica arto superiore."),
+    ],
 }
+
+
 # -----------------------------
 # Seed valori di default
 # -----------------------------
 def seed_defaults():
+    # se già presenti, non sovrascrivere (ma assicurati che ULNT1A esista)
     if st.session_state["vals"]:
+        # assicuriamoci che ULNT1A abbia valori coerenti se presente ma vuota
+        if "ULNT1A (Median nerve)" in st.session_state["vals"]:
+            rec = st.session_state["vals"]["ULNT1A (Median nerve)"]
+            # se non ha Dx/Sx, impostali a 0
+            if rec.get("bilat", False):
+                rec.setdefault("Dx", 0.0)
+                rec.setdefault("Sx", 0.0)
+                rec.setdefault("DoloreDx", False)
+                rec.setdefault("DoloreSx", False)
         return
+
     for sec, items in TESTS.items():
         for (name, unit, ref, bilat, region, desc) in items:
             if name not in st.session_state["vals"]:
-                if bilat:
-                    st.session_state["vals"][name] = {
-                        "Dx": ref * 0.9 if unit != "sec" else ref * 0.8,
-                        "Sx": ref * 0.88 if unit != "sec" else ref * 0.78,
-                        "DoloreDx": False,
-                        "DoloreSx": False,
-                        "unit": unit,
-                        "ref": ref,
-                        "bilat": True,
-                        "region": region,
-                        "desc": desc,
-                        "section": sec
-                    }
+                # Specifica per ULNT1A: default 0°
+                if name == "ULNT1A (Median nerve)":
+                    if bilat:
+                        st.session_state["vals"][name] = {
+                            "Dx": 0.0,
+                            "Sx": 0.0,
+                            "DoloreDx": False,
+                            "DoloreSx": False,
+                            "unit": unit,
+                            "ref": ref,
+                            "bilat": True,
+                            "region": region,
+                            "desc": desc,
+                            "section": sec
+                        }
+                    else:
+                        st.session_state["vals"][name] = {
+                            "Val": 0.0,
+                            "Dolore": False,
+                            "unit": unit,
+                            "ref": ref,
+                            "bilat": False,
+                            "region": region,
+                            "desc": desc,
+                            "section": sec
+                        }
                 else:
-                    st.session_state["vals"][name] = {
-                        "Val": ref * 0.85,
-                        "Dolore": False,
-                        "unit": unit,
-                        "ref": ref,
-                        "bilat": False,
-                        "region": region,
-                        "desc": desc,
-                        "section": sec
-                    }
+                    if bilat:
+                        st.session_state["vals"][name] = {
+                            "Dx": ref * 0.9 if unit != "sec" else ref * 0.8,
+                            "Sx": ref * 0.88 if unit != "sec" else ref * 0.78,
+                            "DoloreDx": False,
+                            "DoloreSx": False,
+                            "unit": unit,
+                            "ref": ref,
+                            "bilat": True,
+                            "region": region,
+                            "desc": desc,
+                            "section": sec
+                        }
+                    else:
+                        st.session_state["vals"][name] = {
+                            "Val": ref * 0.85,
+                            "Dolore": False,
+                            "unit": unit,
+                            "ref": ref,
+                            "bilat": False,
+                            "region": region,
+                            "desc": desc,
+                            "section": sec
+                        }
+
 
 seed_defaults()
 
+
 # -----------------------------
-# Costruzione DataFrame
+# Costruzione DataFrame (con normalizzazione e colonne dolore Dx/Sx)
 # -----------------------------
 def build_df(section):
     rows = []
+    seen_tests = set()
     for sec, items in TESTS.items():
         if section != "Valutazione Generale" and sec != section:
             continue
         for (name, unit, ref, bilat, region, desc) in items:
+            # Se siamo in Valutazione Generale, vogliamo ogni test UNA SOLA VOLTA
+            if section == "Valutazione Generale":
+                if name in seen_tests:
+                    continue
+                seen_tests.add(name)
+
             rec = st.session_state["vals"].get(name)
             if not rec:
                 continue
             if bilat:
-                dx = float(rec.get("Dx", 0))
-                sx = float(rec.get("Sx", 0))
-                sc = round(ability_linear((dx + sx) / 2.0, ref), 2)
+                dx = pd.to_numeric(rec.get("Dx", 0.0), errors="coerce")
+                sx = pd.to_numeric(rec.get("Sx", 0.0), errors="coerce")
+                dx = 0.0 if pd.isna(dx) else float(dx)
+                sx = 0.0 if pd.isna(sx) else float(sx)
+                avg = (dx + sx) / 2.0
+                sc = round(ability_linear(avg, ref), 2)
+                delta = round(abs(dx - sx), 2)
                 sym = round(symmetry_score(dx, sx, unit), 2)
+                dolore_dx = bool(rec.get("DoloreDx", False))
+                dolore_sx = bool(rec.get("DoloreSx", False))
+                dolore_any = dolore_dx or dolore_sx
                 rows.append([
-                    sec, name, unit, ref, f"{(dx+sx)/2:.1f}", sc,
-                    round(dx, 2), round(sx, 2), round(abs(dx - sx), 2), sym,
-                    bool(rec.get("DoloreDx", False) or rec.get("DoloreSx", False)),
-                    region
+                    sec, name, unit, ref, f"{avg:.1f}", sc,
+                    round(dx, 2), round(sx, 2), delta, sym,
+                    dolore_any, region, dolore_dx, dolore_sx
                 ])
             else:
-                val = float(rec.get("Val", 0))
+                val = pd.to_numeric(rec.get("Val", 0.0), errors="coerce")
+                val = 0.0 if pd.isna(val) else float(val)
                 sc = round(ability_linear(val, ref), 2)
+                dolore = bool(rec.get("Dolore", False))
                 rows.append([
                     sec, name, unit, ref, f"{val:.1f}", sc,
-                    "", "", "", "",
-                    bool(rec.get("Dolore", False)),
-                    region
+                    "", "", "", "", dolore, region, False, False
                 ])
-    return pd.DataFrame(rows, columns=[
+    df = pd.DataFrame(rows, columns=[
         "Sezione", "Test", "Unità", "Rif", "Valore", "Score",
-        "Dx", "Sx", "Delta", "SymScore", "Dolore", "Regione"
+        "Dx", "Sx", "Delta", "SymScore", "Dolore", "Regione", "DoloreDx", "DoloreSx"
     ])
+    # Normalizza tipi numerici
+    for col in ["Score", "Dx", "Sx", "Delta", "SymScore"]:
+        df[col] = pd.to_numeric(df[col], errors="coerce")
+    return df
+
+
 # -----------------------------
 # Radar plot (score per test)
 # -----------------------------
@@ -269,6 +331,7 @@ def radar_plot(df, title="Punteggi (0–10)"):
     plt.close(fig)
     return buf
 
+
 # -----------------------------
 # Radar plot per sezione (media score)
 # -----------------------------
@@ -307,6 +370,7 @@ def radar_plot_per_section(df, title="Media punteggi per sezione"):
     plt.close(fig)
     buf.seek(0)
     return buf
+
 
 # -----------------------------
 # Asymmetry bar plot (SymScore)
@@ -350,7 +414,7 @@ def asymmetry_bar_plot(df, title="SymScore – Simmetria Dx/Sx"):
 
     for bar in bars:
         width = bar.get_width()
-        ax.text(width + 0.2, bar.get_y() + bar.get_height()/2, f"{width:.1f}", va='center')
+        ax.text(width + 0.2, bar.get_y() + bar.get_height() / 2, f"{width:.1f}", va='center')
 
     buf = io.BytesIO()
     plt.tight_layout()
@@ -358,6 +422,8 @@ def asymmetry_bar_plot(df, title="SymScore – Simmetria Dx/Sx"):
     buf.seek(0)
     plt.close(fig)
     return buf
+
+
 # -----------------------------
 # Titolo app
 # -----------------------------
@@ -366,6 +432,8 @@ st.markdown(f"<h2 style='color:{PRIMARY};margin-bottom:0'>{APP_TITLE}</h2>", uns
 # -----------------------------
 # Sidebar – dati atleta e sezione
 # -----------------------------
+ALL_SECTIONS = ["Valutazione Generale"]  # menu ridotto come richiesto
+
 with st.sidebar:
     st.markdown("### Dati atleta")
     st.session_state["athlete"] = st.text_input("Atleta", st.session_state["athlete"])
@@ -373,16 +441,21 @@ with st.sidebar:
     st.session_state["date"] = st.date_input("Data", datetime.strptime(st.session_state["date"], "%Y-%m-%d")).strftime("%Y-%m-%d")
 
     st.markdown("---")
-    st.session_state["section"] = st.selectbox("Sezione", ALL_SECTIONS, index=ALL_SECTIONS.index(st.session_state["section"]))
+    st.session_state["section"] = st.selectbox("Sezione", ALL_SECTIONS, index=0)
 
     colb1, colb2 = st.columns(2)
     with colb1:
         if st.button("Reset valori", use_container_width=True):
             st.session_state["vals"].clear()
             seed_defaults()
+            st.experimental_rerun()
     with colb2:
         if st.button("Randomizza", use_container_width=True):
             for name, rec in st.session_state["vals"].items():
+                # Non randomizzare ULNT1A: lasciarlo a 0 per default clinico
+                if name == "ULNT1A (Median nerve)":
+                    # mantieni 0
+                    continue
                 ref = rec.get("ref", 10.0)
                 if rec.get("bilat", False):
                     rec["Dx"] = max(0.0, ref * random.uniform(0.5, 1.2))
@@ -394,18 +467,25 @@ with st.sidebar:
                     rec["Dolore"] = random.random() < 0.15
             st.success("Valori random impostati.")
 
+
 # -----------------------------
-# Rendering input dinamico
+# Rendering input dinamico (Valutazione Generale: un test unico)
 # -----------------------------
 def render_inputs_for_section(section):
     items = []
     if section == "Valutazione Generale":
-        for s in ["Squat", "Panca", "Deadlift", "Neurodinamica"]:
-            for item in TESTS[s]:
-                items.append((s, *item))  # Aggiungi la sezione originale
+        # raccogli tutti i test ma una sola volta (unique by name), mantieni prima sezione d'origine
+        unique = {}
+        for s, its in TESTS.items():
+            for item in its:
+                name = item[0]
+                if name not in unique:
+                    unique[name] = (s, *item)
+        # ordina per sezione originale/alfabetico per stabilità
+        items = list(unique.values())
     else:
         for item in TESTS.get(section, []):
-            items.append((section, *item))  # Aggiungi la sezione originale
+            items.append((section, *item))
 
     for sec, name, unit, ref, bilat, region, desc in items:
         rec = st.session_state["vals"].get(name)
@@ -414,33 +494,34 @@ def render_inputs_for_section(section):
 
         with st.container():
             st.markdown(f"**{name}** — {desc}  \n*Rif:* {ref} {unit}")
+            key_safe = name.replace(" ", "_").replace("/", "_").replace("(", "").replace(")", "")
             if bilat:
                 c1, c2 = st.columns(2)
                 with c1:
                     dx = st.slider(
-                        f"Dx ({unit})",
-                        0.0, ref * 1.5,
+                        f"{name} — Dx ({unit})",
+                        0.0, ref * 1.5 if ref > 0 else 10.0,
                         float(rec.get("Dx", 0.0)),
                         0.1,
-                        key=f"{sec}_{name}_Dx"
+                        key=f"{key_safe}_Dx"
                     )
                     pdx = st.checkbox(
                         "Dolore Dx",
                         value=bool(rec.get("DoloreDx", False)),
-                        key=f"{sec}_{name}_pDx"
+                        key=f"{key_safe}_pDx"
                     )
                 with c2:
                     sx = st.slider(
-                        f"Sx ({unit})",
-                        0.0, ref * 1.5,
+                        f"{name} — Sx ({unit})",
+                        0.0, ref * 1.5 if ref > 0 else 10.0,
                         float(rec.get("Sx", 0.0)),
                         0.1,
-                        key=f"{sec}_{name}_Sx"
+                        key=f"{key_safe}_Sx"
                     )
                     psx = st.checkbox(
                         "Dolore Sx",
                         value=bool(rec.get("DoloreSx", False)),
-                        key=f"{sec}_{name}_pSx"
+                        key=f"{key_safe}_pSx"
                     )
 
                 rec.update({
@@ -454,23 +535,26 @@ def render_inputs_for_section(section):
 
             else:
                 val = st.slider(
-                    f"Valore ({unit})",
-                    0.0, ref * 1.5,
+                    f"{name} — Valore ({unit})",
+                    0.0, ref * 1.5 if ref > 0 else 10.0,
                     float(rec.get("Val", 0.0)),
                     0.1,
-                    key=f"{sec}_{name}_Val"
+                    key=f"{key_safe}_Val"
                 )
                 p = st.checkbox(
                     "Dolore",
                     value=bool(rec.get("Dolore", False)),
-                    key=f"{sec}_{name}_p"
+                    key=f"{key_safe}_p"
                 )
                 rec.update({"Val": val, "Dolore": p})
                 sc = ability_linear(val, ref)
                 st.caption(f"Score: **{sc:.1f}/10**")
 
+
 # Esegui rendering
 render_inputs_for_section(st.session_state["section"])
+
+
 # -----------------------------
 # Visualizzazione risultati
 # -----------------------------
@@ -478,29 +562,39 @@ df_show = build_df(st.session_state["section"])
 st.markdown("#### Tabella risultati")
 st.dataframe(df_show.round(2), use_container_width=True)
 
+
 # -----------------------------
 # Radar plot
 # -----------------------------
+radar_buf = None
 try:
     if len(df_show) > 0:
-        radar_buf = radar_plot(df_show, title=f"{st.session_state['section']} – Punteggi (0–10)")
-        radar_img = Image.open(radar_buf)
-        st.image(radar_img)
-        st.caption("📊 Radar – Punteggi (0–10)")
+        # per radar prendi solo i test con Score non NaN
+        df_radar = df_show[df_show["Score"].notnull()].copy()
+        if len(df_radar) >= 3:
+            radar_buf = radar_plot(df_radar, title=f"{st.session_state['section']} – Punteggi (0–10)")
+            radar_img = Image.open(radar_buf)
+            st.image(radar_img)
+            st.caption("📊 Radar – Punteggi (0–10)")
+        else:
+            st.info("Radar non disponibile: servono almeno 3 test con punteggio.")
     else:
         radar_buf = None
 except Exception as e:
     radar_buf = None
     st.warning(f"■ Radar non disponibile ({e})")
 
+
 # -----------------------------
 # Body Chart – disattivata
 # -----------------------------
 st.info("📉 Body Chart disattivata in questa versione.")
 
+
 # -----------------------------
 # Asymmetry bar plot
 # -----------------------------
+asym_buf = None
 try:
     if len(df_show) > 0 and "Delta" in df_show.columns:
         df_sym = df_show[df_show["Delta"].notnull()].copy()
@@ -524,7 +618,7 @@ try:
                 st.image(asym_img)
                 st.caption("📉 Grafico delle asimmetrie tra Dx e Sx")
 
-                # ▶️ Radar per sezione (solo se 'Valutazione Generale')
+                # Radar per sezione (solo se 'Valutazione Generale' e se ha dati per sezione)
                 try:
                     if st.session_state["section"] == "Valutazione Generale":
                         radar_sec_buf = radar_plot_per_section(df_show, title="📌 Media punteggi per sezione")
@@ -538,6 +632,8 @@ try:
 except Exception as e:
     st.warning(f"■ Tabella simmetria non disponibile ({e})")
     asym_buf = None
+
+
 # -----------------------------
 # Commenti EBM
 # -----------------------------
@@ -575,9 +671,9 @@ def ebm_from_df(df, friendly=False):
 
     for _, r in df.iterrows():
         test = str(r["Test"])
-        score = float(r["Score"])
+        score = float(r["Score"]) if not pd.isna(r["Score"]) else 10.0
         pain = bool(r["Dolore"])
-        sym = float(r.get("SymScore", 10.0))
+        sym = float(r.get("SymScore", 10.0) if not pd.isna(r.get("SymScore", np.nan)) else 10.0)
 
         comment_lines = []
         issue = False
@@ -608,11 +704,10 @@ def ebm_from_df(df, friendly=False):
 
     return notes
 
+
 # -----------------------------
 # Esportazione PDF
 # -----------------------------
-
-
 def pdf_report_no_bodychart(
     logo_bytes,
     athlete,
@@ -642,13 +737,14 @@ def pdf_report_no_bodychart(
     title = styles["Title"]
 
     story = []
-    story.append(RLImage(io.BytesIO(logo_bytes), width=16*cm, height=4*cm))
+    # logo
+    story.append(RLImage(io.BytesIO(logo_bytes), width=16 * cm, height=4 * cm))
     story.append(Spacer(1, 6))
     story.append(Paragraph(f"<b>Report Valutazione – {section}</b>", title))
     story.append(Spacer(1, 6))
 
     info_data = [["Atleta", athlete, "Valutatore", evaluator, "Data", date_str]]
-    info_table = Table(info_data, colWidths=[2.2*cm, 5.0*cm, 2.8*cm, 5.0*cm, 1.8*cm, 2.0*cm])
+    info_table = Table(info_data, colWidths=[2.2 * cm, 5.0 * cm, 2.8 * cm, 5.0 * cm, 1.8 * cm, 2.0 * cm])
     info_table.setStyle(TableStyle([
         ("BOX", (0, 0), (-1, -1), 0.6, colors.lightgrey),
         ("INNERGRID", (0, 0), (-1, -1), 0.3, colors.lightgrey),
@@ -662,16 +758,16 @@ def pdf_report_no_bodychart(
     # Tabella risultati
     disp = df[["Sezione", "Test", "Unità", "Rif", "Valore", "Score", "Dx", "Sx", "Delta", "SymScore", "Dolore"]].copy()
 
-    # Rimozione test Schober
-    disp = disp[~disp["Test"].str.lower().str.contains("schober")]
+    # Rimozione test Schober (se esistesse)
+    disp = disp[~disp["Test"].str.lower().str.contains("schober", na=False)]
 
-    # Arrotondamenti
+    # Arrotondamenti / conversioni
     for col in ["Valore", "Score", "Dx", "Sx", "Delta", "SymScore"]:
         disp[col] = pd.to_numeric(disp[col], errors="coerce").round(2)
 
     # Tabella
     table = Table([disp.columns.tolist()] + disp.values.tolist(), repeatRows=1,
-                  colWidths=[2.2*cm, 6.5*cm, 1.2*cm, 1.2*cm, 1.6*cm, 1.6*cm, 1.4*cm, 1.4*cm, 1.2*cm, 1.6*cm, 1.6*cm])
+                  colWidths=[2.2 * cm, 6.5 * cm, 1.2 * cm, 1.2 * cm, 1.6 * cm, 1.6 * cm, 1.4 * cm, 1.4 * cm, 1.2 * cm, 1.6 * cm, 1.6 * cm])
     table.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1E6CF4")),
         ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
@@ -689,28 +785,33 @@ def pdf_report_no_bodychart(
     if radar_buf:
         story.append(Paragraph("<b>Radar – Punteggi (0–10)</b>", normal))
         story.append(Spacer(1, 4))
-        story.append(RLImage(io.BytesIO(radar_buf.getvalue()), width=10*cm, height=10*cm))
+        story.append(RLImage(io.BytesIO(radar_buf.getvalue()), width=10 * cm, height=10 * cm))
         story.append(Spacer(1, 8))
 
     # Asimmetrie
     if asym_buf:
         story.append(Paragraph("<b>Grafico Asimmetrie Dx/Sx</b>", normal))
         story.append(Spacer(1, 4))
-        story.append(RLImage(io.BytesIO(asym_buf.getvalue()), width=14*cm, height=6*cm))
+        story.append(RLImage(io.BytesIO(asym_buf.getvalue()), width=14 * cm, height=6 * cm))
         story.append(Spacer(1, 8))
 
-    # Regioni dolorose
+    # Regioni dolorose (utilizza le colonne DoloreDx/DoloreSx se presenti)
     pain_regions = []
     for _, row in df.iterrows():
-        regione = row.get("Regione", "").capitalize()
+        regione = str(row.get("Regione", "") or "").strip()
         if not regione:
             continue
-        if row.get("DoloreDx", False):
-            pain_regions.append(f"{regione} destra")
-        if row.get("DoloreSx", False):
-            pain_regions.append(f"{regione} sinistra")
-        if row.get("Dolore", False) and not (row.get("DoloreDx") or row.get("DoloreSx")):
-            pain_regions.append(f"{regione}")
+        try:
+            if bool(row.get("DoloreDx", False)):
+                pain_regions.append(f"{regione} destra")
+            if bool(row.get("DoloreSx", False)):
+                pain_regions.append(f"{regione} sinistra")
+            if bool(row.get("Dolore", False)) and not (row.get("DoloreDx") or row.get("DoloreSx")):
+                pain_regions.append(f"{regione}")
+        except Exception:
+            # fallback generico
+            if bool(row.get("Dolore", False)):
+                pain_regions.append(f"{regione}")
 
     pain_regions = list(dict.fromkeys(pain_regions))
     story.append(Paragraph("<b>🩹 Regioni dolorose riscontrate durante il test:</b>", normal))
@@ -735,6 +836,7 @@ def pdf_report_no_bodychart(
     doc.build(story)
     buf.seek(0)
     return buf
+
 
 def pdf_report_client_friendly(
     logo_bytes,
@@ -763,12 +865,12 @@ def pdf_report_client_friendly(
     title = styles["Title"]
 
     story = []
-    story.append(RLImage(io.BytesIO(logo_bytes), width=16*cm, height=4*cm))
+    story.append(RLImage(io.BytesIO(logo_bytes), width=16 * cm, height=4 * cm))
     story.append(Spacer(1, 6))
     story.append(Paragraph(f"<b>Valutazione Funzionale – {section}</b>", title))
     story.append(Spacer(1, 6))
 
-    story.append(Paragraph(f"👤 <b>Atleta:</b> {athlete}", normal))
+    story.append(Paragraph(f"     <b>Atleta:</b> {athlete}", normal))
     story.append(Paragraph(f"🧑‍⚕️ <b>Valutatore:</b> {evaluator}", normal))
     story.append(Paragraph(f"📅 <b>Data:</b> {date_str}", normal))
     story.append(Spacer(1, 12))
@@ -777,14 +879,14 @@ def pdf_report_client_friendly(
     if radar_buf:
         story.append(Paragraph("<b>Radar delle capacità funzionali</b>", normal))
         story.append(Spacer(1, 4))
-        story.append(RLImage(io.BytesIO(radar_buf.getvalue()), width=10*cm, height=10*cm))
+        story.append(RLImage(io.BytesIO(radar_buf.getvalue()), width=10 * cm, height=10 * cm))
         story.append(Spacer(1, 12))
 
     # Asimmetrie
     if asym_buf:
         story.append(Paragraph("<b>Simmetria tra lato destro e sinistro</b>", normal))
         story.append(Spacer(1, 4))
-        story.append(RLImage(io.BytesIO(asym_buf.getvalue()), width=14*cm, height=6*cm))
+        story.append(RLImage(io.BytesIO(asym_buf.getvalue()), width=14 * cm, height=6 * cm))
         story.append(Spacer(1, 12))
 
     # Spiegazione punteggi
@@ -795,11 +897,11 @@ def pdf_report_client_friendly(
     # Tabella semplificata
     simple_rows = []
     for _, r in df.iterrows():
-        score = round(float(r["Score"]), 1)
+        score = round(float(r["Score"]) if not pd.isna(r["Score"]) else 0.0, 1)
         test_name = TEST_NAME_TRANSLATIONS.get(r["Test"], r["Test"])
         simple_rows.append([test_name, f"{score}/10"])
 
-    t = Table([["Test", "Punteggio"]] + simple_rows, repeatRows=1, colWidths=[10*cm, 4*cm])
+    t = Table([["Test", "Punteggio"]] + simple_rows, repeatRows=1, colWidths=[10 * cm, 4 * cm])
     t.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1E6CF4")),
         ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
@@ -815,7 +917,13 @@ def pdf_report_client_friendly(
     buf.seek(0)
     return buf
 
+
 # -----------------------------
+# Calcola ebm_notes PRIMA di chiamare il PDF clinico
+# -----------------------------
+ebm_notes = ebm_from_df(df_show, friendly=False)
+
+
 # -----------------------------
 # Esportazione PDF (clinico + friendly) e CSV
 # -----------------------------
@@ -867,33 +975,3 @@ with colpdf2:
             )
         except Exception as e:
             st.error(f"Errore durante generazione PDF semplificato: {e}")
-
-
-
-
-TESTS = {
-    "Squat": [
-        ("Weight Bearing Lunge Test", "cm", 10.0, True,  "ankle",    "Test caviglia: dorsiflessione in carico."),
-        ("Passive Hip Flexion",       "°",  120.0, True, "hip",      "Test anca: flessione passiva supina."),
-        ("Hip Rotation (flexed 90°)", "°",   40.0, True, "hip",      "Test anca: rotazione a 90° flessione."),
-        ("Wall Angel Test",           "score", 3.0, False, "thoracic", "Contatto scapolare/test posturale (0–3)."),
-        ("Shoulder ER (adducted, low-bar)", "°", 70.0, True, "shoulder", "Test spalla: extrarotazione low-bar."),
-    ],
-    "Panca": [
-        ("Shoulder Flexion (supine)", "°", 180.0, True, "shoulder", "Test spalla: flessione supina."),
-        ("External Rotation (90° abd)", "°", 90.0, True, "shoulder", "Test spalla: ER a 90° abduzione."),
-        ("Wall Angel Test", "score", 3.0, False, "thoracic", "Contatto scapolare/test posturale (0–3)."),
-        ("Pectoralis Minor Length", "cm", 10.0, True, "shoulder", "Test pettorale: distanza da lettino."),
-        ("Thomas Test (modified)", "°", 10.0, True, "hip", "Test flessori anca (modificato)."),
-    ],
-    "Deadlift": [
-        ("Active Knee Extension (AKE)", "°", 90.0, True, "knee", "Test hamstrings: estensione attiva."),
-        ("Straight Leg Raise (SLR)", "°", 90.0, True, "hip", "Test SLR catena posteriore."),
-        ("Weight Bearing Lunge Test", "cm", 10.0, True, "ankle", "Test caviglia: dorsiflessione in carico."),
-        ("Sorensen Endurance", "sec", 180.0, False, "lumbar", "Test endurance estensori lombari."),
-    ],
-    "Neurodinamica": [
-        ("Straight Leg Raise (SLR)", "°", 90.0, True, "hip", "Test neurodinamica posteriore LE."),
-        ("ULNT1A (Median nerve)", "°", 90.0, True, "shoulder", "Test neurodinamica arto superiore."),
-    ],
-}
