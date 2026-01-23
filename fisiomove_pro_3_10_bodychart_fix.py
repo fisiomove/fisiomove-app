@@ -1,4 +1,3 @@
-
 import io
 import os
 import random
@@ -17,8 +16,17 @@ import plotly.express as px
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import cm
 from reportlab.lib import colors
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image as RLImage, Table, TableStyle
-from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.platypus import (
+    SimpleDocTemplate,
+    Paragraph,
+    Spacer,
+    Image as RLImage,
+    Table,
+    TableStyle,
+    PageBreak,
+)
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.enums import TA_LEFT
 
 st.set_page_config(page_title="Fisiomove MobilityPro v. 1.0", layout="centered")
 
@@ -75,6 +83,23 @@ TEST_NAME_TRANSLATIONS = {
     "Straight Leg Raise (SLR)": "Straight Leg Raise (SLR)",
     "Sorensen Endurance": "Test Sorensen (endurance lombare)",
     "ULNT1A (Median nerve)": "ULNT1A (nervo mediano)",
+}
+
+# Short labels used ONLY for the PDF radar (simpler/test-friendly names)
+SHORT_RADAR_LABELS = {
+    "Weight Bearing Lunge Test": "Mobilità caviglia",
+    "Passive Hip Flexion": "Flessione anca",
+    "Hip Rotation (flexed 90°)": "Rotazione anca",
+    "Wall Angel Test": "Wall Angel",
+    "Shoulder ER (adducted, low-bar)": "ER spalla (low-bar)",
+    "Shoulder Flexion (supine)": "Flessione spalla",
+    "External Rotation (90° abd)": "ER 90° abd",
+    "Pectoralis Minor Length": "PM length",
+    "Thomas Test (modified)": "Lunghezza flessori anca",
+    "Active Knee Extension (AKE)": "Hamstring AKE",
+    "Straight Leg Raise (SLR)": "SLR",
+    "Sorensen Endurance": "Endurance lombare",
+    "ULNT1A (Median nerve)": "ULNT1A (mediano)",
 }
 
 LOGO_PATHS = ["logo 2600x1000.jpg", "logo.png", "logo.jpg"]
@@ -341,19 +366,22 @@ def build_df(section):
 
 
 # -----------------------------
-# Plots: Matplotlib (for PDF) and Plotly (UI)
+# Plots: Matplotlib (for PDF) with simplified labels mapping
 # -----------------------------
 def radar_plot_matplotlib(df, title="Punteggi (0–10)"):
     import numpy as np
 
-    labels = df["Test"].tolist()
+    labels_raw = df["Test"].tolist()
+    # map to short labels for PDF
+    labels = [SHORT_RADAR_LABELS.get(name, name) for name in labels_raw]
     values = df["Score"].astype(float).tolist()
 
     if len(labels) < 3:
         raise ValueError("Servono almeno 3 test per il radar.")
 
     values += values[:1]
-    num_vars = len(labels)
+    labels += labels[:1]
+    num_vars = len(labels) - 1
     angles = np.linspace(0, 2 * np.pi, num_vars, endpoint=False).tolist()
     angles += angles[:1]
 
@@ -367,7 +395,7 @@ def radar_plot_matplotlib(df, title="Punteggi (0–10)"):
     ax.set_yticks([2, 4, 6, 8, 10])
     ax.set_ylim(0, 10)
     ax.set_xticks(angles[:-1])
-    ax.set_xticklabels(labels, fontsize=9)
+    ax.set_xticklabels(labels[:-1], fontsize=9)
     ax.set_title(sanitize_text_for_plot(title), y=1.1, fontsize=14)
 
     buf = io.BytesIO()
@@ -447,114 +475,268 @@ def plotly_asymmetry(df):
 
 
 # -----------------------------
-# EBM library (italian text templates)
-# Each entry contains a 'title' and a 'text' (Italian, polished)
+# EBM library (Italian, with practical recommendations)
 # -----------------------------
 EBM_LIBRARY = {
     "Weight Bearing Lunge Test": {
         "title": "Dorsiflessione caviglia (WBLT)",
         "text": (
             "Test: Weight Bearing Lunge Test — Dorsiflessione della caviglia ridotta.\n"
-            "Interpretazione: una limitata dorsiflessione in carico può compromettere la profondità dello squat e indurre compensi a livello del ginocchio e dell'anca; è anche associata a maggiore rischio di problematiche biomeccaniche nella catena cinetica inferiore.\n"
-            "Cosa fare: valutare mobilità talo‑crurale ed eventuali restrizioni muscolari, programmare mobilizzazioni articolari, esercizi di controllo del movimento e integrazione funzionale nello squat. Monitorare progressi con il WBLT."
+            "Interpretazione: limitata dorsiflessione in carico può compromettere la profondità dello squat e indurre compensi; associata a rischio di disturbi del comparto anteriore del ginocchio e alterazioni di carico.\n"
+            "Raccomandazioni pratiche: mobilizzazione tibio‑talarica (3 serie da 1–2 min tecniche di mobilità), esercizi di controllo eccentrico per la caviglia (es. calf‑lowering) 3x8–12, integrazione in squat assistito e progressione funzionale 2–3 volte/settimana."
         ),
     },
     "Passive Hip Flexion": {
         "title": "Flessione d'anca passiva",
         "text": (
-            "Test: Flessione d'anca passiva ridotta.\n"
-            "Interpretazione: limiti nella flessione passiva possono ridurre la capacità di raggiungere profondità funzionali nello squat e indurre compensi lombo‑pelvici o alterazioni dell'assetto pelvico.\n"
-            "Cosa fare: valutare struttura articolare e tensione muscolare (glutei, ileopsoas), includere mobilità specifica e lavoro sul controllo pelvico durante esercizi di profondità."
+            "Test: flessione d'anca passiva ridotta.\n"
+            "Interpretazione: limiti nel ROM possono ridurre profondità del squat e provocare compensi lombari.\n"
+            "Raccomandazioni pratiche: mobilità articolare dell'anca (3 serie da 30–60s di stretching progressivo), esercizi di attivazione glutea 3x10–15, e lavoro sul controllo pelvico durante squat (progressioni guidate)."
         ),
     },
     "Hip Rotation (flexed 90°)": {
         "title": "Rotazione anca (flessione 90°)",
         "text": (
-            "Test: Rotazione anca in flessione 90° ridotta o asimmetrica.\n"
-            "Interpretazione: deficit di rotazione interna/esterna in flessione possono influenzare pivot, squat profondo e aumentare il carico su ginocchio e colonna; possono essere segnali di conflitto femoro‑acetabolare o limitazioni miofasciali.\n"
-            "Cosa fare: approfondire con valutazione clinica, lavorare su mobilità capsulare e controllo neuromuscolare, correggere asimmetrie."
+            "Test: rotazione anca in flessione 90° ridotta o asimmetrica.\n"
+            "Interpretazione: può indicare limitazioni capsulari o miofasciali, con potenziali ricadute su ginocchio/colonna.\n"
+            "Raccomandazioni pratiche: mobilità capsulare specifica (manipolazioni o mobilizzazioni), esercizi di controllo rotazionale 3x8–12, e integrare il lavoro in esercizi funzionali come squat profondi con cue pelvico."
         ),
     },
     "Wall Angel Test": {
         "title": "Wall Angel — controllo scapolare e mobilità toracica",
         "text": (
             "Test: Wall Angel con punteggio ridotto.\n"
-            "Interpretazione: suggerisce deficit di controllo scapolare, limitazione di estensione toracica o pattern di movimento compensatorio; può influenzare i movimenti overhead e la postura.\n"
-            "Cosa fare: inserire esercizi di mobilità toracica, rinforzo selettivo dei stabilizzatori scapolari (lower trapezius, serratus anterior) e training del pattern motorio in posizione funzionale."
+            "Interpretazione: deficit di controllo scapolare e/o mobilità toracica; impatta movimenti overhead.\n"
+            "Raccomandazioni pratiche: esercizi di estensione toracica (foam roller 2–3min), rinforzo serratus/low trapezius 3x10–15, e esercizi di retraining del pattern (Wall Angel progressivo) giornalmente."
         ),
     },
     "Shoulder ER (adducted, low-bar)": {
-        "title": "Rotazione esterna spalla (adducted, low-bar)",
+        "title": "Rotazione esterna spalla (adduction, low-bar)",
         "text": (
-            "Test: Ridotta rotazione esterna in adduzione.\n"
-            "Interpretazione: può impedire una corretta posizione low‑bar nello squat, provocando compensi a carico dei polsi o della colonna toracica e aumentando il rischio di discomfort o sovraccarico articolare.\n"
-            "Cosa fare: lavorare su mobilità capsulare, esercizi attivi di rotazione esterna e posizionamento scapolare; adattare la tecnica di sollevamento fino a recupero funzionale."
+            "Test: ridotta rotazione esterna in adduzione.\n"
+            "Interpretazione: può impedire posizione low‑bar e generare compensi a livello di polso/avambraccio/torace.\n"
+            "Raccomandazioni pratiche: mobilità capsulare anteriore, esercizi attivi di ER con banda 3x12, esercizi scapolari per stabilità e progressione tecnica del posizionamento del bilanciere."
         ),
     },
     "Shoulder Flexion (supine)": {
         "title": "Flessione spalla (supina)",
         "text": (
-            "Test: Flessione di spalla ridotta.\n"
-            "Interpretazione: può limitare attività overhead e indicare deficit muscolari o restrizioni capsulari.\n"
-            "Cosa fare: valutare differenza tra deficit attivo e passivo, applicare mobilità e rinforzo progressivo, integrare esercizi overhead con controllo scapolare."
+            "Test: flessione spalla ridotta.\n"
+            "Interpretazione: limita attività overhead; distinguere deficit attivo vs passivo.\n"
+            "Raccomandazioni pratiche: mobilità passiva e attiva assistita, rinforzo progressivo range-specific 3x8–12, e integrazione con esercizi overhead a bassa intensità."
         ),
     },
     "External Rotation (90° abd)": {
-        "title": "Rotazione esterna spalla a 90° di abduzione",
+        "title": "Rotazione esterna spalla a 90° abduzione",
         "text": (
-            "Test: Ridotta ER a 90° di abduzione.\n"
-            "Interpretazione: importante per funzioni overhead e per la stabilità dinamica; deficit può predisporre a sovraccarichi e dolore durante attività sollevamento o sport.\n"
-            "Cosa fare: rinforzo selettivo, esercizi di stabilità e progressione verso movimenti specifici di sport/attività."
+            "Test: limitazione della ER a 90° di abduzione.\n"
+            "Interpretazione: rilevante per attività overhead; deficit incrementa rischio di sovraccarico.\n"
+            "Raccomandazioni pratiche: esercizi isometrici e progressivi di ER a 90° (3x6–8 isometrici progressivi), lavoro di stabilità scapolare e gradual return-to-load."
         ),
     },
     "Pectoralis Minor Length": {
         "title": "Lunghezza piccolo pettorale",
         "text": (
             "Test: piccolo pettorale accorciato.\n"
-            "Interpretazione: l'accorciamento tende a proiettare in avanti la scapola, riducendo la rotazione superiore e la posterior tilt; può contribuire a impingement o disfunzione scapolare.\n"
-            "Cosa fare: stretching mirato del piccolo pettorale, esercizi di riequilibrio scapolare e rinforzo degli antagonisti; valutare in combinazione con altri test scapolari."
+            "Interpretazione: contribuisce a scapula proiettata in avanti e a disfunzione di spazio subacromiale.\n"
+            "Raccomandazioni pratiche: stretching del PM (3×30–60s), rilascio miofasciale, e rinforzo degli antagonisti (lower trap e serratus) 3x10–15; correggere pattern posturali."
         ),
     },
     "Thomas Test (modified)": {
         "title": "Test di Thomas (modificato)",
         "text": (
-            "Test: Thomas modificato positivo (flessori di anca tesi).\n"
-            "Interpretazione: accorciamento degli iliopsoas o del retto femorale che limita l'estensione d'anca e può aumentare il compenso lombare.\n"
-            "Cosa fare: stretching mirato, rilascio miofasciale e lavoro sul controllo pelvico e sulla estensione dell'anca."
+            "Test: Thomas modificato positivo.\n"
+            "Interpretazione: accorciamento dei flessori d'anca che limita estensione e può aumentare compenso lombare.\n"
+            "Raccomandazioni pratiche: stretching attivo/passivo dei flessori (3×30–60s), esercizi di controllo pelvico ed estensione cinematica guidata; progressione 2–3 volte/settimana."
         ),
     },
     "Active Knee Extension (AKE)": {
         "title": "Estensione attiva ginocchio (AKE)",
         "text": (
-            "Test: AKE indica ridotta lunghezza degli hamstring.\n"
-            "Interpretazione: gli hamstring corti possono modificare la meccanica del bacino e aumentare il rischio di infortuni durante sprint o movimenti esplosivi.\n"
-            "Cosa fare: piano di mobilità e allenamento eccentrico/funzionale specifico per gli hamstring, monitorando simmetrie laterali."
+            "Test: AKE indica ridotta lunghezza hamstring.\n"
+            "Interpretazione: può alterare meccanica del bacino e aumentare il rischio di infortuni esplosivi.\n"
+            "Raccomandazioni pratiche: programmi eccentrici e di flessibilità (es. Nordic eccentrico 2x/set 2–3 serie, o stretching 3×30s), integrazione nei movimenti funzionali."
         ),
     },
     "Straight Leg Raise (SLR)": {
         "title": "Straight Leg Raise (SLR)",
         "text": (
             "Test: SLR positivo.\n"
-            "Interpretazione: va fatta distinzione tra limitazione muscolare e sensibilità neurodinamica. Se la manovra riproduce sintomi radicolari o aumenta con dorsiflessione della caviglia o flessione cervicale, è probabile componente neurale; se il dolore resta locale alla parte posteriore della coscia, più probabile componente muscolare.\n"
-            "Cosa fare: applicare manovre di differenziazione strutturale, considerare interventi neurodinamici o di flessibilità a secondo dell'origine del sintomo."
+            "Interpretazione: distinguere tra limitazione muscolare e sensibilità neurodinamica. Se i sintomi sono radicolari o aumentano con differenziazione strutturale, è probabile componente neurale.\n"
+            "Raccomandazioni pratiche: se neurale, tecniche neurodinamiche (gliding/gliding progressivo), mobilità vertebrale; se muscolare, lavoro di flessibilità e potenziamento funzionale."
         ),
     },
     "Sorensen Endurance": {
         "title": "Test di Sorensen (endurance lombare)",
         "text": (
             "Test: bassa resistenza al test di Sorensen.\n"
-            "Interpretazione: può indicare deficit di endurance degli estensori lombari e essere associato a rischio o persistenza di lombalgia; tuttavia il dato va interpretato insieme a fattori motivazionali e capacità condizionali generali.\n"
-            "Cosa fare: inserire progressioni di endurance e controllo motorio lombare, valutare fattori comportamentali e di condizionamento generale."
+            "Interpretazione: può indicare deficit di endurance degli estensori lombari e essere associato a rischio/persistenza di lombalgia.\n"
+            "Raccomandazioni pratiche: programmazione di endurance lombare progressiva (es. back extensions a tempo, 3–4 set da 30–60s progressivi) e integrazione del controllo motorio."
         ),
     },
     "ULNT1A (Median nerve)": {
         "title": "ULNT1A (nervo mediano)",
         "text": (
-            "Test: ULNT1A positivo o mobilità neurale ridotta (valori molto bassi vicino a 0°).\n"
-            "Interpretazione: suggerisce aumentata meccanica o irritabilità del nervo mediano. È fondamentale usare la differenziazione strutturale per confermare l'origine neurale dei sintomi.\n"
-            "Cosa fare: tecniche di neurodinamica, mobilità neurale e integrazione con trattamenti per la causa primaria (ad es. compressione periferica o cervicale)."
+            "Test: ULNT1A positivo o mobilità neurale ridotta.\n"
+            "Interpretazione: suggerisce irritabilità o ridotta mobilità del nervo mediano; è fondamentale confermare con differenziazione strutturale.\n"
+            "Raccomandazioni pratiche: tecniche di mobilizzazione neurale (gliding) 3x10 ripetizioni, esercizi di tolleranza graduale, e trattamento della causa compressiva (se presente)."
         ),
     },
+}
+
+
+# -----------------------------
+# Exercise plans templates for program generation (4-week progression)
+# These are pragmatic templates (sets/reps, frequency). They reflect common evidence-based practice patterns.
+# -----------------------------
+EXERCISE_PLANS = {
+    "Weight Bearing Lunge Test": [
+        {
+            "name": "Mobilizzazione tibio-talarica (lunge con scivolamento)",
+            "week_loads": ["3x30s mobilità blanda", "3x40s", "3x60s", "3x90s (progredire range)"],
+            "frequency": "giornaliero"
+        },
+        {
+            "name": "Esercizi di controllo eccentrico della caviglia (calf lowering)",
+            "week_loads": ["2x8", "2x10", "3x8", "3x10"],
+            "frequency": "3 volte/settimana"
+        },
+        {
+            "name": "Squat assistito (box squat) con cue caviglia",
+            "week_loads": ["2x8 leggero", "3x8", "3x10", "3x12 progressivo carico"],
+            "frequency": "2-3 volte/settimana"
+        }
+    ],
+    "Passive Hip Flexion": [
+        {
+            "name": "Stretching dinamico anca (30-60s)",
+            "week_loads": ["3x30s", "3x40s", "3x45s", "3x60s"],
+            "frequency": "giornaliero"
+        },
+        {
+            "name": "Attivazione gluteo (bridge progressivo)",
+            "week_loads": ["2x10", "3x10", "3x12", "3x15"],
+            "frequency": "3 volte/settimana"
+        },
+        {
+            "name": "Squat profondità progressiva con controllo pelvico",
+            "week_loads": ["2x6", "3x6", "3x8", "3x10"],
+            "frequency": "2 volte/settimana"
+        }
+    ],
+    "Hip Rotation (flexed 90°)": [
+        {
+            "name": "Mobilità rotazionale anca (manuale o self‑mobil)",
+            "week_loads": ["3x30s", "3x40s", "3x45s", "3x60s"],
+            "frequency": "giornaliero"
+        },
+        {
+            "name": "Controllo rotazionale (clamshell progressivo, 3D control)",
+            "week_loads": ["2x8", "3x10", "3x12", "3x15"],
+            "frequency": "3 volte/settimana"
+        }
+    ],
+    "Wall Angel Test": [
+        {
+            "name": "Estensione toracica (foam roller)",
+            "week_loads": ["2x1min", "2x1.5min", "2x2min", "3x2min"],
+            "frequency": "giornaliero"
+        },
+        {
+            "name": "Rinforzo serratus/low trap (scapular push-up, prone  Y)",
+            "week_loads": ["2x8", "3x8", "3x10", "3x12"],
+            "frequency": "3 volte/settimana"
+        },
+        {
+            "name": "Wall Angel progressivo (reach eccentrico)",
+            "week_loads": ["2x6 lento", "3x6", "3x8", "3x10 con pause"],
+            "frequency": "giornaliero"
+        }
+    ],
+    "Shoulder ER (adducted, low-bar)": [
+        {
+            "name": "ER con banda a 0° (banda esterna)",
+            "week_loads": ["2x12 light", "3x12", "3x15", "3x20 con difficilezza"],
+            "frequency": "3 volte/settimana"
+        },
+        {
+            "name": "Mobilità capsulare anteriore (stretch controllato)",
+            "week_loads": ["3x30s", "3x40s", "3x45s", "3x60s"],
+            "frequency": "giornaliero"
+        }
+    ],
+    "Pectoralis Minor Length": [
+        {
+            "name": "Stretch piccolo pettorale (doorway/pec stretch)",
+            "week_loads": ["3x30s", "3x40s", "3x45s", "3x60s"],
+            "frequency": "giornaliero"
+        },
+        {
+            "name": "Rinforzo lower trap/serratus (YTWL progressivo)",
+            "week_loads": ["2x8", "3x8", "3x10", "3x12"],
+            "frequency": "3 volte/settimana"
+        }
+    ],
+    "Thomas Test (modified)": [
+        {
+            "name": "Stretch attivo dei flessori d'anca (lunge stretch)",
+            "week_loads": ["3x30s", "3x40s", "3x45s", "3x60s"],
+            "frequency": "giornaliero"
+        },
+        {
+            "name": "Control pelvico ed estensioni (bridge ecc.)",
+            "week_loads": ["2x10", "3x10", "3x12", "3x15"],
+            "frequency": "3 volte/settimana"
+        }
+    ],
+    "Active Knee Extension (AKE)": [
+        {
+            "name": "Nordic eccentrico / eccentric hamstrings",
+            "week_loads": ["2x4 controllo", "2x6", "3x6", "3x8"],
+            "frequency": "2-3 volte/settimana"
+        },
+        {
+            "name": "Stretch 90/90 hamstring",
+            "week_loads": ["3x30s", "3x40s", "3x45s", "3x60s"],
+            "frequency": "giornaliero"
+        }
+    ],
+    "Straight Leg Raise (SLR)": [
+        {
+            "name": "Neurodynamics gliding per sciatico (se neurale)",
+            "week_loads": ["3x10 lento", "3x12", "3x12", "3x15"],
+            "frequency": "giornaliero se tollerato"
+        },
+        {
+            "name": "Stretch/controllo muscolare se muscolare",
+            "week_loads": ["3x30s", "3x40s", "3x45s", "3x60s"],
+            "frequency": "giornaliero"
+        }
+    ],
+    "Sorensen Endurance": [
+        {
+            "name": "Progressione endurance lombare (back hold/tempo)",
+            "week_loads": ["3x20s", "3x30s", "3x45s", "3x60s"],
+            "frequency": "3 volte/settimana"
+        },
+        {
+            "name": "Integrazione control motorio (bird-dog, deadbug)",
+            "week_loads": ["2x8", "3x8", "3x10", "3x12"],
+            "frequency": "3 volte/settimana"
+        }
+    ],
+    "ULNT1A (Median nerve)": [
+        {
+            "name": "Gliding neurodinamico del nervo mediano",
+            "week_loads": ["3x10 gliding", "3x12", "3x12", "3x15"],
+            "frequency": "giornaliero se tollerato"
+        },
+        {
+            "name": "Progressione di tolleranza (sensibilità)",
+            "week_loads": ["educazione + 2x5", "2x8", "3x8", "3x10"],
+            "frequency": "giornaliero"
+        }
+    ],
 }
 
 
@@ -586,33 +768,87 @@ def ebm_from_df(df, friendly=False):
             issue = True
 
         if issue:
-            # use the prepared text (already in italian, polished)
             text = entry["text"]
-            # ensure the paragraph begins with the test name for clarity
             paragraph = f"{heading} {text}"
             para_parts.append(paragraph)
         else:
             paragraph = f"{heading} Risultato nella norma (score {score:.1f}/10)."
             para_parts.append(paragraph)
 
-        # join and append
         notes.append("\n".join(para_parts))
 
     return notes
 
 
 # -----------------------------
-# PDF generation (senza bibliografia finale)
+# Build intervention program for top priorities (returns list of flowables)
+# -----------------------------
+def build_intervention_program_flowables(df):
+    flow = []
+    styles = getSampleStyleSheet()
+    normal = styles["Normal"]
+    heading = ParagraphStyle("heading", parent=styles["Heading2"], alignment=TA_LEFT, textColor=colors.HexColor(PRIMARY))
+
+    # Determine top 3 priorities (lowest scores <7)
+    bad_df = df.copy()
+    bad_df = bad_df[bad_df["Score"].notnull()]
+    bad_df = bad_df.sort_values("Score", ascending=True)
+    priorities = bad_df[bad_df["Score"] < 7].head(3)
+
+    flow.append(Paragraph("<b>Programma d'intervento personalizzato — 4 settimane</b>", heading))
+    flow.append(Spacer(1, 8))
+
+    if priorities.empty:
+        flow.append(Paragraph("Nessuna priorità critica individuata: mantenere programma di mantenimento e monitorare.", normal))
+        flow.append(Spacer(1, 8))
+        return flow
+
+    # For each priority, produce a per-week plan using EXERCISE_PLANS
+    week_titles = ["Settimana 1 (adattamento)", "Settimana 2 (progressione)", "Settimana 3 (carico crescente)", "Settimana 4 (consolidamento)"]
+
+    for idx, row in priorities.iterrows():
+        test_name = row["Test"]
+        display_name = TEST_NAME_TRANSLATIONS.get(test_name, test_name)
+        flow.append(Paragraph(f"<b>{display_name}</b>", styles["Heading4"]))
+        flow.append(Spacer(1, 6))
+
+        plans = EXERCISE_PLANS.get(test_name)
+        if not plans:
+            flow.append(Paragraph("Nessun piano standard disponibile per questo test. Valutare programmi specifici in consulto.", normal))
+            flow.append(Spacer(1, 8))
+            continue
+
+        # Warm-up recommendation
+        flow.append(Paragraph("Riscaldamento suggerito: 5–10 minuti attività a bassa intensità (bicicletta/ cammino) + mobilità dinamica specifica.", normal))
+        flow.append(Spacer(1, 6))
+
+        # For each exercise, show week progression
+        for ex in plans:
+            flow.append(Paragraph(f"• {ex['name']}", normal))
+            # list weekly loads
+            for w, wk in enumerate(ex["week_loads"], start=1):
+                flow.append(Paragraph(f"   - {week_titles[w-1]}: {wk} — ({ex['frequency']})", normal))
+            flow.append(Spacer(1, 4))
+        flow.append(Spacer(1, 8))
+
+    # Add general notes
+    flow.append(Paragraph("<b>Note generali</b>", normal))
+    flow.append(Paragraph(
+        "• Programmare le sessioni in modo da non sovraccaricare i distretti sensibili; monitorare dolore e tolleranza. "
+        "• Se il paziente riferisce peggioramento significativo contattare il valutatore e ridurre carico o modificare esercizi.",
+        normal,
+    ))
+    flow.append(Spacer(1, 6))
+    flow.append(Paragraph("Durata: 4 settimane. Rivalutare con gli stessi test alla fine del ciclo per misurare il progresso.", normal))
+    flow.append(Spacer(1, 10))
+
+    return flow
+
+
+# -----------------------------
+# PDF generation (adds program page as second page)
 # -----------------------------
 def pdf_report_no_bodychart(logo_bytes, athlete, evaluator, date_str, section, df, ebm_notes, radar_buf=None, asym_buf=None):
-    import io
-    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image as RLImage, Table, TableStyle
-    from reportlab.lib.pagesizes import A4
-    from reportlab.lib.units import cm
-    from reportlab.lib import colors
-    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-    from reportlab.lib.enums import TA_LEFT
-
     buf = io.BytesIO()
     doc = SimpleDocTemplate(
         buf, pagesize=A4, leftMargin=1.6 * cm, rightMargin=1.6 * cm, topMargin=1.2 * cm, bottomMargin=1.2 * cm
@@ -647,7 +883,7 @@ def pdf_report_no_bodychart(logo_bytes, athlete, evaluator, date_str, section, d
     story.append(info_table)
     story.append(Spacer(1, 8))
 
-    # Summary metrics
+    # Summary metrics + Top 3 priorities
     avg_score = df["Score"].mean() if "Score" in df.columns and not df["Score"].isna().all() else 0.0
     n_dolore = int(df["Dolore"].sum()) if "Dolore" in df.columns else 0
     sym_mean = df["SymScore"].mean() if "SymScore" in df.columns else np.nan
@@ -666,6 +902,20 @@ def pdf_report_no_bodychart(logo_bytes, athlete, evaluator, date_str, section, d
         )
     )
     story.append(metrics)
+    story.append(Spacer(1, 8))
+
+    # Top 3 priorities: lowest scores (only those below 7)
+    story.append(Paragraph("<b>Top 3 priorità di intervento</b>", heading))
+    bad_df = df.copy()
+    bad_df = bad_df[bad_df["Score"].notnull()]
+    bad_df = bad_df.sort_values("Score", ascending=True)
+    priorities = bad_df[bad_df["Score"] < 7].head(3)
+    if not priorities.empty:
+        for _, row in priorities.iterrows():
+            test_label = TEST_NAME_TRANSLATIONS.get(row["Test"], row["Test"])
+            story.append(Paragraph(f"• {test_label} — Score: {row['Score']:.1f}/10 — Azione prioritaria: valutare e intervenire su mobilità o forza.", normal))
+    else:
+        story.append(Paragraph("Nessuna priorità critica (tutti i test sono >= 7).", normal))
     story.append(Spacer(1, 12))
 
     # Results table
@@ -748,13 +998,25 @@ def pdf_report_no_bodychart(logo_bytes, athlete, evaluator, date_str, section, d
     story.append(Spacer(1, 6))
     if ebm_notes:
         for para in ebm_notes:
-            # each para already starts with the test name
             story.append(Paragraph(sanitize_text_for_plot(para).replace("\n", "<br/>"), normal))
             story.append(Spacer(1, 8))
     else:
         story.append(Paragraph("Nessun commento disponibile.", normal))
 
-    # Footer
+    # Footer for page 1
+    story.append(Spacer(1, 12))
+    story.append(Paragraph(f"Valutatore: {evaluator}", small))
+    story.append(Paragraph("Firma: ______________________", small))
+    story.append(Spacer(1, 6))
+
+    # --- Page break: second page = intervention program (4-week)
+    story.append(PageBreak())
+
+    program_flow = build_intervention_program_flowables(df)
+    for f in program_flow:
+        story.append(f)
+
+    # final footer (on second page)
     story.append(Spacer(1, 12))
     story.append(Paragraph(f"Valutatore: {evaluator}", small))
     story.append(Paragraph("Firma: ______________________", small))
@@ -766,11 +1028,6 @@ def pdf_report_no_bodychart(logo_bytes, athlete, evaluator, date_str, section, d
 
 
 def pdf_report_client_friendly(logo_bytes, athlete, evaluator, date_str, section, df, radar_buf=None, asym_buf=None):
-    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image as RLImage, Table, TableStyle
-    from reportlab.lib.pagesizes import A4
-    from reportlab.lib.units import cm
-    from reportlab.lib.styles import getSampleStyleSheet
-
     buf = io.BytesIO()
     doc = SimpleDocTemplate(
         buf, pagesize=A4, leftMargin=1.6 * cm, rightMargin=1.6 * cm, topMargin=1.2 * cm, bottomMargin=1.2 * cm
