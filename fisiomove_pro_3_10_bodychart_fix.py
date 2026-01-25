@@ -31,6 +31,7 @@ from reportlab.platypus import (
     Image as RLImage,
     Table,
     TableStyle,
+    KeepTogether,
 )
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_LEFT
@@ -149,6 +150,28 @@ SHORT_RADAR_LABELS = {
     "Sorensen Endurance": "Endurance lombare",
     "ULNT1A (Median nerve)": "ULNT1A (mediano)",
 }
+
+# Labels to use ONLY inside PDFs (anatomical area)
+PDF_TEST_LABELS = {
+    "Weight Bearing Lunge Test": "Test caviglia",
+    "Passive Hip Flexion": "Test mob. flessione anca",
+    "Hip Rotation (flexed 90°)": "Test rotazione anca",
+    "Wall Angel Test": "Test mobilità toracica",
+    "Shoulder ER (adducted, low-bar)": "Test rotazione spalla",
+    "Shoulder Flexion (supine)": "Test flessione spalla",
+    "External Rotation (90° abd)": "Test rot spalla",
+    "Pectoralis Minor Length": "Test pettorale minore",
+    "Thomas Test (modified)": "Test flessori anca",
+    "Active Knee Extension (AKE)": "Test estensione ginocchio",
+    "Straight Leg Raise (SLR)": "Test sciatico",
+    "Sorensen Endurance": "Test endurance lombare",
+    "ULNT1A (Median nerve)": "Test neurodinamico spalla",
+}
+
+
+def pdf_test_label(name: str) -> str:
+    return PDF_TEST_LABELS.get(name, name)
+
 
 # -----------------------------
 # Init session state
@@ -725,7 +748,7 @@ def ebm_from_df(df):
         entry = EBM_LIBRARY.get(test)
         if not entry:
             continue
-        title_it = test
+        title_it = pdf_test_label(test)
         if score < 7:
             paragraph = f"{title_it}: {entry['text']}"
         else:
@@ -810,7 +833,7 @@ def pdf_report_clinico(logo_bytes, athlete, evaluator, date_str, section, df, eb
     priorities = bad_df[bad_df["Score"] < 7].head(3)
     if not priorities.empty:
         for _, row in priorities.iterrows():
-            lbl = row["Test"]
+            lbl = pdf_test_label(row["Test"])
             story.append(Paragraph(f"• {lbl} — Score {row['Score']:.1f}/10 — area da approfondire", normal))
     else:
         story.append(Paragraph("Nessuna priorità critica.", normal))
@@ -819,10 +842,11 @@ def pdf_report_clinico(logo_bytes, athlete, evaluator, date_str, section, df, eb
     # Results table
     disp = df.copy()
     disp["Status"] = disp["Score"].apply(lambda s: "✔" if s >= 7 else ("⚠" if s >= 4 else "✖"))
+    disp["TestPdf"] = disp["Test"].apply(pdf_test_label)
     table_cols = ["Status", "Test", "Valore", "Unità", "Rif", "Score"]
     table_data = [table_cols]
     for _, r in disp.iterrows():
-        table_data.append([r["Status"], r["Test"], r["Valore"], r["Unità"], r["Rif"], f"{r['Score']:.1f}"])
+        table_data.append([r["Status"], r["TestPdf"], r["Valore"], r["Unità"], r["Rif"], f"{r['Score']:.1f}"])
     colWidths = [1.0*cm, 7.0*cm, 2.0*cm, 2.0*cm, 1.6*cm, 2.0*cm]
     result_table = Table(table_data, colWidths=colWidths, repeatRows=1)
     style = TableStyle([
@@ -851,17 +875,21 @@ def pdf_report_clinico(logo_bytes, athlete, evaluator, date_str, section, df, eb
     story.append(result_table)
     story.append(Spacer(1, 12))
 
-    # Charts
+    # Charts (keep together & centered)
+    chart_block = []
     if radar_buf:
-        story.append(Paragraph("<b>Grafico radar</b>", normal))
-        story.append(Spacer(1, 6))
-        story.append(RLImage(io.BytesIO(radar_buf.getvalue()), width=10 * cm, height=10 * cm))
-        story.append(Spacer(1, 8))
+        chart_block.append(Paragraph("<b>Grafico radar</b>", normal))
+        chart_block.append(Spacer(1, 6))
+        chart_block.append(RLImage(io.BytesIO(radar_buf.getvalue()), width=10 * cm, height=10 * cm, hAlign="CENTER"))
+        chart_block.append(Spacer(1, 8))
     if asym_buf:
-        story.append(Paragraph("<b>Asimmetrie</b>", normal))
-        story.append(Spacer(1, 6))
-        story.append(RLImage(io.BytesIO(asym_buf.getvalue()), width=14 * cm, height=6 * cm))
-        story.append(Spacer(1, 8))
+        chart_block.append(Paragraph("<b>Asimmetrie</b>", normal))
+        chart_block.append(Spacer(1, 6))
+        chart_block.append(RLImage(io.BytesIO(asym_buf.getvalue()), width=14 * cm, height=6 * cm, hAlign="CENTER"))
+        chart_block.append(Spacer(1, 8))
+
+    if chart_block:
+        story.append(KeepTogether(chart_block))
 
     # Pain regions
     pain_regions = []
@@ -927,12 +955,12 @@ with colpdf1:
             )
             st.download_button("Scarica PDF Clinico", data=pdf.getvalue(), file_name=f"Fisiomove_Report_Clinico_{st.session_state['date']}.pdf", mime="application/pdf", use_container_width=True)
         except Exception as e:
-            st.error(f"Errore durante generazione PDF clinico: {e}")
+            st.error(f"Errore durante la generazione del PDF clinico: {e}")
 
 with colpdf2:
-    if st.button("Esporta PDF Client Friendly", use_container_width=True):
+    if st.button("Esporta PDF Cliente", use_container_width=True):
         try:
-            pdf_client = pdf_report_client_friendly(
+            pdf = pdf_report_client_friendly(
                 logo_bytes=LOGO,
                 athlete=st.session_state["athlete"],
                 evaluator=st.session_state["evaluator"],
@@ -942,6 +970,6 @@ with colpdf2:
                 radar_buf=radar_buf,
                 asym_buf=asym_buf,
             )
-            st.download_button("Scarica PDF Client Friendly", data=pdf_client.getvalue(), file_name=f"Fisiomove_Report_Facile_{st.session_state['date']}.pdf", mime="application/pdf", use_container_width=True)
+            st.download_button("Scarica PDF Cliente", data=pdf.getvalue(), file_name=f"Fisiomove_Report_Cliente_{st.session_state['date']}.pdf", mime="application/pdf", use_container_width=True)
         except Exception as e:
-            st.error(f"Errore durante generazione PDF semplificato: {e}")
+            st.error(f"Errore durante la generazione del PDF cliente: {e}")
