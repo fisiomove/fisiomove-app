@@ -1,3 +1,7 @@
+# Updated streamlit_app.py
+# Purpose: remove all practical recommendations from EBM comments and from PDF.
+# The app still generates interpretative EBM comments and brief EBM tips (no exercises/sets/reps).
+
 import io
 import os
 import random
@@ -32,7 +36,7 @@ st.set_page_config(page_title="Fisiomove MobilityPro v. 1.0", layout="centered")
 
 
 # -----------------------------
-# Utility: sanitize testo (rimuove emoji e simboli non-ASCII pesanti)
+# Utility
 # -----------------------------
 emoji_pattern = re.compile(
     "["
@@ -85,7 +89,6 @@ TEST_NAME_TRANSLATIONS = {
     "ULNT1A (Median nerve)": "ULNT1A (nervo mediano)",
 }
 
-# Short labels used ONLY for the PDF radar (simpler/test-friendly names)
 SHORT_RADAR_LABELS = {
     "Weight Bearing Lunge Test": "Mobilità caviglia",
     "Passive Hip Flexion": "Flessione anca",
@@ -137,7 +140,7 @@ BODYCHART_BASE = load_bodychart_image()
 
 
 # -----------------------------
-# Stato Streamlit
+# Session state init
 # -----------------------------
 def init_state():
     if "vals" not in st.session_state:
@@ -156,7 +159,7 @@ init_state()
 
 
 # -----------------------------
-# Scoring helper (handles tests where lower value = better)
+# Scoring helpers
 # -----------------------------
 def ability_linear(val, ref, higher_is_better=True):
     try:
@@ -166,7 +169,6 @@ def ability_linear(val, ref, higher_is_better=True):
         if higher_is_better:
             score = (val / float(ref)) * 10.0
         else:
-            # lower values correspond to better performance (0 -> best)
             v = min(val, ref)
             score = (1.0 - (v / float(ref))) * 10.0
         return max(0.0, min(10.0, score))
@@ -189,16 +191,14 @@ def symmetry_score(dx, sx, unit):
 
 
 # -----------------------------
-# Sezioni e TESTS (UNICA DEFINIZIONE)
-# Now each test tuple: (name, unit, ref, bilat, region, desc, higher_is_better)
-# higher_is_better = False means lower numeric value = better (invert scoring)
+# Tests definition
+# Each: (name, unit, ref, bilat, region, desc, higher_is_better)
 # -----------------------------
 TESTS = {
     "Squat": [
         ("Weight Bearing Lunge Test", "cm", 12.0, True, "ankle", "Test caviglia: dorsiflessione in carico.", True),
         ("Passive Hip Flexion", "°", 120.0, True, "hip", "Test anca: flessione passiva supina.", True),
         ("Hip Rotation (flexed 90°)", "°", 40.0, True, "hip", "Test anca: rotazione a 90° flessione.", True),
-        # Wall Angel now measures distance cm from wall (higher = more rigid -> worse)
         ("Wall Angel Test", "cm", 12.0, False, "thoracic", "Distanza cm tra braccio e muro a braccio teso; valori alti indicano rigidità.", False),
         ("Shoulder ER (adducted, low-bar)", "°", 70.0, True, "shoulder", "Test spalla: extrarotazione low-bar.", True),
     ],
@@ -206,7 +206,6 @@ TESTS = {
         ("Shoulder Flexion (supine)", "°", 180.0, True, "shoulder", "Test spalla: flessione supina.", True),
         ("External Rotation (90° abd)", "°", 90.0, True, "shoulder", "Test spalla: ER a 90° abduzione.", True),
         ("Wall Angel Test", "cm", 12.0, False, "thoracic", "Distanza cm tra braccio e muro a braccio teso; valori alti indicano rigidità.", False),
-        # Pectoralis minor: lower value means more mobile -> better, so higher_is_better = False
         ("Pectoralis Minor Length", "cm", 5.0, True, "shoulder", "Distanza PM: valori più bassi indicano maggiore mobilità.", False),
         ("Thomas Test (modified)", "°", 10.0, True, "hip", "Test flessori anca (modificato).", True),
     ],
@@ -224,11 +223,10 @@ TESTS = {
 
 
 # -----------------------------
-# Seed valori di default (adatta al nuovo formato)
+# Seed defaults
 # -----------------------------
 def seed_defaults():
     if st.session_state["vals"]:
-        # ensure ULNT1A keys exist if present
         if "ULNT1A (Median nerve)" in st.session_state["vals"]:
             rec = st.session_state["vals"]["ULNT1A (Median nerve)"]
             if rec.get("bilat", False):
@@ -273,7 +271,7 @@ seed_defaults()
 
 
 # -----------------------------
-# Costruzione DataFrame (unico per Valutazione Generale, senza duplicati)
+# Build DataFrame
 # -----------------------------
 def build_df(section):
     rows = []
@@ -351,13 +349,12 @@ def build_df(section):
 
 
 # -----------------------------
-# Plots: Matplotlib (for PDF) with simplified labels mapping
+# Plot helpers
 # -----------------------------
 def radar_plot_matplotlib(df, title="Punteggi (0–10)"):
     import numpy as np
 
     labels_raw = df["Test"].tolist()
-    # map to short labels for PDF
     labels = [SHORT_RADAR_LABELS.get(name, name) for name in labels_raw]
     values = df["Score"].astype(float).tolist()
 
@@ -396,8 +393,7 @@ def asymmetry_plot_matplotlib(df, title="SymScore – Simmetria Dx/Sx"):
     try:
         df_bilat["SymScore"] = pd.to_numeric(df_bilat["SymScore"], errors="coerce")
         df_bilat = df_bilat.dropna(subset=["SymScore"])
-    except Exception as e:
-        print(f"Errore nella conversione di SymScore: {e}")
+    except Exception:
         return None
 
     if df_bilat.empty:
@@ -460,102 +456,105 @@ def plotly_asymmetry(df):
 
 
 # -----------------------------
-# EBM library (Italian, with practical recommendations)
+# EBM library (interpretation only — no practical recommendations)
 # -----------------------------
 EBM_LIBRARY = {
     "Weight Bearing Lunge Test": {
         "title": "Dorsiflessione caviglia (WBLT)",
         "text": (
-            "Test: Weight Bearing Lunge Test — dorsiflessione in carico ridotta.\n"
-            "Interpretazione: limitata dorsiflessione compromette profondità di squat e può indurre compensi; valutare e intervenire su mobilità talo‑crurale e controllo della caviglia.\n"
-            "Cosa osservare: limitazione di range, asimmetria, presenza di dolore durante carico."
+            "Test: Weight Bearing Lunge Test — dorsiflessione in carico.\n"
+            "Interpretazione: valuta mobilità tibio‑talarica in carico e simmetria tra i lati; valori ridotti indicano limitazione funzionale."
         ),
     },
     "Passive Hip Flexion": {
         "title": "Flessione d'anca passiva",
         "text": (
-            "Test: flessione d'anca passiva ridotta.\n"
-            "Interpretazione: può ridurre la profondità funzionale dello squat e provocare compensi lombari. Valutare anche eventuali segni di FAI o restrizioni capsulari."
+            "Test: flessione d'anca passiva.\n"
+            "Interpretazione: misura il ROM passivo dell'anca; limitazioni suggeriscono restrizioni capsulari o muscolari."
         ),
     },
     "Hip Rotation (flexed 90°)": {
         "title": "Rotazione anca (flessione 90°)",
         "text": (
-            "Test: rotazione interna/esterna dell'anca con anca flessa a 90°.\n"
-            "Cosa misura: ROM rotazionale articolare in posizione funzionale; utile per identificare limitazioni capsulari o deficit miofasciali che influenzano pivot, squat profondo e controllo del ginocchio."
+            "Test: rotazione interna/esterna con anca flessa a 90°.\n"
+            "Interpretazione: valuta il ROM rotazionale in posizione funzionale; utile per identificare limitazioni capsulari o miofasciali."
         ),
     },
     "Wall Angel Test": {
         "title": "Wall Angel — controllo scapolare / mobilità toracica",
         "text": (
-            "Test: misura la distanza (cm) tra la parte laterale del braccio/braccio teso ed il muro.\n"
-            "Interpretazione: valori maggiori indicano maggiore rigidità/postura proiettata; attenzione: il punteggio deve essere invertito (valore numerico alto = peggiore)."
+            "Test: misura la distanza (cm) tra braccio teso e muro.\n"
+            "Interpretazione: valori maggiori indicano maggiore rigidità o posture proiettate; la scala numerica è inversa rispetto al punteggio funzionale."
         ),
     },
     "Shoulder ER (adducted, low-bar)": {
         "title": "Rotazione esterna spalla (low-bar)",
         "text": (
-            "Test: ER in adduzione — valuta la mobilità necessaria per il posizionamento low‑bar nello squat.\n"
-            "Interpretazione: deficit suggerisce lavoro su ER e stabilità scapolare; attenzione a dolore e asimmetrie."
+            "Test: rotazione esterna in adduzione.\n"
+            "Interpretazione: valuta la capacità di ER necessaria per il posizionamento low‑bar; deficit possono limitare posizione e causa compensi."
         ),
     },
     "Shoulder Flexion (supine)": {
         "title": "Flessione spalla (supina)",
         "text": (
-            "Test: flessione spalla in supino — differenzia deficit attivo vs passivo.\n"
-            "Interpretazione: limitazione indica necessità di mobilità e/o rinforzo specifico."
+            "Test: flessione spalla in supino.\n"
+            "Interpretazione: distingue tra limitazioni attive e passive; utile per valutare capacità overhead."
         ),
     },
     "External Rotation (90° abd)": {
         "title": "Rotazione esterna spalla a 90° abduzione",
         "text": (
-            "Test: ER a 90° abduzione — importante per attività overhead e stabilità della cuffia.\n"
-            "Interpretazione: deficit richiede rinforzo e lavoro di tolleranza al range."
+            "Test: ER a 90° abduzione.\n"
+            "Interpretazione: valuta stabilità e mobilità in range overhead; deficit possono essere rilevanti per specifiche attività."
         ),
     },
     "Pectoralis Minor Length": {
         "title": "Lunghezza piccolo pettorale",
         "text": (
-            "Test: misura la distanza del piccolo pettorale. Valori più bassi indicano maggiore mobilità; la scala è invertita (valore basso = migliore)."
+            "Test: misura la distanza del piccolo pettorale.\n"
+            "Interpretazione: valori più bassi indicano maggiore mobilità; la scala è inversa rispetto a test dove valore alto indica buon risultato."
         ),
     },
     "Thomas Test (modified)": {
         "title": "Test di Thomas (modificato)",
         "text": (
-            "Test: valuta l'accorciamento dei flessori d'anca (iliopsoas, retto femorale).\n"
-            "Cosa misurare: registrare l'angolo di estensione d'anca o la distanza coscia‑tavolo; come valore clinico utile usare il deficit in gradi rispetto alla posizione neutra (es. 0° ideale)."
+            "Test: valuta l'accorciamento dei flessori d'anca.\n"
+            "Interpretazione: misurare angolo di estensione d'anca o distanza coscia‑tavolo; il deficit in gradi rispetto a 0° è il riferimento clinico."
         ),
     },
     "Active Knee Extension (AKE)": {
         "title": "Estensione attiva ginocchio (AKE)",
         "text": (
-            "Test: misura lunghezza degli hamstring in 90/90. Valori maggiori di flessione residua indicano minor flessibilità e rischio funzionale."
+            "Test: misura lunghezza funzionale degli hamstring (posizione 90/90).\n"
+            "Interpretazione: angolo residuo di flessione indica grado di tensione degli hamstring."
         ),
     },
     "Straight Leg Raise (SLR)": {
         "title": "Straight Leg Raise (SLR)",
         "text": (
-            "Test: identifica limitazione posteriore; distinguere tra componente muscolare e neurodinamica tramite differenziazione strutturale (caviglia/collo)."
+            "Test: sollevamento gamba tesa.\n"
+            "Interpretazione: utile per distinguere limitazioni muscolari da sensibilità neurodinamica mediante manovre di differenziazione."
         ),
     },
     "Sorensen Endurance": {
         "title": "Test di Sorensen (endurance lombare)",
         "text": (
-            "Test: valuta endurance degli estensori lombari (time to fatigue). Valori bassi suggeriscono deficit di endurance e richiedono progressione di resistenza."
+            "Test: misura il tempo di mantenimento per gli estensori lombari.\n"
+            "Interpretazione: tempi ridotti indicano deficit di endurance muscolare del comparto estensore."
         ),
     },
     "ULNT1A (Median nerve)": {
         "title": "ULNT1A (nervo mediano)",
         "text": (
-            "Test: valutazione della mobilità neurale del nervo mediano; registrare angolo in cui compaiono sintomi e presenza di sintomi radicolari.\n"
-            "Interpretazione: valori limitati o riproduzione dei sintomi indicano maggiori restrizioni neurali; intervenire con progressione di gliding."
+            "Test: valutazione della mobilità neurale del nervo mediano.\n"
+            "Interpretazione: registrare l'angolo e le caratteristiche dei sintomi; comparare con il lato sano e usare differenziazione per conferma neurale."
         ),
     },
 }
 
 
 # -----------------------------
-# Short practical EBM tips generator (one-liners) to include in second page
+# Short EBM tips generator (interpretative one-liners only)
 # -----------------------------
 def ebm_tips_from_df(df):
     tips = []
@@ -567,88 +566,77 @@ def ebm_tips_from_df(df):
             continue
         label = TEST_NAME_TRANSLATIONS.get(test, test)
         if score < 7:
-            # take the first sentence of the EBM text as short tip (polished)
-            first_sentence = entry["text"].split("\n")[0].strip()
-            tip = f"{label}: {first_sentence}"
-            tips.append(tip)
+            first_line = entry["text"].split("\n")[0].strip()
+            tips.append(f"{label}: {first_line}")
     return tips
 
 
 # -----------------------------
-# TEST instructions (shown via 'i' button / expander) for each test
+# Test instructions (toggle button callback)
 # -----------------------------
 TEST_INSTRUCTIONS = {
     "Weight Bearing Lunge Test": (
-        "Posizione: il paziente in piedi di fronte al muro.\n"
-        "Esecuzione: far avanzare il ginocchio verso il muro mantenendo il tallone a terra fino a raggiungere il massimo senza sollevare il tallone.\n"
-        "Cosa misurare: distanza in cm tra punta del piede e muro o angolo tibiale con inclinometro. Strumento: metro o inclinometro/smartphone.\n"
-        "Annotare: valore in cm o gradi per lato; se differenza >2 cm considerare asimmetria clinica."
+        "Posizione: paziente in piedi di fronte al muro.\n"
+        "Esecuzione: avanzare il ginocchio verso il muro mantenendo il tallone a terra.\n"
+        "Misura: distanza in cm o angolo con inclinometro; registrare per lato."
     ),
     "Passive Hip Flexion": (
-        "Posizione: paziente supino, gamba passivamente fletto con ginocchio flesso per isolare l'anca.\n"
-        "Cosa misurare: angolo di flessione d'anca con goniometro; stabilizzare il bacino per evitare compensi pelvici."
+        "Posizione: supino; ginocchio flesso per isolare l'anca.\n"
+        "Misura: angolo di flessione d'anca con goniometro; stabilizzare il bacino."
     ),
     "Hip Rotation (flexed 90°)": (
-        "Posizione: paziente seduto o supino con anca flessa a 90° e ginocchio flesso.\n"
-        "Cosa misurare: rotazione interna ed esterna misurata in gradi con goniometro; registra entrambe le direzioni e confronta i lati.\n"
-        "Cosa indica: valuta la capacità rotazionale dell'anca in posizione funzionale (importante per pivot e squat)."
+        "Posizione: anca flessa 90°, ginocchio flesso.\n"
+        "Misura: rotazione interna/esterna in gradi con goniometro; confrontare i lati."
     ),
     "Wall Angel Test": (
-        "Posizione: paziente in piedi con schiena contro il muro, braccia alzate e appoggiate al muro se possibile.\n"
-        "Cosa misurare: distanza in cm tra il braccio esteso e il muro (es. misurare gap o spessore). Strumento: righello o metro.\n"
-        "Nota: qui un valore numerico più alto indica maggiore rigidità (peggiore). Nel PDF il punteggio è invertito di conseguenza."
+        "Posizione: paziente con schiena contro il muro, braccia estese.\n"
+        "Misura: distanza (cm) tra braccio esteso e muro; valori maggiori indicano rigidità."
     ),
     "Shoulder ER (adducted, low-bar)": (
-        "Posizione: paziente supino o seduto, braccio adotto al corpo, gomito a 90°.\n"
-        "Cosa misurare: angolo di rotazione esterna (goniometro) o capacità di raggiungere presa low‑bar per lo squat.\n"
-        "Strumento: goniometro."
+        "Posizione: braccio addotto, gomito 90°.\n"
+        "Misura: angolo di ER con goniometro; verificare capacità di posizionamento low‑bar."
     ),
     "Shoulder Flexion (supine)": (
-        "Posizione: paziente supino.\n"
-        "Cosa misurare: angolo di flessione passiva e/o attiva; stabilizzare il bacino e registrare eventuale limitazione o compenso scapolare."
+        "Posizione: supino.\n"
+        "Misura: angolo di flessione (passiva/attiva) con goniometro."
     ),
     "External Rotation (90° abd)": (
-        "Posizione: paziente seduto o sdraiato con abduzione a 90° e gomito a 90°.\n"
-        "Cosa misurare: angolo di ER con goniometro; utile per attività overhead."
+        "Posizione: abduzione 90°, gomito 90°.\n"
+        "Misura: angolo di ER con goniometro."
     ),
     "Pectoralis Minor Length": (
-        "Posizione: paziente supino.\n"
-        "Cosa misurare: distanza del processo coracoideo o punto di riferimento dalla superficie o dalla spalla; valori più bassi indicano maggiore mobilità (meglio).\n"
-        "Strumento: metro o calibro."
+        "Posizione: supino.\n"
+        "Misura: distanza (cm) di riferimento; valori più bassi indicano maggiore mobilità."
     ),
     "Thomas Test (modified)": (
-        "Posizione: paziente seduto al bordo del lettino, poi porta le ginocchia al petto e lascerà cadere una gamba.\n"
-        "Cosa misurare: angolo di estensione d'anca o distanza coscia‑tavolo; usare goniometro per misurare il deficit in gradi rispetto a 0° (estensione completa)."
+        "Posizione: paziente al bordo del lettino, ginocchia al petto, poi lascia cadere una gamba.\n"
+        "Misura: angolo di estensione d'anca o distanza coscia‑tavolo in gradi o cm."
     ),
     "Active Knee Extension (AKE)": (
-        "Posizione: paziente in 90/90 (anca flessa 90°, ginocchio 90°), estende attivamente il ginocchio.\n"
-        "Cosa misurare: angolo residuo di flessione del ginocchio; valori maggiori indicano minor flessibilità degli hamstring."
+        "Posizione: 90/90.\n"
+        "Misura: angolo residuo di flessione del ginocchio al termine dell'estensione attiva."
     ),
     "Straight Leg Raise (SLR)": (
-        "Posizione: paziente supino, gamba passivamente sollevata mantenendo ginocchio esteso.\n"
-        "Cosa misurare: angolo di sollevamento e localizzazione del dolore; usare differenziazione (dorsiflessione caviglia/ flessione collo) per distinguere componente neurale da muscolare."
+        "Posizione: supino.\n"
+        "Misura: angolo di sollevamento e localizzazione del dolore; usare differenziazione per distinguere origine."
     ),
     "Sorensen Endurance": (
-        "Posizione: paziente in posizione di Sorensen (tronco orizzontale sostenuto da bordo), tempo di mantenimento fino a fatica.\n"
-        "Cosa misurare: durata in secondi."
+        "Posizione: Sorensen.\n"
+        "Misura: durata in secondi fino a fatica."
     ),
     "ULNT1A (Median nerve)": (
-        "Posizione: paziente sdraiato; sequenza di posizioni che tensionano il nervo mediano (supinazione, estensione polso/dita, estensione gomito, abduzione/ER spalla).\n"
-        "Cosa misurare: angolo di estensione del gomito quando compaiono i sintomi e caratteristiche dei sintomi (parestesie / dolore). Registrare e usare differenziazione cervicale."
+        "Posizione: sdraiato; sequenza che tensiona nervo mediano.\n"
+        "Misura: angolo di estensione del gomito e caratteristiche dei sintomi."
     ),
 }
 
 
-# -----------------------------
-# Toggle callback (safe) used by info buttons
-# -----------------------------
 def toggle_info(session_key: str):
-    # flip boolean (default False)
     st.session_state[session_key] = not st.session_state.get(session_key, False)
 
 
 # -----------------------------
-# Render inputs grouped by region with info toggle button (fixed implementation)
+# Render inputs with safe toggle buttons
 # -----------------------------
 def get_all_unique_tests():
     unique = {}
@@ -673,18 +661,14 @@ def render_inputs_for_section(section):
                 if not rec:
                     continue
                 st.markdown("<div class='card'>", unsafe_allow_html=True)
-                # Header with info button implemented safely
                 cols = st.columns([8, 1])
                 with cols[0]:
                     st.markdown(f"**{name}**  \n*{desc}*  \n*Rif:* {ref} {unit}")
                 with cols[1]:
                     session_key = f"info_{short_key(name)}"
                     button_key = f"btn_{short_key(name)}"
-                    instr = TEST_INSTRUCTIONS.get(name, "Istruzioni non disponibili.")
-                    # Use on_click callback to toggle session_state safely
                     st.button("ℹ️", key=button_key, on_click=toggle_info, args=(session_key,))
 
-                # Show instruction if toggled
                 if st.session_state.get(f"info_{short_key(name)}", False):
                     instr = TEST_INSTRUCTIONS.get(name, "Istruzioni non disponibili.")
                     st.info(instr)
@@ -714,7 +698,7 @@ def render_inputs_for_section(section):
 
 
 # -----------------------------
-# UI Styling & Header
+# UI header
 # -----------------------------
 st.markdown(
     f"""
@@ -739,7 +723,7 @@ with col3:
 
 
 # -----------------------------
-# Sidebar UI (allow random for ULNT1A as requested)
+# Sidebar
 # -----------------------------
 ALL_SECTIONS = ["Valutazione Generale"]
 
@@ -762,7 +746,6 @@ with st.sidebar:
             st.experimental_rerun()
     with colb2:
         if st.button("Randomizza", use_container_width=True):
-            # include ULNT1A in randomization as requested
             for name, rec in st.session_state["vals"].items():
                 ref = rec.get("ref", 10.0)
                 if rec.get("bilat", False):
@@ -777,14 +760,10 @@ with st.sidebar:
 
 
 # -----------------------------
-# Render inputs
+# Render inputs and compute
 # -----------------------------
 render_inputs_for_section(st.session_state["section"])
 
-
-# -----------------------------
-# Build DF and visuals
-# -----------------------------
 df_show = build_df(st.session_state["section"])
 st.markdown("### Risultati")
 st.write(df_show.style.format(precision=1))
@@ -796,7 +775,6 @@ with metric_container:
     st.metric("Score medio", f"{avg_score:.1f}/10")
     st.metric("Test con dolore", f"{painful}")
     st.metric("Symmetry medio", f"{sym_mean:.1f}/10" if not pd.isna(sym_mean) else "n/a")
-
 
 col_a, col_b = st.columns(2)
 with col_a:
@@ -832,7 +810,7 @@ except Exception:
 
 
 # -----------------------------
-# EBM notes & tips (italian, clear per test)
+# EBM comments & tips (interpretation only)
 # -----------------------------
 def ebm_from_df(df, friendly=False):
     notes = []
@@ -856,7 +834,7 @@ ebm_tips = ebm_tips_from_df(df_show)
 
 
 # -----------------------------
-# PDF generation (page1 = report, page2 = brief EBM tips)
+# PDF generation (two pages: report + interpretive tips only)
 # -----------------------------
 def pdf_report_no_bodychart(logo_bytes, athlete, evaluator, date_str, section, df, ebm_notes, ebm_tips, radar_buf=None, asym_buf=None):
     buf = io.BytesIO()
@@ -871,7 +849,7 @@ def pdf_report_no_bodychart(logo_bytes, athlete, evaluator, date_str, section, d
 
     story = []
 
-    # Page 1 - Report summary
+    # Page 1
     story.append(RLImage(io.BytesIO(logo_bytes), width=14 * cm, height=3.2 * cm))
     story.append(Spacer(1, 6))
     story.append(Paragraph(f"<b>Report Valutazione — {sanitize_text_for_plot(section)}</b>", title))
@@ -922,7 +900,7 @@ def pdf_report_no_bodychart(logo_bytes, athlete, evaluator, date_str, section, d
     if not priorities.empty:
         for _, row in priorities.iterrows():
             test_label = TEST_NAME_TRANSLATIONS.get(row["Test"], row["Test"])
-            story.append(Paragraph(f"• {test_label} — Score: {row['Score']:.1f}/10 — Azione prioritaria: valutare e intervenire su mobilità/forza.", normal))
+            story.append(Paragraph(f"• {test_label} — Score: {row['Score']:.1f}/10 — Area da approfondire: interpretazione clinica.", normal))
     else:
         story.append(Paragraph("Nessuna priorità critica (tutti i test sono >= 7).", normal))
     story.append(Spacer(1, 12))
@@ -1002,7 +980,7 @@ def pdf_report_no_bodychart(logo_bytes, athlete, evaluator, date_str, section, d
         story.append(Paragraph("Nessuna regione segnalata come dolorosa.", normal))
     story.append(Spacer(1, 12))
 
-    # EBM Comments (italian, each clearly tied to a test)
+    # EBM Comments (interpretation only)
     story.append(Paragraph("<b>Commento clinico (EBM)</b>", heading))
     story.append(Spacer(1, 6))
     if ebm_notes:
@@ -1018,10 +996,9 @@ def pdf_report_no_bodychart(logo_bytes, athlete, evaluator, date_str, section, d
     story.append(Paragraph("Firma: ______________________", small))
     story.append(Spacer(1, 6))
 
-    # Page break -> Page 2: brief EBM tips (short practical items)
+    # Page 2: brief interpretive tips only
     story.append(PageBreak())
-
-    story.append(Paragraph("<b>Consigli pratici brevi (EBM)</b>", heading))
+    story.append(Paragraph("<b>Consigli interpretativi brevi (EBM)</b>", heading))
     story.append(Spacer(1, 8))
     if ebm_tips:
         for tip in ebm_tips:
@@ -1032,11 +1009,9 @@ def pdf_report_no_bodychart(logo_bytes, athlete, evaluator, date_str, section, d
     story.append(Spacer(1, 12))
 
     story.append(Paragraph("<b>Note rapide</b>", normal))
-    story.append(Paragraph("• Monitorare dolore e tolleranza: interrompere o ridurre esercizi se dolore acuto o peggioramento.", normal))
-    story.append(Paragraph("• Rivalutare con gli stessi test dopo programma di intervento scelto (circa 4 settimane).", normal))
+    story.append(Paragraph("• Interpretazioni basate sui dati raccolti; per interventi specifici consultare la documentazione clinica.", normal))
     story.append(Spacer(1, 12))
 
-    # Footer page 2
     story.append(Paragraph(f"Valutatore: {evaluator}", small))
     story.append(Paragraph("Firma: ______________________", small))
     story.append(Spacer(1, 6))
@@ -1047,7 +1022,7 @@ def pdf_report_no_bodychart(logo_bytes, athlete, evaluator, date_str, section, d
 
 
 # -----------------------------
-# UI: Export buttons
+# Export buttons
 # -----------------------------
 colpdf1, colpdf2 = st.columns(2)
 with colpdf1:
