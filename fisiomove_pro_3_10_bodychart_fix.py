@@ -640,7 +640,15 @@ TEST_INSTRUCTIONS = {
 
 
 # -----------------------------
-# Render inputs grouped by region with info 'i' button
+# Toggle callback (safe) used by info buttons
+# -----------------------------
+def toggle_info(session_key: str):
+    # flip boolean (default False)
+    st.session_state[session_key] = not st.session_state.get(session_key, False)
+
+
+# -----------------------------
+# Render inputs grouped by region with info toggle button (fixed implementation)
 # -----------------------------
 def get_all_unique_tests():
     unique = {}
@@ -665,23 +673,26 @@ def render_inputs_for_section(section):
                 if not rec:
                     continue
                 st.markdown("<div class='card'>", unsafe_allow_html=True)
-                # Header with info icon
+                # Header with info button implemented safely
                 cols = st.columns([8, 1])
                 with cols[0]:
                     st.markdown(f"**{name}**  \n*{desc}*  \n*Rif:* {ref} {unit}")
                 with cols[1]:
-                    key_info = f"info_{short_key(name)}"
-                    if st.button("ℹ️", key=key_info):
-                        st.session_state[key_info] = not st.session_state.get(key_info, False)
+                    session_key = f"info_{short_key(name)}"
+                    button_key = f"btn_{short_key(name)}"
+                    instr = TEST_INSTRUCTIONS.get(name, "Istruzioni non disponibili.")
+                    # Use on_click callback to toggle session_state safely
+                    st.button("ℹ️", key=button_key, on_click=toggle_info, args=(session_key,))
+
                 # Show instruction if toggled
                 if st.session_state.get(f"info_{short_key(name)}", False):
                     instr = TEST_INSTRUCTIONS.get(name, "Istruzioni non disponibili.")
                     st.info(instr)
 
                 key = short_key(name)
-                max_val = ref if name == "ULNT1A (Median nerve)" else (ref * 1.5 if ref > 0 else 10.0)
+                max_val = rec.get("ref", ref) if name == "ULNT1A (Median nerve)" else (rec.get("ref", ref) * 1.5 if rec.get("ref", ref) > 0 else 10.0)
 
-                if bilat:
+                if rec.get("bilat", False):
                     c1, c2 = st.columns([1, 1])
                     with c1:
                         dx = st.slider(f"Dx ({unit})", 0.0, max_val, float(rec.get("Dx", 0.0)), 0.1, key=f"{key}_Dx")
