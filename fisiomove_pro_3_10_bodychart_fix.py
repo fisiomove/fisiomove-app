@@ -156,15 +156,19 @@ init_state()
 
 
 # -----------------------------
-# Funzioni di scoring
+# Scoring helper (handles tests where lower value = better)
 # -----------------------------
-def ability_linear(val, ref):
+def ability_linear(val, ref, higher_is_better=True):
     try:
         if ref <= 0:
             return 0.0
-        if ref == 3.0:
-            return float(val) / 3.0 * 10.0
-        score = (float(val) / float(ref)) * 10.0
+        val = float(val)
+        if higher_is_better:
+            score = (val / float(ref)) * 10.0
+        else:
+            # lower values correspond to better performance (0 -> best)
+            v = min(val, ref)
+            score = (1.0 - (v / float(ref))) * 10.0
         return max(0.0, min(10.0, score))
     except:
         return 0.0
@@ -186,40 +190,45 @@ def symmetry_score(dx, sx, unit):
 
 # -----------------------------
 # Sezioni e TESTS (UNICA DEFINIZIONE)
+# Now each test tuple: (name, unit, ref, bilat, region, desc, higher_is_better)
+# higher_is_better = False means lower numeric value = better (invert scoring)
 # -----------------------------
 TESTS = {
     "Squat": [
-        ("Weight Bearing Lunge Test", "cm", 10.0, True, "ankle", "Test caviglia: dorsiflessione in carico."),
-        ("Passive Hip Flexion", "°", 120.0, True, "hip", "Test anca: flessione passiva supina."),
-        ("Hip Rotation (flexed 90°)", "°", 40.0, True, "hip", "Test anca: rotazione a 90° flessione."),
-        ("Wall Angel Test", "score", 3.0, False, "thoracic", "Contatto scapolare/test posturale (0–3)."),
-        ("Shoulder ER (adducted, low-bar)", "°", 70.0, True, "shoulder", "Test spalla: extrarotazione low-bar."),
+        ("Weight Bearing Lunge Test", "cm", 12.0, True, "ankle", "Test caviglia: dorsiflessione in carico.", True),
+        ("Passive Hip Flexion", "°", 120.0, True, "hip", "Test anca: flessione passiva supina.", True),
+        ("Hip Rotation (flexed 90°)", "°", 40.0, True, "hip", "Test anca: rotazione a 90° flessione.", True),
+        # Wall Angel now measures distance cm from wall (higher = more rigid -> worse)
+        ("Wall Angel Test", "cm", 12.0, False, "thoracic", "Distanza cm tra braccio e muro a braccio teso; valori alti indicano rigidità.", False),
+        ("Shoulder ER (adducted, low-bar)", "°", 70.0, True, "shoulder", "Test spalla: extrarotazione low-bar.", True),
     ],
     "Panca": [
-        ("Shoulder Flexion (supine)", "°", 180.0, True, "shoulder", "Test spalla: flessione supina."),
-        ("External Rotation (90° abd)", "°", 90.0, True, "shoulder", "Test spalla: ER a 90° abduzione."),
-        ("Wall Angel Test", "score", 3.0, False, "thoracic", "Contatto scapolare/test posturale (0–3)."),
-        ("Pectoralis Minor Length", "cm", 10.0, True, "shoulder", "Test pettorale: distanza da lettino."),
-        ("Thomas Test (modified)", "°", 10.0, True, "hip", "Test flessori anca (modificato)."),
+        ("Shoulder Flexion (supine)", "°", 180.0, True, "shoulder", "Test spalla: flessione supina.", True),
+        ("External Rotation (90° abd)", "°", 90.0, True, "shoulder", "Test spalla: ER a 90° abduzione.", True),
+        ("Wall Angel Test", "cm", 12.0, False, "thoracic", "Distanza cm tra braccio e muro a braccio teso; valori alti indicano rigidità.", False),
+        # Pectoralis minor: lower value means more mobile -> better, so higher_is_better = False
+        ("Pectoralis Minor Length", "cm", 5.0, True, "shoulder", "Distanza PM: valori più bassi indicano maggiore mobilità.", False),
+        ("Thomas Test (modified)", "°", 10.0, True, "hip", "Test flessori anca (modificato).", True),
     ],
     "Deadlift": [
-        ("Active Knee Extension (AKE)", "°", 90.0, True, "knee", "Test hamstrings: estensione attiva."),
-        ("Straight Leg Raise (SLR)", "°", 90.0, True, "hip", "Test SLR catena posteriore."),
-        ("Weight Bearing Lunge Test", "cm", 10.0, True, "ankle", "Test caviglia: dorsiflessione in carico."),
-        ("Sorensen Endurance", "sec", 180.0, False, "lumbar", "Test endurance estensori lombari."),
+        ("Active Knee Extension (AKE)", "°", 90.0, True, "knee", "Test hamstrings: estensione attiva.", True),
+        ("Straight Leg Raise (SLR)", "°", 90.0, True, "hip", "Test SLR catena posteriore.", True),
+        ("Weight Bearing Lunge Test", "cm", 12.0, True, "ankle", "Test caviglia: dorsiflessione in carico.", True),
+        ("Sorensen Endurance", "sec", 180.0, False, "lumbar", "Test endurance estensori lombari.", True),
     ],
     "Neurodinamica": [
-        ("Straight Leg Raise (SLR)", "°", 90.0, True, "hip", "Test neurodinamica posteriore LE."),
-        ("ULNT1A (Median nerve)", "°", 90.0, True, "shoulder", "Test neurodinamica arto superiore."),
+        ("Straight Leg Raise (SLR)", "°", 90.0, True, "hip", "Test neurodinamica posteriore LE.", True),
+        ("ULNT1A (Median nerve)", "°", 90.0, True, "shoulder", "Test neurodinamica arto superiore.", True),
     ],
 }
 
 
 # -----------------------------
-# Seed valori di default
+# Seed valori di default (adatta al nuovo formato)
 # -----------------------------
 def seed_defaults():
     if st.session_state["vals"]:
+        # ensure ULNT1A keys exist if present
         if "ULNT1A (Median nerve)" in st.session_state["vals"]:
             rec = st.session_state["vals"]["ULNT1A (Median nerve)"]
             if rec.get("bilat", False):
@@ -230,58 +239,34 @@ def seed_defaults():
         return
 
     for sec, items in TESTS.items():
-        for (name, unit, ref, bilat, region, desc) in items:
+        for (name, unit, ref, bilat, region, desc, hib) in items:
             if name not in st.session_state["vals"]:
-                if name == "ULNT1A (Median nerve)":
-                    if bilat:
-                        st.session_state["vals"][name] = {
-                            "Dx": 0.0,
-                            "Sx": 0.0,
-                            "DoloreDx": False,
-                            "DoloreSx": False,
-                            "unit": unit,
-                            "ref": ref,
-                            "bilat": True,
-                            "region": region,
-                            "desc": desc,
-                            "section": sec,
-                        }
-                    else:
-                        st.session_state["vals"][name] = {
-                            "Val": 0.0,
-                            "Dolore": False,
-                            "unit": unit,
-                            "ref": ref,
-                            "bilat": False,
-                            "region": region,
-                            "desc": desc,
-                            "section": sec,
-                        }
+                if bilat:
+                    st.session_state["vals"][name] = {
+                        "Dx": ref * 0.9 if unit != "sec" else ref * 0.8,
+                        "Sx": ref * 0.88 if unit != "sec" else ref * 0.78,
+                        "DoloreDx": False,
+                        "DoloreSx": False,
+                        "unit": unit,
+                        "ref": ref,
+                        "bilat": True,
+                        "region": region,
+                        "desc": desc,
+                        "section": sec,
+                        "higher_is_better": hib,
+                    }
                 else:
-                    if bilat:
-                        st.session_state["vals"][name] = {
-                            "Dx": ref * 0.9 if unit != "sec" else ref * 0.8,
-                            "Sx": ref * 0.88 if unit != "sec" else ref * 0.78,
-                            "DoloreDx": False,
-                            "DoloreSx": False,
-                            "unit": unit,
-                            "ref": ref,
-                            "bilat": True,
-                            "region": region,
-                            "desc": desc,
-                            "section": sec,
-                        }
-                    else:
-                        st.session_state["vals"][name] = {
-                            "Val": ref * 0.85,
-                            "Dolore": False,
-                            "unit": unit,
-                            "ref": ref,
-                            "bilat": False,
-                            "region": region,
-                            "desc": desc,
-                            "section": sec,
-                        }
+                    st.session_state["vals"][name] = {
+                        "Val": ref * 0.85,
+                        "Dolore": False,
+                        "unit": unit,
+                        "ref": ref,
+                        "bilat": False,
+                        "region": region,
+                        "desc": desc,
+                        "section": sec,
+                        "higher_is_better": hib,
+                    }
 
 
 seed_defaults()
@@ -296,7 +281,7 @@ def build_df(section):
     for sec, items in TESTS.items():
         if section != "Valutazione Generale" and sec != section:
             continue
-        for (name, unit, ref, bilat, region, desc) in items:
+        for (name, unit, ref, bilat, region, desc, hib) in items:
             if section == "Valutazione Generale":
                 if name in seen_tests:
                     continue
@@ -305,13 +290,13 @@ def build_df(section):
             rec = st.session_state["vals"].get(name)
             if not rec:
                 continue
-            if bilat:
+            if rec.get("bilat", False):
                 dx = pd.to_numeric(rec.get("Dx", 0.0), errors="coerce")
                 sx = pd.to_numeric(rec.get("Sx", 0.0), errors="coerce")
                 dx = 0.0 if pd.isna(dx) else float(dx)
                 sx = 0.0 if pd.isna(sx) else float(sx)
                 avg = (dx + sx) / 2.0
-                sc = round(ability_linear(avg, ref), 2)
+                sc = round(ability_linear(avg, rec.get("ref", ref), rec.get("higher_is_better", hib)), 2)
                 delta = round(abs(dx - sx), 2)
                 sym = round(symmetry_score(dx, sx, unit), 2)
                 dolore_dx = bool(rec.get("DoloreDx", False))
@@ -322,7 +307,7 @@ def build_df(section):
                         sec,
                         name,
                         unit,
-                        ref,
+                        rec.get("ref", ref),
                         f"{avg:.1f}",
                         sc,
                         round(dx, 2),
@@ -338,9 +323,9 @@ def build_df(section):
             else:
                 val = pd.to_numeric(rec.get("Val", 0.0), errors="coerce")
                 val = 0.0 if pd.isna(val) else float(val)
-                sc = round(ability_linear(val, ref), 2)
+                sc = round(ability_linear(val, rec.get("ref", ref), rec.get("higher_is_better", hib)), 2)
                 dolore = bool(rec.get("Dolore", False))
-                rows.append([sec, name, unit, ref, f"{val:.1f}", sc, "", "", "", "", dolore, region, False, False])
+                rows.append([sec, name, unit, rec.get("ref", ref), f"{val:.1f}", sc, "", "", "", "", dolore, region, False, False])
     df = pd.DataFrame(
         rows,
         columns=[
@@ -481,374 +466,388 @@ EBM_LIBRARY = {
     "Weight Bearing Lunge Test": {
         "title": "Dorsiflessione caviglia (WBLT)",
         "text": (
-            "Test: Weight Bearing Lunge Test — Dorsiflessione della caviglia ridotta.\n"
-            "Interpretazione: limitata dorsiflessione in carico può compromettere la profondità dello squat e indurre compensi; associata a rischio di disturbi del comparto anteriore del ginocchio e alterazioni di carico.\n"
-            "Raccomandazioni pratiche: mobilizzazione tibio‑talarica (3 serie da 1–2 min tecniche di mobilità), esercizi di controllo eccentrico per la caviglia (es. calf‑lowering) 3x8–12, integrazione in squat assistito e progressione funzionale 2–3 volte/settimana."
+            "Test: Weight Bearing Lunge Test — dorsiflessione in carico ridotta.\n"
+            "Interpretazione: limitata dorsiflessione compromette profondità di squat e può indurre compensi; valutare e intervenire su mobilità talo‑crurale e controllo della caviglia.\n"
+            "Cosa osservare: limitazione di range, asimmetria, presenza di dolore durante carico."
         ),
     },
     "Passive Hip Flexion": {
         "title": "Flessione d'anca passiva",
         "text": (
             "Test: flessione d'anca passiva ridotta.\n"
-            "Interpretazione: limiti nel ROM possono ridurre profondità del squat e provocare compensi lombari.\n"
-            "Raccomandazioni pratiche: mobilità articolare dell'anca (3 serie da 30–60s di stretching progressivo), esercizi di attivazione glutea 3x10–15, e lavoro sul controllo pelvico durante squat (progressioni guidate)."
+            "Interpretazione: può ridurre la profondità funzionale dello squat e provocare compensi lombari. Valutare anche eventuali segni di FAI o restrizioni capsulari."
         ),
     },
     "Hip Rotation (flexed 90°)": {
         "title": "Rotazione anca (flessione 90°)",
         "text": (
-            "Test: rotazione anca in flessione 90° ridotta o asimmetrica.\n"
-            "Interpretazione: può indicare limitazioni capsulari o miofasciali, con potenziali ricadute su ginocchio/colonna.\n"
-            "Raccomandazioni pratiche: mobilità capsulare specifica (manipolazioni o mobilizzazioni), esercizi di controllo rotazionale 3x8–12, e integrare il lavoro in esercizi funzionali come squat profondi con cue pelvico."
+            "Test: rotazione interna/esterna dell'anca con anca flessa a 90°.\n"
+            "Cosa misura: ROM rotazionale articolare in posizione funzionale; utile per identificare limitazioni capsulari o deficit miofasciali che influenzano pivot, squat profondo e controllo del ginocchio."
         ),
     },
     "Wall Angel Test": {
-        "title": "Wall Angel — controllo scapolare e mobilità toracica",
+        "title": "Wall Angel — controllo scapolare / mobilità toracica",
         "text": (
-            "Test: Wall Angel con punteggio ridotto.\n"
-            "Interpretazione: deficit di controllo scapolare e/o mobilità toracica; impatta movimenti overhead.\n"
-            "Raccomandazioni pratiche: esercizi di estensione toracica (foam roller 2–3min), rinforzo serratus/low trapezius 3x10–15, e esercizi di retraining del pattern (Wall Angel progressivo) giornalmente."
+            "Test: misura la distanza (cm) tra la parte laterale del braccio/braccio teso ed il muro.\n"
+            "Interpretazione: valori maggiori indicano maggiore rigidità/postura proiettata; attenzione: il punteggio deve essere invertito (valore numerico alto = peggiore)."
         ),
     },
     "Shoulder ER (adducted, low-bar)": {
-        "title": "Rotazione esterna spalla (adduction, low-bar)",
+        "title": "Rotazione esterna spalla (low-bar)",
         "text": (
-            "Test: ridotta rotazione esterna in adduzione.\n"
-            "Interpretazione: può impedire posizione low‑bar e generare compensi a livello di polso/avambraccio/torace.\n"
-            "Raccomandazioni pratiche: mobilità capsulare anteriore, esercizi attivi di ER con banda 3x12, esercizi scapolari per stabilità e progressione tecnica del posizionamento del bilanciere."
+            "Test: ER in adduzione — valuta la mobilità necessaria per il posizionamento low‑bar nello squat.\n"
+            "Interpretazione: deficit suggerisce lavoro su ER e stabilità scapolare; attenzione a dolore e asimmetrie."
         ),
     },
     "Shoulder Flexion (supine)": {
         "title": "Flessione spalla (supina)",
         "text": (
-            "Test: flessione spalla ridotta.\n"
-            "Interpretazione: limita attività overhead; distinguere deficit attivo vs passivo.\n"
-            "Raccomandazioni pratiche: mobilità passiva e attiva assistita, rinforzo progressivo range-specific 3x8–12, e integrazione con esercizi overhead a bassa intensità."
+            "Test: flessione spalla in supino — differenzia deficit attivo vs passivo.\n"
+            "Interpretazione: limitazione indica necessità di mobilità e/o rinforzo specifico."
         ),
     },
     "External Rotation (90° abd)": {
         "title": "Rotazione esterna spalla a 90° abduzione",
         "text": (
-            "Test: limitazione della ER a 90° di abduzione.\n"
-            "Interpretazione: rilevante per attività overhead; deficit incrementa rischio di sovraccarico.\n"
-            "Raccomandazioni pratiche: esercizi isometrici e progressivi di ER a 90° (3x6–8 isometrici progressivi), lavoro di stabilità scapolare e gradual return-to-load."
+            "Test: ER a 90° abduzione — importante per attività overhead e stabilità della cuffia.\n"
+            "Interpretazione: deficit richiede rinforzo e lavoro di tolleranza al range."
         ),
     },
     "Pectoralis Minor Length": {
         "title": "Lunghezza piccolo pettorale",
         "text": (
-            "Test: piccolo pettorale accorciato.\n"
-            "Interpretazione: contribuisce a scapula proiettata in avanti e a disfunzione di spazio subacromiale.\n"
-            "Raccomandazioni pratiche: stretching del PM (3×30–60s), rilascio miofasciale, e rinforzo degli antagonisti (lower trap e serratus) 3x10–15; correggere pattern posturali."
+            "Test: misura la distanza del piccolo pettorale. Valori più bassi indicano maggiore mobilità; la scala è invertita (valore basso = migliore)."
         ),
     },
     "Thomas Test (modified)": {
         "title": "Test di Thomas (modificato)",
         "text": (
-            "Test: Thomas modificato positivo.\n"
-            "Interpretazione: accorciamento dei flessori d'anca che limita estensione e può aumentare compenso lombare.\n"
-            "Raccomandazioni pratiche: stretching attivo/passivo dei flessori (3×30–60s), esercizi di controllo pelvico ed estensione cinematica guidata; progressione 2–3 volte/settimana."
+            "Test: valuta l'accorciamento dei flessori d'anca (iliopsoas, retto femorale).\n"
+            "Cosa misurare: registrare l'angolo di estensione d'anca o la distanza coscia‑tavolo; come valore clinico utile usare il deficit in gradi rispetto alla posizione neutra (es. 0° ideale)."
         ),
     },
     "Active Knee Extension (AKE)": {
         "title": "Estensione attiva ginocchio (AKE)",
         "text": (
-            "Test: AKE indica ridotta lunghezza hamstring.\n"
-            "Interpretazione: può alterare meccanica del bacino e aumentare il rischio di infortuni esplosivi.\n"
-            "Raccomandazioni pratiche: programmi eccentrici e di flessibilità (es. Nordic eccentrico 2x/set 2–3 serie, o stretching 3×30s), integrazione nei movimenti funzionali."
+            "Test: misura lunghezza degli hamstring in 90/90. Valori maggiori di flessione residua indicano minor flessibilità e rischio funzionale."
         ),
     },
     "Straight Leg Raise (SLR)": {
         "title": "Straight Leg Raise (SLR)",
         "text": (
-            "Test: SLR positivo.\n"
-            "Interpretazione: distinguere tra limitazione muscolare e sensibilità neurodinamica. Se i sintomi sono radicolari o aumentano con differenziazione strutturale, è probabile componente neurale.\n"
-            "Raccomandazioni pratiche: se neurale, tecniche neurodinamiche (gliding/gliding progressivo), mobilità vertebrale; se muscolare, lavoro di flessibilità e potenziamento funzionale."
+            "Test: identifica limitazione posteriore; distinguere tra componente muscolare e neurodinamica tramite differenziazione strutturale (caviglia/collo)."
         ),
     },
     "Sorensen Endurance": {
         "title": "Test di Sorensen (endurance lombare)",
         "text": (
-            "Test: bassa resistenza al test di Sorensen.\n"
-            "Interpretazione: può indicare deficit di endurance degli estensori lombari e essere associato a rischio/persistenza di lombalgia.\n"
-            "Raccomandazioni pratiche: programmazione di endurance lombare progressiva (es. back extensions a tempo, 3–4 set da 30–60s progressivi) e integrazione del controllo motorio."
+            "Test: valuta endurance degli estensori lombari (time to fatigue). Valori bassi suggeriscono deficit di endurance e richiedono progressione di resistenza."
         ),
     },
     "ULNT1A (Median nerve)": {
         "title": "ULNT1A (nervo mediano)",
         "text": (
-            "Test: ULNT1A positivo o mobilità neurale ridotta.\n"
-            "Interpretazione: suggerisce irritabilità o ridotta mobilità del nervo mediano; è fondamentale confermare con differenziazione strutturale.\n"
-            "Raccomandazioni pratiche: tecniche di mobilizzazione neurale (gliding) 3x10 ripetizioni, esercizi di tolleranza graduale, e trattamento della causa compressiva (se presente)."
+            "Test: valutazione della mobilità neurale del nervo mediano; registrare angolo in cui compaiono sintomi e presenza di sintomi radicolari.\n"
+            "Interpretazione: valori limitati o riproduzione dei sintomi indicano maggiori restrizioni neurali; intervenire con progressione di gliding."
         ),
     },
 }
 
 
 # -----------------------------
-# Exercise plans templates for program generation (4-week progression)
-# These are pragmatic templates (sets/reps, frequency). They reflect common evidence-based practice patterns.
+# Short practical EBM tips generator (one-liners) to include in second page
 # -----------------------------
-EXERCISE_PLANS = {
-    "Weight Bearing Lunge Test": [
-        {
-            "name": "Mobilizzazione tibio-talarica (lunge con scivolamento)",
-            "week_loads": ["3x30s mobilità blanda", "3x40s", "3x60s", "3x90s (progredire range)"],
-            "frequency": "giornaliero"
-        },
-        {
-            "name": "Esercizi di controllo eccentrico della caviglia (calf lowering)",
-            "week_loads": ["2x8", "2x10", "3x8", "3x10"],
-            "frequency": "3 volte/settimana"
-        },
-        {
-            "name": "Squat assistito (box squat) con cue caviglia",
-            "week_loads": ["2x8 leggero", "3x8", "3x10", "3x12 progressivo carico"],
-            "frequency": "2-3 volte/settimana"
-        }
-    ],
-    "Passive Hip Flexion": [
-        {
-            "name": "Stretching dinamico anca (30-60s)",
-            "week_loads": ["3x30s", "3x40s", "3x45s", "3x60s"],
-            "frequency": "giornaliero"
-        },
-        {
-            "name": "Attivazione gluteo (bridge progressivo)",
-            "week_loads": ["2x10", "3x10", "3x12", "3x15"],
-            "frequency": "3 volte/settimana"
-        },
-        {
-            "name": "Squat profondità progressiva con controllo pelvico",
-            "week_loads": ["2x6", "3x6", "3x8", "3x10"],
-            "frequency": "2 volte/settimana"
-        }
-    ],
-    "Hip Rotation (flexed 90°)": [
-        {
-            "name": "Mobilità rotazionale anca (manuale o self‑mobil)",
-            "week_loads": ["3x30s", "3x40s", "3x45s", "3x60s"],
-            "frequency": "giornaliero"
-        },
-        {
-            "name": "Controllo rotazionale (clamshell progressivo, 3D control)",
-            "week_loads": ["2x8", "3x10", "3x12", "3x15"],
-            "frequency": "3 volte/settimana"
-        }
-    ],
-    "Wall Angel Test": [
-        {
-            "name": "Estensione toracica (foam roller)",
-            "week_loads": ["2x1min", "2x1.5min", "2x2min", "3x2min"],
-            "frequency": "giornaliero"
-        },
-        {
-            "name": "Rinforzo serratus/low trap (scapular push-up, prone  Y)",
-            "week_loads": ["2x8", "3x8", "3x10", "3x12"],
-            "frequency": "3 volte/settimana"
-        },
-        {
-            "name": "Wall Angel progressivo (reach eccentrico)",
-            "week_loads": ["2x6 lento", "3x6", "3x8", "3x10 con pause"],
-            "frequency": "giornaliero"
-        }
-    ],
-    "Shoulder ER (adducted, low-bar)": [
-        {
-            "name": "ER con banda a 0° (banda esterna)",
-            "week_loads": ["2x12 light", "3x12", "3x15", "3x20 con difficilezza"],
-            "frequency": "3 volte/settimana"
-        },
-        {
-            "name": "Mobilità capsulare anteriore (stretch controllato)",
-            "week_loads": ["3x30s", "3x40s", "3x45s", "3x60s"],
-            "frequency": "giornaliero"
-        }
-    ],
-    "Pectoralis Minor Length": [
-        {
-            "name": "Stretch piccolo pettorale (doorway/pec stretch)",
-            "week_loads": ["3x30s", "3x40s", "3x45s", "3x60s"],
-            "frequency": "giornaliero"
-        },
-        {
-            "name": "Rinforzo lower trap/serratus (YTWL progressivo)",
-            "week_loads": ["2x8", "3x8", "3x10", "3x12"],
-            "frequency": "3 volte/settimana"
-        }
-    ],
-    "Thomas Test (modified)": [
-        {
-            "name": "Stretch attivo dei flessori d'anca (lunge stretch)",
-            "week_loads": ["3x30s", "3x40s", "3x45s", "3x60s"],
-            "frequency": "giornaliero"
-        },
-        {
-            "name": "Control pelvico ed estensioni (bridge ecc.)",
-            "week_loads": ["2x10", "3x10", "3x12", "3x15"],
-            "frequency": "3 volte/settimana"
-        }
-    ],
-    "Active Knee Extension (AKE)": [
-        {
-            "name": "Nordic eccentrico / eccentric hamstrings",
-            "week_loads": ["2x4 controllo", "2x6", "3x6", "3x8"],
-            "frequency": "2-3 volte/settimana"
-        },
-        {
-            "name": "Stretch 90/90 hamstring",
-            "week_loads": ["3x30s", "3x40s", "3x45s", "3x60s"],
-            "frequency": "giornaliero"
-        }
-    ],
-    "Straight Leg Raise (SLR)": [
-        {
-            "name": "Neurodynamics gliding per sciatico (se neurale)",
-            "week_loads": ["3x10 lento", "3x12", "3x12", "3x15"],
-            "frequency": "giornaliero se tollerato"
-        },
-        {
-            "name": "Stretch/controllo muscolare se muscolare",
-            "week_loads": ["3x30s", "3x40s", "3x45s", "3x60s"],
-            "frequency": "giornaliero"
-        }
-    ],
-    "Sorensen Endurance": [
-        {
-            "name": "Progressione endurance lombare (back hold/tempo)",
-            "week_loads": ["3x20s", "3x30s", "3x45s", "3x60s"],
-            "frequency": "3 volte/settimana"
-        },
-        {
-            "name": "Integrazione control motorio (bird-dog, deadbug)",
-            "week_loads": ["2x8", "3x8", "3x10", "3x12"],
-            "frequency": "3 volte/settimana"
-        }
-    ],
-    "ULNT1A (Median nerve)": [
-        {
-            "name": "Gliding neurodinamico del nervo mediano",
-            "week_loads": ["3x10 gliding", "3x12", "3x12", "3x15"],
-            "frequency": "giornaliero se tollerato"
-        },
-        {
-            "name": "Progressione di tolleranza (sensibilità)",
-            "week_loads": ["educazione + 2x5", "2x8", "3x8", "3x10"],
-            "frequency": "giornaliero"
-        }
-    ],
+def ebm_tips_from_df(df):
+    tips = []
+    for _, r in df.iterrows():
+        test = str(r["Test"])
+        score = float(r["Score"]) if not pd.isna(r["Score"]) else 10.0
+        entry = EBM_LIBRARY.get(test)
+        if not entry:
+            continue
+        label = TEST_NAME_TRANSLATIONS.get(test, test)
+        if score < 7:
+            # take the first sentence of the EBM text as short tip (polished)
+            first_sentence = entry["text"].split("\n")[0].strip()
+            tip = f"{label}: {first_sentence}"
+            tips.append(tip)
+    return tips
+
+
+# -----------------------------
+# TEST instructions (shown via 'i' button / expander) for each test
+# -----------------------------
+TEST_INSTRUCTIONS = {
+    "Weight Bearing Lunge Test": (
+        "Posizione: il paziente in piedi di fronte al muro.\n"
+        "Esecuzione: far avanzare il ginocchio verso il muro mantenendo il tallone a terra fino a raggiungere il massimo senza sollevare il tallone.\n"
+        "Cosa misurare: distanza in cm tra punta del piede e muro o angolo tibiale con inclinometro. Strumento: metro o inclinometro/smartphone.\n"
+        "Annotare: valore in cm o gradi per lato; se differenza >2 cm considerare asimmetria clinica."
+    ),
+    "Passive Hip Flexion": (
+        "Posizione: paziente supino, gamba passivamente fletto con ginocchio flesso per isolare l'anca.\n"
+        "Cosa misurare: angolo di flessione d'anca con goniometro; stabilizzare il bacino per evitare compensi pelvici."
+    ),
+    "Hip Rotation (flexed 90°)": (
+        "Posizione: paziente seduto o supino con anca flessa a 90° e ginocchio flesso.\n"
+        "Cosa misurare: rotazione interna ed esterna misurata in gradi con goniometro; registra entrambe le direzioni e confronta i lati.\n"
+        "Cosa indica: valuta la capacità rotazionale dell'anca in posizione funzionale (importante per pivot e squat)."
+    ),
+    "Wall Angel Test": (
+        "Posizione: paziente in piedi con schiena contro il muro, braccia alzate e appoggiate al muro se possibile.\n"
+        "Cosa misurare: distanza in cm tra il braccio esteso e il muro (es. misurare gap o spessore). Strumento: righello o metro.\n"
+        "Nota: qui un valore numerico più alto indica maggiore rigidità (peggiore). Nel PDF il punteggio è invertito di conseguenza."
+    ),
+    "Shoulder ER (adducted, low-bar)": (
+        "Posizione: paziente supino o seduto, braccio adotto al corpo, gomito a 90°.\n"
+        "Cosa misurare: angolo di rotazione esterna (goniometro) o capacità di raggiungere presa low‑bar per lo squat.\n"
+        "Strumento: goniometro."
+    ),
+    "Shoulder Flexion (supine)": (
+        "Posizione: paziente supino.\n"
+        "Cosa misurare: angolo di flessione passiva e/o attiva; stabilizzare il bacino e registrare eventuale limitazione o compenso scapolare."
+    ),
+    "External Rotation (90° abd)": (
+        "Posizione: paziente seduto o sdraiato con abduzione a 90° e gomito a 90°.\n"
+        "Cosa misurare: angolo di ER con goniometro; utile per attività overhead."
+    ),
+    "Pectoralis Minor Length": (
+        "Posizione: paziente supino.\n"
+        "Cosa misurare: distanza del processo coracoideo o punto di riferimento dalla superficie o dalla spalla; valori più bassi indicano maggiore mobilità (meglio).\n"
+        "Strumento: metro o calibro."
+    ),
+    "Thomas Test (modified)": (
+        "Posizione: paziente seduto al bordo del lettino, poi porta le ginocchia al petto e lascerà cadere una gamba.\n"
+        "Cosa misurare: angolo di estensione d'anca o distanza coscia‑tavolo; usare goniometro per misurare il deficit in gradi rispetto a 0° (estensione completa)."
+    ),
+    "Active Knee Extension (AKE)": (
+        "Posizione: paziente in 90/90 (anca flessa 90°, ginocchio 90°), estende attivamente il ginocchio.\n"
+        "Cosa misurare: angolo residuo di flessione del ginocchio; valori maggiori indicano minor flessibilità degli hamstring."
+    ),
+    "Straight Leg Raise (SLR)": (
+        "Posizione: paziente supino, gamba passivamente sollevata mantenendo ginocchio esteso.\n"
+        "Cosa misurare: angolo di sollevamento e localizzazione del dolore; usare differenziazione (dorsiflessione caviglia/ flessione collo) per distinguere componente neurale da muscolare."
+    ),
+    "Sorensen Endurance": (
+        "Posizione: paziente in posizione di Sorensen (tronco orizzontale sostenuto da bordo), tempo di mantenimento fino a fatica.\n"
+        "Cosa misurare: durata in secondi."
+    ),
+    "ULNT1A (Median nerve)": (
+        "Posizione: paziente sdraiato; sequenza di posizioni che tensionano il nervo mediano (supinazione, estensione polso/dita, estensione gomito, abduzione/ER spalla).\n"
+        "Cosa misurare: angolo di estensione del gomito quando compaiono i sintomi e caratteristiche dei sintomi (parestesie / dolore). Registrare e usare differenziazione cervicale."
+    ),
 }
 
 
 # -----------------------------
-# Costruzione commenti EBM (italiano chiaro, un commento per test con titolo)
-# - restituisce lista di paragrafi già chiari a quale test si riferiscono
+# Render inputs grouped by region with info 'i' button
+# -----------------------------
+def get_all_unique_tests():
+    unique = {}
+    for s, its in TESTS.items():
+        for item in its:
+            name = item[0]
+            if name not in unique:
+                unique[name] = (s, *item)
+    return list(unique.values())
+
+
+def render_inputs_for_section(section):
+    tests = get_all_unique_tests() if section == "Valutazione Generale" else [(section, *t) for t in TESTS.get(section, [])]
+    region_map = {}
+    for sec, name, unit, ref, bilat, region, desc, hib in tests:
+        region_map.setdefault(region or "other", []).append((sec, name, unit, ref, bilat, region, desc, hib))
+
+    for region, items in region_map.items():
+        with st.expander(region.capitalize(), expanded=False):
+            for sec, name, unit, ref, bilat, region, desc, hib in items:
+                rec = st.session_state["vals"].get(name)
+                if not rec:
+                    continue
+                st.markdown("<div class='card'>", unsafe_allow_html=True)
+                # Header with info icon
+                cols = st.columns([8, 1])
+                with cols[0]:
+                    st.markdown(f"**{name}**  \n*{desc}*  \n*Rif:* {ref} {unit}")
+                with cols[1]:
+                    key_info = f"info_{short_key(name)}"
+                    if st.button("ℹ️", key=key_info):
+                        st.session_state[key_info] = not st.session_state.get(key_info, False)
+                # Show instruction if toggled
+                if st.session_state.get(f"info_{short_key(name)}", False):
+                    instr = TEST_INSTRUCTIONS.get(name, "Istruzioni non disponibili.")
+                    st.info(instr)
+
+                key = short_key(name)
+                max_val = ref if name == "ULNT1A (Median nerve)" else (ref * 1.5 if ref > 0 else 10.0)
+
+                if bilat:
+                    c1, c2 = st.columns([1, 1])
+                    with c1:
+                        dx = st.slider(f"Dx ({unit})", 0.0, max_val, float(rec.get("Dx", 0.0)), 0.1, key=f"{key}_Dx")
+                        pdx = st.checkbox("Dolore Dx", value=bool(rec.get("DoloreDx", False)), key=f"{key}_pDx")
+                    with c2:
+                        sx = st.slider(f"Sx ({unit})", 0.0, max_val, float(rec.get("Sx", 0.0)), 0.1, key=f"{key}_Sx")
+                        psx = st.checkbox("Dolore Sx", value=bool(rec.get("DoloreSx", False)), key=f"{key}_pSx")
+                    rec.update({"Dx": dx, "Sx": sx, "DoloreDx": pdx, "DoloreSx": psx})
+                    sc = ability_linear((dx + sx) / 2.0, rec.get("ref", ref), rec.get("higher_is_better", hib))
+                    sym = symmetry_score(dx, sx, unit)
+                    st.caption(f"Score: **{sc:.1f}/10** — Δ {abs(dx - sx):.1f} {unit} — Sym: **{sym:.1f}/10")
+                else:
+                    val = st.slider(f"Valore ({unit})", 0.0, max_val, float(rec.get("Val", 0.0)), 0.1, key=f"{key}_Val")
+                    p = st.checkbox("Dolore", value=bool(rec.get("Dolore", False)), key=f"{key}_p")
+                    rec.update({"Val": val, "Dolore": p})
+                    sc = ability_linear(val, rec.get("ref", ref), rec.get("higher_is_better", hib))
+                    st.caption(f"Score: **{sc:.1f}/10**")
+                st.markdown("</div>", unsafe_allow_html=True)
+
+
+# -----------------------------
+# UI Styling & Header
+# -----------------------------
+st.markdown(
+    f"""
+<style>
+:root {{ --primary: {PRIMARY}; --accent: {ACCENT}; }}
+body {{ background: #f6f8fb; }}
+.header-card {{ background: linear-gradient(90deg, #ffffff, #f1f7ff); padding:12px; border-radius:12px; box-shadow: 0 6px 18px rgba(16,24,40,0.04); }}
+.card {{ background: white; padding:12px; border-radius:10px; box-shadow: 0 3px 10px rgba(16,24,40,0.04); margin-bottom:10px; }}
+.small-muted {{ color:#6b7280; font-size:0.9rem; }}
+</style>
+""",
+    unsafe_allow_html=True,
+)
+
+col1, col2, col3 = st.columns([1, 3, 1])
+with col1:
+    st.image(LOGO, width=120)
+with col2:
+    st.markdown(f"<div class='header-card'><h2 style='color:{PRIMARY};margin:0'>{APP_TITLE}</h2><div class='small-muted'>{SUBTITLE}</div></div>", unsafe_allow_html=True)
+with col3:
+    metric_container = st.container()
+
+
+# -----------------------------
+# Sidebar UI (allow random for ULNT1A as requested)
+# -----------------------------
+ALL_SECTIONS = ["Valutazione Generale"]
+
+with st.sidebar:
+    st.markdown("### Dati atleta")
+    st.session_state["athlete"] = st.text_input("Atleta", st.session_state["athlete"])
+    st.session_state["evaluator"] = st.text_input("Valutatore", st.session_state["evaluator"])
+    st.session_state["date"] = st.date_input("Data", datetime.strptime(st.session_state["date"], "%Y-%m-%d")).strftime(
+        "%Y-%m-%d"
+    )
+
+    st.markdown("---")
+    st.session_state["section"] = st.selectbox("Sezione", ALL_SECTIONS, index=0)
+
+    colb1, colb2 = st.columns(2)
+    with colb1:
+        if st.button("Reset valori", use_container_width=True):
+            st.session_state["vals"].clear()
+            seed_defaults()
+            st.experimental_rerun()
+    with colb2:
+        if st.button("Randomizza", use_container_width=True):
+            # include ULNT1A in randomization as requested
+            for name, rec in st.session_state["vals"].items():
+                ref = rec.get("ref", 10.0)
+                if rec.get("bilat", False):
+                    rec["Dx"] = max(0.0, ref * random.uniform(0.5, 1.2))
+                    rec["Sx"] = max(0.0, ref * random.uniform(0.5, 1.2))
+                    rec["DoloreDx"] = random.random() < 0.15
+                    rec["DoloreSx"] = random.random() < 0.15
+                else:
+                    rec["Val"] = max(0.0, ref * random.uniform(0.5, 1.2))
+                    rec["Dolore"] = random.random() < 0.15
+            st.success("Valori random impostati.")
+
+
+# -----------------------------
+# Render inputs
+# -----------------------------
+render_inputs_for_section(st.session_state["section"])
+
+
+# -----------------------------
+# Build DF and visuals
+# -----------------------------
+df_show = build_df(st.session_state["section"])
+st.markdown("### Risultati")
+st.write(df_show.style.format(precision=1))
+
+with metric_container:
+    avg_score = df_show["Score"].mean() if not df_show["Score"].isna().all() else 0.0
+    painful = int(df_show["Dolore"].sum()) if "Dolore" in df_show.columns else 0
+    sym_mean = df_show["SymScore"].mean() if "SymScore" in df_show.columns else np.nan
+    st.metric("Score medio", f"{avg_score:.1f}/10")
+    st.metric("Test con dolore", f"{painful}")
+    st.metric("Symmetry medio", f"{sym_mean:.1f}/10" if not pd.isna(sym_mean) else "n/a")
+
+
+col_a, col_b = st.columns(2)
+with col_a:
+    radar_fig = plotly_radar(df_show)
+    if radar_fig:
+        st.plotly_chart(radar_fig, use_container_width=True)
+    else:
+        st.info("Radar non disponibile: servono almeno 3 test con punteggio.")
+with col_b:
+    asym_fig = plotly_asymmetry(df_show)
+    if asym_fig:
+        st.plotly_chart(asym_fig, use_container_width=True)
+    else:
+        st.info("Grafico asimmetria non disponibile.")
+
+
+# -----------------------------
+# Prepare PDF buffers
+# -----------------------------
+radar_buf = None
+asym_buf = None
+try:
+    df_radar = df_show[df_show["Score"].notnull()].copy()
+    if len(df_radar) >= 3:
+        radar_buf = radar_plot_matplotlib(df_radar, title=f"{st.session_state['section']} - Punteggi (0-10)")
+except Exception:
+    radar_buf = None
+
+try:
+    asym_buf = asymmetry_plot_matplotlib(df_show, title=f"Asimmetrie - {st.session_state['section']}")
+except Exception:
+    asym_buf = None
+
+
+# -----------------------------
+# EBM notes & tips (italian, clear per test)
 # -----------------------------
 def ebm_from_df(df, friendly=False):
     notes = []
     for _, r in df.iterrows():
         test = str(r["Test"])
         score = float(r["Score"]) if not pd.isna(r["Score"]) else 10.0
-        pain = bool(r["Dolore"])
-        sym = float(r.get("SymScore", 10.0) if not pd.isna(r.get("SymScore", np.nan)) else 10.0)
-
         entry = EBM_LIBRARY.get(test)
         if not entry:
             continue
-
         title_it = TEST_NAME_TRANSLATIONS.get(test, test)
-        para_parts = []
-
-        # include a clear heading per test
-        heading = f"{title_it}:"
-
-        # decide se il test merita commento approfondito
-        issue = False
-        if score < 7 or sym < 7 or pain:
-            issue = True
-
-        if issue:
-            text = entry["text"]
-            paragraph = f"{heading} {text}"
-            para_parts.append(paragraph)
+        if score < 7:
+            paragraph = f"{title_it}: {entry['text']}"
         else:
-            paragraph = f"{heading} Risultato nella norma (score {score:.1f}/10)."
-            para_parts.append(paragraph)
-
-        notes.append("\n".join(para_parts))
-
+            paragraph = f"{title_it}: Risultato nella norma (score {score:.1f}/10)."
+        notes.append(paragraph)
     return notes
 
 
-# -----------------------------
-# Build intervention program for top priorities (returns list of flowables)
-# -----------------------------
-def build_intervention_program_flowables(df):
-    flow = []
-    styles = getSampleStyleSheet()
-    normal = styles["Normal"]
-    heading = ParagraphStyle("heading", parent=styles["Heading2"], alignment=TA_LEFT, textColor=colors.HexColor(PRIMARY))
-
-    # Determine top 3 priorities (lowest scores <7)
-    bad_df = df.copy()
-    bad_df = bad_df[bad_df["Score"].notnull()]
-    bad_df = bad_df.sort_values("Score", ascending=True)
-    priorities = bad_df[bad_df["Score"] < 7].head(3)
-
-    flow.append(Paragraph("<b>Programma d'intervento personalizzato — 4 settimane</b>", heading))
-    flow.append(Spacer(1, 8))
-
-    if priorities.empty:
-        flow.append(Paragraph("Nessuna priorità critica individuata: mantenere programma di mantenimento e monitorare.", normal))
-        flow.append(Spacer(1, 8))
-        return flow
-
-    # For each priority, produce a per-week plan using EXERCISE_PLANS
-    week_titles = ["Settimana 1 (adattamento)", "Settimana 2 (progressione)", "Settimana 3 (carico crescente)", "Settimana 4 (consolidamento)"]
-
-    for idx, row in priorities.iterrows():
-        test_name = row["Test"]
-        display_name = TEST_NAME_TRANSLATIONS.get(test_name, test_name)
-        flow.append(Paragraph(f"<b>{display_name}</b>", styles["Heading4"]))
-        flow.append(Spacer(1, 6))
-
-        plans = EXERCISE_PLANS.get(test_name)
-        if not plans:
-            flow.append(Paragraph("Nessun piano standard disponibile per questo test. Valutare programmi specifici in consulto.", normal))
-            flow.append(Spacer(1, 8))
-            continue
-
-        # Warm-up recommendation
-        flow.append(Paragraph("Riscaldamento suggerito: 5–10 minuti attività a bassa intensità (bicicletta/ cammino) + mobilità dinamica specifica.", normal))
-        flow.append(Spacer(1, 6))
-
-        # For each exercise, show week progression
-        for ex in plans:
-            flow.append(Paragraph(f"• {ex['name']}", normal))
-            # list weekly loads
-            for w, wk in enumerate(ex["week_loads"], start=1):
-                flow.append(Paragraph(f"   - {week_titles[w-1]}: {wk} — ({ex['frequency']})", normal))
-            flow.append(Spacer(1, 4))
-        flow.append(Spacer(1, 8))
-
-    # Add general notes
-    flow.append(Paragraph("<b>Note generali</b>", normal))
-    flow.append(Paragraph(
-        "• Programmare le sessioni in modo da non sovraccaricare i distretti sensibili; monitorare dolore e tolleranza. "
-        "• Se il paziente riferisce peggioramento significativo contattare il valutatore e ridurre carico o modificare esercizi.",
-        normal,
-    ))
-    flow.append(Spacer(1, 6))
-    flow.append(Paragraph("Durata: 4 settimane. Rivalutare con gli stessi test alla fine del ciclo per misurare il progresso.", normal))
-    flow.append(Spacer(1, 10))
-
-    return flow
+ebm_notes = ebm_from_df(df_show, friendly=False)
+ebm_tips = ebm_tips_from_df(df_show)
 
 
 # -----------------------------
-# PDF generation (adds program page as second page)
+# PDF generation (page1 = report, page2 = brief EBM tips)
 # -----------------------------
-def pdf_report_no_bodychart(logo_bytes, athlete, evaluator, date_str, section, df, ebm_notes, radar_buf=None, asym_buf=None):
+def pdf_report_no_bodychart(logo_bytes, athlete, evaluator, date_str, section, df, ebm_notes, ebm_tips, radar_buf=None, asym_buf=None):
     buf = io.BytesIO()
     doc = SimpleDocTemplate(
         buf, pagesize=A4, leftMargin=1.6 * cm, rightMargin=1.6 * cm, topMargin=1.2 * cm, bottomMargin=1.2 * cm
@@ -861,13 +860,12 @@ def pdf_report_no_bodychart(logo_bytes, athlete, evaluator, date_str, section, d
 
     story = []
 
-    # Header: logo + title
+    # Page 1 - Report summary
     story.append(RLImage(io.BytesIO(logo_bytes), width=14 * cm, height=3.2 * cm))
     story.append(Spacer(1, 6))
     story.append(Paragraph(f"<b>Report Valutazione — {sanitize_text_for_plot(section)}</b>", title))
     story.append(Spacer(1, 6))
 
-    # Info band
     info_data = [["Atleta", athlete, "Valutatore", evaluator, "Data", date_str]]
     info_table = Table(info_data, colWidths=[2.2 * cm, 6.0 * cm, 2.8 * cm, 5.0 * cm, 1.6 * cm, 2.0 * cm])
     info_table.setStyle(
@@ -883,7 +881,7 @@ def pdf_report_no_bodychart(logo_bytes, athlete, evaluator, date_str, section, d
     story.append(info_table)
     story.append(Spacer(1, 8))
 
-    # Summary metrics + Top 3 priorities
+    # Metrics
     avg_score = df["Score"].mean() if "Score" in df.columns and not df["Score"].isna().all() else 0.0
     n_dolore = int(df["Dolore"].sum()) if "Dolore" in df.columns else 0
     sym_mean = df["SymScore"].mean() if "SymScore" in df.columns else np.nan
@@ -904,7 +902,7 @@ def pdf_report_no_bodychart(logo_bytes, athlete, evaluator, date_str, section, d
     story.append(metrics)
     story.append(Spacer(1, 8))
 
-    # Top 3 priorities: lowest scores (only those below 7)
+    # Top 3 priorities
     story.append(Paragraph("<b>Top 3 priorità di intervento</b>", heading))
     bad_df = df.copy()
     bad_df = bad_df[bad_df["Score"].notnull()]
@@ -913,7 +911,7 @@ def pdf_report_no_bodychart(logo_bytes, athlete, evaluator, date_str, section, d
     if not priorities.empty:
         for _, row in priorities.iterrows():
             test_label = TEST_NAME_TRANSLATIONS.get(row["Test"], row["Test"])
-            story.append(Paragraph(f"• {test_label} — Score: {row['Score']:.1f}/10 — Azione prioritaria: valutare e intervenire su mobilità o forza.", normal))
+            story.append(Paragraph(f"• {test_label} — Score: {row['Score']:.1f}/10 — Azione prioritaria: valutare e intervenire su mobilità/forza.", normal))
     else:
         story.append(Paragraph("Nessuna priorità critica (tutti i test sono >= 7).", normal))
     story.append(Spacer(1, 12))
@@ -1003,21 +1001,31 @@ def pdf_report_no_bodychart(logo_bytes, athlete, evaluator, date_str, section, d
     else:
         story.append(Paragraph("Nessun commento disponibile.", normal))
 
-    # Footer for page 1
+    # Footer page 1
     story.append(Spacer(1, 12))
     story.append(Paragraph(f"Valutatore: {evaluator}", small))
     story.append(Paragraph("Firma: ______________________", small))
     story.append(Spacer(1, 6))
 
-    # --- Page break: second page = intervention program (4-week)
+    # Page break -> Page 2: brief EBM tips (short practical items)
     story.append(PageBreak())
 
-    program_flow = build_intervention_program_flowables(df)
-    for f in program_flow:
-        story.append(f)
-
-    # final footer (on second page)
+    story.append(Paragraph("<b>Consigli pratici brevi (EBM)</b>", heading))
+    story.append(Spacer(1, 8))
+    if ebm_tips:
+        for tip in ebm_tips:
+            story.append(Paragraph(f"• {sanitize_text_for_plot(tip)}", normal))
+            story.append(Spacer(1, 4))
+    else:
+        story.append(Paragraph("Nessuna area critica individuata per consigli specifici.", normal))
     story.append(Spacer(1, 12))
+
+    story.append(Paragraph("<b>Note rapide</b>", normal))
+    story.append(Paragraph("• Monitorare dolore e tolleranza: interrompere o ridurre esercizi se dolore acuto o peggioramento.", normal))
+    story.append(Paragraph("• Rivalutare con gli stessi test dopo programma di intervento scelto (circa 4 settimane).", normal))
+    story.append(Spacer(1, 12))
+
+    # Footer page 2
     story.append(Paragraph(f"Valutatore: {evaluator}", small))
     story.append(Paragraph("Firma: ______________________", small))
     story.append(Spacer(1, 6))
@@ -1027,250 +1035,8 @@ def pdf_report_no_bodychart(logo_bytes, athlete, evaluator, date_str, section, d
     return buf
 
 
-def pdf_report_client_friendly(logo_bytes, athlete, evaluator, date_str, section, df, radar_buf=None, asym_buf=None):
-    buf = io.BytesIO()
-    doc = SimpleDocTemplate(
-        buf, pagesize=A4, leftMargin=1.6 * cm, rightMargin=1.6 * cm, topMargin=1.2 * cm, bottomMargin=1.2 * cm
-    )
-
-    styles = getSampleStyleSheet()
-    normal = styles["Normal"]
-    title = styles["Title"]
-
-    story = []
-    story.append(RLImage(io.BytesIO(logo_bytes), width=14 * cm, height=3.2 * cm))
-    story.append(Spacer(1, 6))
-    story.append(Paragraph(f"<b>Valutazione Funzionale – {sanitize_text_for_plot(section)}</b>", title))
-    story.append(Spacer(1, 6))
-
-    story.append(Paragraph(f"Atleta: {athlete}", normal))
-    story.append(Paragraph(f"Valutatore: {evaluator}", normal))
-    story.append(Paragraph(f"Data: {date_str}", normal))
-    story.append(Spacer(1, 12))
-
-    if radar_buf:
-        story.append(Paragraph("<b>Radar delle capacità funzionali</b>", normal))
-        story.append(Spacer(1, 4))
-        story.append(RLImage(io.BytesIO(radar_buf.getvalue()), width=10 * cm, height=10 * cm))
-        story.append(Spacer(1, 12))
-
-    if asym_buf:
-        story.append(Paragraph("<b>Simmetria tra lato destro e sinistro</b>", normal))
-        story.append(Spacer(1, 4))
-        story.append(RLImage(io.BytesIO(asym_buf.getvalue()), width=14 * cm, height=6 * cm))
-        story.append(Spacer(1, 12))
-
-    story.append(Paragraph("Ogni test è valutato su un punteggio da 0 a 10.", normal))
-    story.append(Paragraph("0–3: da migliorare • 4–6: accettabile • 7–10: ottimale", normal))
-    story.append(Spacer(1, 10))
-
-    simple_rows = []
-    for _, r in df.iterrows():
-        score = round(float(r["Score"]) if not pd.isna(r["Score"]) else 0.0, 1)
-        test_name = TEST_NAME_TRANSLATIONS.get(r["Test"], r["Test"])
-        simple_rows.append([test_name, f"{score}/10"])
-
-    t = Table([["Test", "Punteggio"]] + simple_rows, repeatRows=1, colWidths=[10 * cm, 4 * cm])
-    t.setStyle(
-        TableStyle(
-            [
-                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor(PRIMARY)),
-                ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-                ("ALIGN", (1, 1), (-1, -1), "CENTER"),
-                ("GRID", (0, 0), (-1, -1), 0.25, colors.lightgrey),
-                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-                ("FONTNAME", (0, 1), (-1, -1), "Helvetica"),
-                ("FONTSIZE", (0, 0), (-1, -1), 9),
-            ]
-        )
-    )
-    story.append(t)
-
-    doc.build(story)
-    buf.seek(0)
-    return buf
-
-
 # -----------------------------
-# UI Styling & Header
-# -----------------------------
-st.markdown(
-    f"""
-<style>
-:root {{ --primary: {PRIMARY}; --accent: {ACCENT}; }}
-body {{ background: #f6f8fb; }}
-.header-card {{ background: linear-gradient(90deg, #ffffff, #f1f7ff); padding:12px; border-radius:12px; box-shadow: 0 6px 18px rgba(16,24,40,0.04); }}
-.card {{ background: white; padding:12px; border-radius:10px; box-shadow: 0 3px 10px rgba(16,24,40,0.04); margin-bottom:10px; }}
-.small-muted {{ color:#6b7280; font-size:0.9rem; }}
-.badge-ok {{ background: #ecfdf5; color: #166534; padding:4px 8px; border-radius:999px; font-weight:600; }}
-.badge-warn {{ background:#fff7ed; color:#92400e; padding:4px 8px; border-radius:999px; font-weight:600; }}
-.badge-bad {{ background:#fff1f2; color:#7f1d1d; padding:4px 8px; border-radius:999px; font-weight:600; }}
-</style>
-""",
-    unsafe_allow_html=True,
-)
-
-col1, col2, col3 = st.columns([1, 3, 1])
-with col1:
-    st.image(LOGO, width=120)
-with col2:
-    st.markdown(f"<div class='header-card'><h2 style='color:{PRIMARY};margin:0'>{APP_TITLE}</h2><div class='small-muted'>{SUBTITLE}</div></div>", unsafe_allow_html=True)
-with col3:
-    metric_container = st.container()
-
-
-# -----------------------------
-# Sidebar UI
-# -----------------------------
-ALL_SECTIONS = ["Valutazione Generale"]
-
-with st.sidebar:
-    st.markdown("### Dati atleta")
-    st.session_state["athlete"] = st.text_input("Atleta", st.session_state["athlete"])
-    st.session_state["evaluator"] = st.text_input("Valutatore", st.session_state["evaluator"])
-    st.session_state["date"] = st.date_input("Data", datetime.strptime(st.session_state["date"], "%Y-%m-%d")).strftime(
-        "%Y-%m-%d"
-    )
-
-    st.markdown("---")
-    st.session_state["section"] = st.selectbox("Sezione", ALL_SECTIONS, index=0)
-
-    colb1, colb2 = st.columns(2)
-    with colb1:
-        if st.button("Reset valori", use_container_width=True):
-            st.session_state["vals"].clear()
-            seed_defaults()
-            st.experimental_rerun()
-    with colb2:
-        if st.button("Randomizza", use_container_width=True):
-            for name, rec in st.session_state["vals"].items():
-                if name == "ULNT1A (Median nerve)":
-                    continue
-                ref = rec.get("ref", 10.0)
-                if rec.get("bilat", False):
-                    rec["Dx"] = max(0.0, ref * random.uniform(0.5, 1.2))
-                    rec["Sx"] = max(0.0, ref * random.uniform(0.5, 1.2))
-                    rec["DoloreDx"] = random.random() < 0.15
-                    rec["DoloreSx"] = random.random() < 0.15
-                else:
-                    rec["Val"] = max(0.0, ref * random.uniform(0.5, 1.2))
-                    rec["Dolore"] = random.random() < 0.15
-            st.success("Valori random impostati.")
-
-
-# -----------------------------
-# Render inputs grouped by region
-# -----------------------------
-def get_all_unique_tests():
-    unique = {}
-    for s, its in TESTS.items():
-        for item in its:
-            name = item[0]
-            if name not in unique:
-                unique[name] = (s, *item)
-    return list(unique.values())
-
-
-def render_inputs_for_section(section):
-    tests = get_all_unique_tests() if section == "Valutazione Generale" else [(section, *t) for t in TESTS.get(section, [])]
-    region_map = {}
-    for sec, name, unit, ref, bilat, region, desc in tests:
-        region_map.setdefault(region or "other", []).append((sec, name, unit, ref, bilat, region, desc))
-
-    for region, items in region_map.items():
-        with st.expander(region.capitalize(), expanded=False):
-            for sec, name, unit, ref, bilat, region, desc in items:
-                rec = st.session_state["vals"].get(name)
-                if not rec:
-                    continue
-                st.markdown("<div class='card'>", unsafe_allow_html=True)
-                st.markdown(f"**{name}**  \n*{desc}*  \n*Rif:* {ref} {unit}")
-                key = short_key(name)
-                max_val = ref if name == "ULNT1A (Median nerve)" else (ref * 1.5 if ref > 0 else 10.0)
-
-                if bilat:
-                    c1, c2 = st.columns([1, 1])
-                    with c1:
-                        dx = st.slider(f"Dx ({unit})", 0.0, max_val, float(rec.get("Dx", 0.0)), 0.1, key=f"{key}_Dx")
-                        pdx = st.checkbox("Dolore Dx", value=bool(rec.get("DoloreDx", False)), key=f"{key}_pDx")
-                    with c2:
-                        sx = st.slider(f"Sx ({unit})", 0.0, max_val, float(rec.get("Sx", 0.0)), 0.1, key=f"{key}_Sx")
-                        psx = st.checkbox("Dolore Sx", value=bool(rec.get("DoloreSx", False)), key=f"{key}_pSx")
-                    rec.update({"Dx": dx, "Sx": sx, "DoloreDx": pdx, "DoloreSx": psx})
-                    sc = ability_linear((dx + sx) / 2.0, ref)
-                    sym = symmetry_score(dx, sx, unit)
-                    status = "badge-ok" if sc >= 7 else ("badge-warn" if sc >= 4 else "badge-bad")
-                    st.markdown(f"<div style='margin-top:8px'><span class='{status}'>Score {sc:.1f}/10</span>  — Δ {abs(dx - sx):.1f} {unit} — Sym: <b>{sym:.1f}/10</b></div>", unsafe_allow_html=True)
-                else:
-                    val = st.slider(f"Valore ({unit})", 0.0, max_val, float(rec.get("Val", 0.0)), 0.1, key=f"{key}_Val")
-                    p = st.checkbox("Dolore", value=bool(rec.get("Dolore", False)), key=f"{key}_p")
-                    rec.update({"Val": val, "Dolore": p})
-                    sc = ability_linear(val, ref)
-                    status = "badge-ok" if sc >= 7 else ("badge-warn" if sc >= 4 else "badge-bad")
-                    st.markdown(f"<div style='margin-top:8px'><span class='{status}'>Score {sc:.1f}/10</span></div>", unsafe_allow_html=True)
-                st.markdown("</div>", unsafe_allow_html=True)
-
-
-render_inputs_for_section(st.session_state["section"])
-
-
-# -----------------------------
-# Build DF and visuals
-# -----------------------------
-df_show = build_df(st.session_state["section"])
-st.markdown("### Risultati")
-st.write(df_show.style.format(precision=1))
-
-with metric_container:
-    avg_score = df_show["Score"].mean() if not df_show["Score"].isna().all() else 0.0
-    painful = int(df_show["Dolore"].sum()) if "Dolore" in df_show.columns else 0
-    sym_mean = df_show["SymScore"].mean() if "SymScore" in df_show.columns else np.nan
-    st.metric("Score medio", f"{avg_score:.1f}/10")
-    st.metric("Test con dolore", f"{painful}")
-    st.metric("Symmetry medio", f"{sym_mean:.1f}/10" if not pd.isna(sym_mean) else "n/a")
-
-
-col_a, col_b = st.columns(2)
-with col_a:
-    radar_fig = plotly_radar(df_show)
-    if radar_fig:
-        st.plotly_chart(radar_fig, use_container_width=True)
-    else:
-        st.info("Radar non disponibile: servono almeno 3 test con punteggio.")
-with col_b:
-    asym_fig = plotly_asymmetry(df_show)
-    if asym_fig:
-        st.plotly_chart(asym_fig, use_container_width=True)
-    else:
-        st.info("Grafico asimmetria non disponibile.")
-
-
-# -----------------------------
-# Prepare PDF buffers
-# -----------------------------
-radar_buf = None
-asym_buf = None
-try:
-    df_radar = df_show[df_show["Score"].notnull()].copy()
-    if len(df_radar) >= 3:
-        radar_buf = radar_plot_matplotlib(df_radar, title=f"{st.session_state['section']} - Punteggi (0-10)")
-except Exception:
-    radar_buf = None
-
-try:
-    asym_buf = asymmetry_plot_matplotlib(df_show, title=f"Asimmetrie - {st.session_state['section']}")
-except Exception:
-    asym_buf = None
-
-
-# -----------------------------
-# EBM notes (italian, clear per test)
-# -----------------------------
-ebm_notes = ebm_from_df(df_show, friendly=False)
-
-
-# -----------------------------
-# Export PDFs
+# UI: Export buttons
 # -----------------------------
 colpdf1, colpdf2 = st.columns(2)
 with colpdf1:
@@ -1284,6 +1050,7 @@ with colpdf1:
                 section=st.session_state["section"],
                 df=df_show,
                 ebm_notes=ebm_notes,
+                ebm_tips=ebm_tips,
                 radar_buf=radar_buf,
                 asym_buf=asym_buf,
             )
