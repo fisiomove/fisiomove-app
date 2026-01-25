@@ -550,6 +550,23 @@ def radar_plot_matplotlib(df, title="Punteggi (0–10)"):
     return buf
 
 
+# Mapping per nomi più semplici da usare nel grafico delle asimmetrie nel PDF
+SIMPLE_TEST_LABELS = {
+    "Weight Bearing Lunge Test": "Caviglia",
+    "Passive Hip Flexion": "Anca passiva",
+    "Hip Rotation (flexed 90°)": "Rotazione anca",
+    "Wall Angel Test": "Rigidità braccio-muro",
+    "Shoulder ER (adducted, low-bar)": "Spalla ER Low-Bar",
+    "Shoulder Flexion (supine)": "Flessione spalla",
+    "External Rotation (90° abd)": "ER Spalla 90° abd",
+    "Pectoralis Minor Length": "Lunghezza Pettorale Min.",
+    "Thomas Test (modified)": "Thomas Test",
+    "Active Knee Extension (AKE)": "Estensione attiva ginocchio",
+    "Straight Leg Raise (SLR)": "SLR",
+    "Sorensen Endurance": "Endurance lombare",
+    "ULNT1A (Median nerve)": "ULNT1A",
+}
+
 def asymmetry_plot_matplotlib(df, title="SymScore – Simmetria Dx/Sx"):
     df_bilat = df[df["SymScore"].notnull()].copy()
     try:
@@ -561,7 +578,8 @@ def asymmetry_plot_matplotlib(df, title="SymScore – Simmetria Dx/Sx"):
     if df_bilat.empty:
         return None
 
-    labels = df_bilat["Test"].tolist()
+    # Passaggio dai nomi dei test a nomi più semplici
+    labels = df_bilat["Test"].apply(lambda name: SIMPLE_TEST_LABELS.get(name, name)).tolist()
     scores = df_bilat["SymScore"].tolist()
 
     colors_map = []
