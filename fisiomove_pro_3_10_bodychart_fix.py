@@ -82,7 +82,7 @@ def short_key(s: str) -> str:
 APP_TITLE = "Fisiomove MobilityPro"
 SUBTITLE = "Valutazione Funzionale — versione 1.0"
 PRIMARY = "#1E6CF4"
-CONTACT = "info@fisiomove.example"
+CONTACT = "fisiomove.net oppure 3454844901"
 
 LOGO_PATHS = ["logo 2600x1000.jpg", "logo.png", "logo.jpg"]
 
