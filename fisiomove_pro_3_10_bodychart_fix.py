@@ -827,22 +827,7 @@ def generate_recommendations(df, sport, session_state):
     
     return recommendations
 
-def ebm_from_df(df):
-    """Generate EBM-based clinical notes"""
-    notes = []
-    for _, r in df.iterrows():
-        test = str(r["Test"])
-        score = float(r["Score"]) if not pd.isna(r["Score"]) else 10.0
-        entry = EBM_LIBRARY.get(test)
-        if not entry:
-            continue
-        title_it = pdf_test_label(test)
-        if score < 7:
-            paragraph = f"{title_it}: {entry['text']}"
-        else:
-            paragraph = f"{title_it}: Risultato nella norma (score {score:.1f}/10)."
-        notes.append(paragraph)
-    return notes
+# REMOVED: ebm_from_df function - not needed anymore
 
 # -----------------------------
 # Toggle callback
@@ -1260,7 +1245,7 @@ def add_footer(canvas, doc):
     canvas.restoreState()
 
 def pdf_report_clinico(logo_bytes, athlete, evaluator, date_str, section, df, 
-                       ebm_notes, recommendations, session_state, 
+                       recommendations, session_state, 
                        radar_buf=None, asym_buf=None, progress_buf=None):
     """Generate comprehensive clinical PDF report"""
     buf = io.BytesIO()
@@ -1469,16 +1454,7 @@ def pdf_report_clinico(logo_bytes, athlete, evaluator, date_str, section, df,
         story.append(Paragraph("Nessuna regione dolorosa segnalata.", body))
     story.append(Spacer(1, 16))
 
-    # EBM comments
-    story.append(Paragraph("<b>Commento Clinico (Evidence-Based)</b>", heading))
-    if ebm_notes:
-        for note in ebm_notes[:8]:  # Limit for space
-            story.append(Paragraph(sanitize_text_for_plot(note), body))
-            story.append(Spacer(1, 4))
-    else:
-        story.append(Paragraph("Nessun commento specifico.", body))
-    
-    story.append(Spacer(1, 20))
+    # REMOVED: EBM comments section completely
 
     # Clinical notes
     if session_state.get("clinical_notes", "").strip():
@@ -1716,7 +1692,7 @@ with tab1:
                                              help="0 = nessun dolore, 10 = peggior dolore immaginabile")
         
         if st.session_state["nprs"] >= 7:
-            st.warning("⚠️ Dolore elevato - considerare gestione farmacologica")
+            st.warning("��️ Dolore elevato - considerare gestione farmacologica")
         elif st.session_state["nprs"] >= 4:
             st.info("ℹ️ Dolore moderato")
         else:
@@ -2122,7 +2098,7 @@ with tab6:
     if df_show.empty:
         st.warning("⚠️ Nessun dato disponibile per generare il report. Compilare prima i test.")
     else:
-        st.info("Il report PDF includerà: anamnesi, red flags, scale funzionali, risultati test, grafici, raccomandazioni EBM e note cliniche.")
+        st.info("Il report PDF includerà: anamnesi, red flags, scale funzionali, risultati test, grafici, raccomandazioni e note cliniche.")
         
         # Prepare data for PDF
         try:
@@ -2147,7 +2123,6 @@ with tab6:
                 except Exception:
                     pass
         
-        ebm_notes = ebm_from_df(df_show)
         recommendations = generate_recommendations(df_show, st.session_state.get("sport", "Powerlifting"), st.session_state)
         
         col_pdf1, col_pdf2 = st.columns([2, 1])
@@ -2163,7 +2138,6 @@ with tab6:
                             date_str=st.session_state["date"],
                             section="Valutazione Generale",
                             df=df_show,
-                            ebm_notes=ebm_notes,
                             recommendations=recommendations,
                             session_state=st.session_state,
                             radar_buf=radar_buf,
