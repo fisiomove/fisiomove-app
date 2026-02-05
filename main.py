@@ -827,8 +827,6 @@ def generate_recommendations(df, sport, session_state):
     
     return recommendations
 
-# REMOVED: ebm_from_df function - not needed anymore
-
 # -----------------------------
 # Toggle callback
 # -----------------------------
@@ -1454,8 +1452,6 @@ def pdf_report_clinico(logo_bytes, athlete, evaluator, date_str, section, df,
         story.append(Paragraph("Nessuna regione dolorosa segnalata.", body))
     story.append(Spacer(1, 16))
 
-    # REMOVED: EBM comments section completely
-
     # Clinical notes
     if session_state.get("clinical_notes", "").strip():
         story.append(Paragraph("<b>Note Cliniche Aggiuntive</b>", heading))
@@ -1692,7 +1688,7 @@ with tab1:
                                              help="0 = nessun dolore, 10 = peggior dolore immaginabile")
         
         if st.session_state["nprs"] >= 7:
-            st.warning("��️ Dolore elevato - considerare gestione farmacologica")
+            st.warning("⚠️ Dolore elevato - considerare gestione farmacologica")
         elif st.session_state["nprs"] >= 4:
             st.info("ℹ️ Dolore moderato")
         else:
@@ -1957,7 +1953,7 @@ with tab4:
             help="Pattern di movimento, compensi, strategie motorie, etc."
         )
 
-# TAB 5: PROGRESSION
+# TAB 5: PROGRESSION (CORRECTED)
 with tab5:
     st.markdown("### 📈 Progressione nel Tempo")
     
@@ -2081,10 +2077,107 @@ with tab5:
         
         elif len(history) == 1:
             st.info(f"ℹ️ Trovata 1 valutazione per {athlete_name}. Servono almeno 2 valutazioni per visualizzare la progressione.")
-            st.json(history[0])
+            
+            # CORREZIONE: Mostra i dati in modo formattato invece di JSON raw
+            h = history[0]
+            
+            st.markdown("#### 📋 Dettagli Valutazione")
+            
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Data", h.get("date", "N/A"))
+            with col2:
+                st.metric("Sport", h.get("sport", "N/A"))
+            with col3:
+                st.metric("NPRS", f"{h.get('nprs', 0)}/10")
+            
+            st.markdown("---")
+            
+            # Calcola score medio
+            vals = h.get("data", {})
+            scores = []
+            for test_data in vals.values():
+                ref = test_data.get("ref", 10.0)
+                hib = test_data.get("higher_is_better", True)
+                if test_data.get("bilat", False):
+                    dx = test_data.get("Dx", 0.0)
+                    sx = test_data.get("Sx", 0.0)
+                    avg = (float(dx) + float(sx)) / 2.0
+                    score = ability_linear(avg, ref, hib)
+                    scores.append(score)
+                else:
+                    val = test_data.get("Val", 0.0)
+                    score = ability_linear(val, ref, hib)
+                    scores.append(score)
+            
+            avg_score = np.mean(scores) if scores else 0
+            
+            col_score1, col_score2 = st.columns(2)
+            with col_score1:
+                st.metric("Score Medio", f"{avg_score:.1f}/10")
+            with col_score2:
+                st.metric("Numero Test", len(vals))
+            
+            st.markdown("---")
+            
+            # Mostra test con score più bassi
+            st.markdown("#### 🎯 Test con Score Più Bassi")
+            
+            test_scores = []
+            for test_name, test_data in vals.items():
+                ref = test_data.get("ref", 10.0)
+                hib = test_data.get("higher_is_better", True)
+                
+                if test_data.get("bilat", False):
+                    dx = test_data.get("Dx", 0.0)
+                    sx = test_data.get("Sx", 0.0)
+                    avg = (float(dx) + float(sx)) / 2.0
+                    score = ability_linear(avg, ref, hib)
+                else:
+                    val = test_data.get("Val", 0.0)
+                    score = ability_linear(val, ref, hib)
+                
+                test_scores.append({
+                    "Test": test_name,
+                    "Score": score,
+                    "Regione": test_data.get("region", "N/A")
+                })
+            
+            # Ordina per score (dal più basso)
+            test_scores_df = pd.DataFrame(test_scores).sort_values("Score")
+            
+            # Mostra top 5 con score più bassi
+            st.dataframe(test_scores_df.head(5), use_container_width=True)
+            
+            st.markdown("---")
+            
+            # Anamnesi
+            with st.expander("📋 Anamnesi e Note Cliniche", expanded=False):
+                st.markdown(f"**Storia Infortuni:** {h.get('injury_history', 'Nessuna') or 'Nessuna'}")
+                st.markdown(f"**Sintomi Attuali:** {h.get('current_symptoms', 'Nessuno') or 'Nessuno'}")
+                st.markdown(f"**Obiettivi:** {h.get('goals', 'N/A') or 'N/A'}")
+                st.markdown(f"**Note Cliniche:** {h.get('clinical_notes', 'Nessuna') or 'Nessuna'}")
+                st.markdown(f"**Osservazioni Posturali:** {h.get('postural_observations', 'Nessuna') or 'Nessuna'}")
+            
+            # PSFS
+            psfs_activities = h.get("psfs_activities", [])
+            if psfs_activities:
+                with st.expander("📊 PSFS Activities", expanded=False):
+                    for act in psfs_activities:
+                        st.markdown(f"- **{act.get('activity', 'N/A')}**: {act.get('score', 0)}/10")
+            
+            # Red Flags
+            red_flags = h.get("red_flags", [])
+            if red_flags:
+                with st.expander("🚨 Red Flags", expanded=False):
+                    for flag in red_flags:
+                        st.warning(f"⚠️ {RED_FLAGS.get(flag, flag)}")
+            
+            st.success("💡 **Suggerimento:** Crea una nuova valutazione per vedere la progressione nel tempo!")
         
         else:
             st.warning(f"⚠️ Nessuna valutazione precedente trovata per {athlete_name}")
+            st.info("💡 Compila i test e clicca su '💾 Salva Valutazione' nella sidebar per iniziare a tracciare i tuoi progressi.")
     
     else:
         st.warning("⚠️ Inserire il nome dell'atleta per visualizzare la progressione")
