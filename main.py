@@ -159,13 +159,13 @@ TESTS = {
         ("Weight Bearing Lunge Test", "cm", 12.0, True, "ankle", "Test dorsiflessione in carico.", True),
         ("Passive Hip Flexion", "°", 120.0, True, "hip", "Flessione anca passiva.", True),
         ("Hip Rotation (flexed 90°)", "°", 40.0, True, "hip", "Rotazione anca (flessione 90°).", True),
-        ("Wall Angel Test", "cm", 12.0, False, "thoracic", "Distanza cm tra braccio e muro; valori alti indicano rigidità.", False),
+        ("Wall Angel Test", "cm", 12.0, False, "thoracic", "Distanza cm tra braccio e muro; valori alti indicano rigidità.", True),
         ("Shoulder ER (adducted, low-bar)", "°", 70.0, True, "shoulder", "Rotazione esterna spalla (low-bar).", True),
     ],
     "Panca": [
         ("Shoulder Flexion (supine)", "°", 180.0, True, "shoulder", "Flessione spalla (supina).", True),
         ("External Rotation (90° abd)", "°", 90.0, True, "shoulder", "ER a 90° abduzione.", True),
-        ("Wall Angel Test", "cm", 12.0, False, "thoracic", "Distanza cm tra braccio e muro; valori alti indicano rigidità.", False),
+        ("Wall Angel Test", "cm", 12.0, False, "thoracic", "Distanza cm tra braccio e muro; valori alti indicano rigidità.", True),
         ("Pectoralis Minor Length", "cm", 5.0, True, "shoulder", "Distanza PM: valori più bassi indicano maggiore mobilità.", False),
         ("Thomas Test (modified)", "°", 10.0, False, "hip", "Thomas test (modificato).", True),
     ],
@@ -332,7 +332,7 @@ SPORT_SPECIFIC_INTERPRETATION = {
         "Squat": {
             "critical_tests": ["Weight Bearing Lunge Test", "Hip Rotation (flexed 90°)", "Passive Hip Flexion"],
             "threshold": 7.0,
-            "note": "Mobilità caviglia critica per depth ATG; ROM anca essenziale per stance largo"
+            "note": "ROM anca critico per depth ATG; mobilità anca essenziale per stance largo"
         },
         "Panca": {
             "critical_tests": ["Shoulder ER (adducted, low-bar)", "Pectoralis Minor Length", "Shoulder Flexion (supine)"],
@@ -1398,7 +1398,13 @@ def pdf_report_clinico(logo_bytes, athlete, evaluator, date_str, section, df,
 
     # Recommendations
     story.append(PageBreak())
-    story.append(Paragraph("<b>Raccomandazioni Cliniche</b>", heading))
+    story.append(Paragraph("<b>Raccomandazioni cliniche e priorità di intervento</b>", heading))
+    
+    disclaimer_text = ("<i>Disclaimer: I protocolli di esercizi si basano su principi biomeccanici, "
+                      "esperienza clinica e letteratura disponibile. Il livello di evidenza scientifica varia. "
+                      "Personalizzare in base alla risposta individuale del paziente.</i>")
+    story.append(Paragraph(disclaimer_text, small))
+    story.append(Spacer(1, 8))
     
     if recommendations:
         for i, rec in enumerate(recommendations[:6], 1):  # Limit to top 6 for space
@@ -1477,42 +1483,142 @@ def pdf_report_clinico(logo_bytes, athlete, evaluator, date_str, section, df,
 # -----------------------------
 st.markdown(f"""
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
+
 :root {{ --primary: {PRIMARY}; }}
-body {{ background: #f6f8fb; }}
+
+* {{
+    font-family: 'Roboto', sans-serif !important;
+}}
+
+[data-testid="stAppViewContainer"] {{
+    background-color: #32373c;
+}}
+[data-testid="stHeader"] {{
+    background-color: #32373c;
+}}
+[data-testid="stSidebar"] {{
+    background-color: #23282d;
+}}
+.main {{
+    background-color: #32373c;
+}}
+body {{ 
+    background: #32373c;
+    font-family: 'Roboto', sans-serif;
+}}
+h1, h2, h3, h4, h5, h6 {{
+    color: #ffffff !important;
+    font-family: 'Roboto', sans-serif !important;
+}}
+p, span, div {{
+    color: #e8e8e8;
+    font-family: 'Roboto', sans-serif;
+}}
+[data-testid="stMarkdownContainer"] p {{
+    color: #e8e8e8 !important;
+}}
+[data-testid="stMetricLabel"] {{
+    color: #ffffff !important;
+}}
+[data-testid="stMetricValue"] {{
+    color: {PRIMARY} !important;
+}}
+label {{
+    color: #ffffff !important;
+}}
+.stMarkdown {{
+    color: #e8e8e8 !important;
+}}
+/* Tabelle */
+[data-testid="stDataFrame"] {{
+    background-color: #23282d;
+}}
+[data-testid="stTable"] {{
+    color: #ffffff !important;
+}}
+table {{
+    background-color: #23282d !important;
+    color: #ffffff !important;
+}}
+thead tr th {{
+    background-color: {PRIMARY} !important;
+    color: #ffffff !important;
+}}
+tbody tr td {{
+    color: #e8e8e8 !important;
+    background-color: #23282d !important;
+}}
+/* Menu a tendina e input */
+[data-baseweb="select"] {{
+    background-color: #23282d !important;
+}}
+[data-baseweb="select"] > div {{
+    background-color: #23282d !important;
+    color: #ffffff !important;
+}}
+.stSelectbox label {{
+    color: #ffffff !important;
+}}
+[data-baseweb="popover"] {{
+    background-color: #23282d !important;
+}}
+[data-baseweb="menu"] li {{
+    background-color: #23282d !important;
+    color: #ffffff !important;
+}}
+[data-baseweb="menu"] li:hover {{
+    background-color: #32373c !important;
+}}
+input, textarea, select {{
+    background-color: #23282d !important;
+    color: #ffffff !important;
+    border: 1px solid #50575e !important;
+}}
 .header-card {{ 
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+    background: linear-gradient(135deg, #23282d 0%, #32373c 100%); 
     padding: 20px; 
     border-radius: 15px; 
-    color: white;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    color: #ffffff;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    border: 2px solid #50575e;
+}}
+.header-card h1, .header-card p {{
+    color: #ffffff !important;
 }}
 .card {{ 
-    background: white; 
+    background: #23282d; 
     padding: 15px; 
     border-radius: 12px; 
     margin-bottom: 12px; 
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
     border-left: 4px solid {PRIMARY};
+    color: #e8e8e8;
 }}
-.small-muted {{ color: #6b7280; font-size: 0.9rem; }}
+.small-muted {{ color: #a8a8a8; font-size: 0.9rem; }}
 .metric-card {{
-    background: white;
+    background: #23282d;
     padding: 15px;
     border-radius: 10px;
     text-align: center;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    color: #ffffff;
 }}
 .stTabs [data-baseweb="tab-list"] {{
     gap: 8px;
 }}
 .stTabs [data-baseweb="tab"] {{
     padding: 12px 24px;
-    background-color: #f3f4f6;
+    background-color: #23282d;
+    color: #e8e8e8;
+    border: 1px solid #50575e;
     border-radius: 8px;
 }}
 .stTabs [aria-selected="true"] {{
     background-color: {PRIMARY};
-    color: white;
+    color: #ffffff;
+    border-color: {PRIMARY};
+    font-weight: 600;
 }}
 </style>
 """, unsafe_allow_html=True)
@@ -1543,7 +1649,41 @@ with st.sidebar:
         load_existing = st.checkbox("Carica atleta esistente")
         if load_existing:
             selected_athlete = st.selectbox("Seleziona atleta", existing_athletes)
-            st.session_state["athlete"] = selected_athlete
+            
+            # Load latest assessment when athlete changes
+            if selected_athlete != st.session_state.get("athlete"):
+                history = load_athlete_history(selected_athlete)
+                if history:
+                    latest = history[0]  # Most recent assessment
+                    
+                    # Load all data into session state
+                    st.session_state["athlete"] = latest.get("athlete", selected_athlete)
+                    st.session_state["evaluator"] = latest.get("evaluator", "")
+                    st.session_state["date"] = latest.get("date", datetime.now().strftime("%Y-%m-%d"))
+                    st.session_state["sport"] = latest.get("sport", "Powerlifting")
+                    st.session_state["training_frequency"] = latest.get("training_frequency", 4)
+                    st.session_state["injury_history"] = latest.get("injury_history", "")
+                    st.session_state["current_symptoms"] = latest.get("current_symptoms", "")
+                    st.session_state["goals"] = latest.get("goals", "")
+                    st.session_state["red_flags"] = latest.get("red_flags", [])
+                    st.session_state["nprs"] = latest.get("nprs", 0)
+                    st.session_state["psfs_activities"] = latest.get("psfs_activities", [])
+                    st.session_state["pain_behavior"] = latest.get("pain_behavior", [])
+                    st.session_state["aggravating_factors"] = latest.get("aggravating_factors", [])
+                    st.session_state["relieving_factors"] = latest.get("relieving_factors", [])
+                    st.session_state["movement_quality"] = latest.get("movement_quality", {})
+                    st.session_state["clinical_notes"] = latest.get("clinical_notes", "")
+                    st.session_state["postural_observations"] = latest.get("postural_observations", "")
+                    
+                    # Load test data
+                    test_data = latest.get("data", {})
+                    for test_name, test_values in test_data.items():
+                        if test_name in st.session_state["vals"]:
+                            st.session_state["vals"][test_name].update(test_values)
+                    
+                    st.rerun()
+                else:
+                    st.session_state["athlete"] = selected_athlete
     
     st.session_state["athlete"] = st.text_input("Nome Atleta", st.session_state["athlete"])
     st.session_state["evaluator"] = st.text_input("Fisioterapista", st.session_state["evaluator"])
@@ -1617,13 +1757,12 @@ with st.sidebar:
             st.error(f"Errore nel salvataggio: {e}")
 
 # Main content tabs
-tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "📝 Anamnesi", 
-    "🔍 Test Oggettivi", 
+    "🔍 Test oggettivi", 
     "📊 Risultati", 
-    "💪 Qualità Movimento",
     "📈 Progressione",
-    "📄 Report PDF"
+    "📄 Report pdf"
 ])
 
 # TAB 1: ANAMNESIS
@@ -1871,6 +2010,12 @@ with tab3:
         # Recommendations
         st.markdown("### 💡 Raccomandazioni Evidence-Based")
         
+        st.info("""⚠️ **Disclaimer Evidenza Scientifica**: I protocolli di esercizi proposti si basano su principi biomeccanici, 
+        esperienza clinica e letteratura disponibile. Il livello di evidenza varia: alcuni esercizi hanno supporto da RCT di qualità 
+        (es. eccentrici per hamstrings), altri si basano su opinione di esperti e meccanismi plausibili. 
+        Gli esercizi neurodinamici e alcune tecniche di mobilità hanno evidenza limitata o controversa. 
+        Personalizzare sempre in base alla risposta individuale del paziente.""")
+        
         recommendations = generate_recommendations(df_show, st.session_state.get("sport", "Powerlifting"), st.session_state)
         
         if recommendations:
@@ -1892,69 +2037,8 @@ with tab3:
         else:
             st.success("✓ Nessuna raccomandazione critica. Continuare monitoraggio regolare.")
 
-# TAB 4: MOVEMENT QUALITY
+# TAB 4: PROGRESSION (CORRECTED)
 with tab4:
-    st.markdown("### 🏃 Valutazione Qualitativa del Movimento")
-    st.caption("Valutazione pattern di movimento e controllo motorio")
-    
-    movement_quality = st.session_state.get("movement_quality", {})
-    
-    for test_name, test_data in MOVEMENT_QUALITY_TESTS.items():
-        with st.expander(f"📹 {test_name}", expanded=False):
-            st.markdown(f"**Parametri da osservare:**")
-            
-            test_scores = movement_quality.get(test_name, {})
-            
-            for param in test_data["parametri"]:
-                param_key = f"{test_name}_{param}"
-                score = st.select_slider(
-                    param,
-                    options=test_data["scoring"],
-                    value=test_scores.get(param, test_data["scoring"][0]),
-                    key=param_key
-                )
-                test_scores[param] = score
-            
-            movement_quality[test_name] = test_scores
-            
-            # Overall assessment
-            st.markdown("**Note aggiuntive:**")
-            notes_key = f"{test_name}_notes"
-            notes = st.text_area("Osservazioni", 
-                                value=test_scores.get("notes", ""),
-                                key=notes_key,
-                                height=80)
-            test_scores["notes"] = notes
-    
-    st.session_state["movement_quality"] = movement_quality
-    
-    st.markdown("---")
-    
-    # Clinical notes
-    st.markdown("### 📝 Note Cliniche Generali")
-    
-    col_notes1, col_notes2 = st.columns(2)
-    
-    with col_notes1:
-        st.markdown("#### Osservazioni Posturali")
-        st.session_state["postural_observations"] = st.text_area(
-            "Postura statica e dinamica",
-            value=st.session_state.get("postural_observations", ""),
-            height=150,
-            help="Es: iperlordosi lombare, spalle anteposte, rotazione bacino, etc."
-        )
-    
-    with col_notes2:
-        st.markdown("#### Note Cliniche Libere")
-        st.session_state["clinical_notes"] = st.text_area(
-            "Altre osservazioni rilevanti",
-            value=st.session_state.get("clinical_notes", ""),
-            height=150,
-            help="Pattern di movimento, compensi, strategie motorie, etc."
-        )
-
-# TAB 5: PROGRESSION (CORRECTED)
-with tab5:
     st.markdown("### 📈 Progressione nel Tempo")
     
     athlete_name = st.session_state.get("athlete", "")
@@ -2182,8 +2266,8 @@ with tab5:
     else:
         st.warning("⚠️ Inserire il nome dell'atleta per visualizzare la progressione")
 
-# TAB 6: PDF REPORT
-with tab6:
+# TAB 5: PDF REPORT
+with tab5:
     st.markdown("### 📄 Generazione Report PDF")
     
     df_show = build_df("Valutazione Generale")

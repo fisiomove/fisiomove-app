@@ -1,2 +1,4 @@
 .vscode/
 .venv/
+assessments_data/
+__pycache__/
