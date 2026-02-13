@@ -45,7 +45,7 @@ try:
 except Exception:
     QR_AVAILABLE = False
 
-st.set_page_config(page_title="Fisiomove MobilityPro", layout="wide")
+st.set_page_config(page_title="Fisiomove MobilityPassport", layout="wide", page_icon="🩺")
 
 # -----------------------------
 # Utilities
@@ -77,10 +77,10 @@ def short_key(s: str) -> str:
 # -----------------------------
 # Constants & assets
 # -----------------------------
-APP_TITLE = "Fisiomove MobilityPro"
-SUBTITLE = "Sistema Completo di Valutazione Fisioterapica — v2.0"
+APP_TITLE = "Fisiomove MobilityPassport"
+SUBTITLE = "Sistema Completo di Valutazione Fisioterapica — v1.0"
 PRIMARY = "#1E6CF4"
-CONTACT = "info@fisiomove.example"
+CONTACT = "info@fisiomove.net"
 
 LOGO_PATHS = ["logo 2600x1000.jpg", "logo.png", "logo.jpg"]
 
@@ -158,16 +158,17 @@ TESTS = {
     "Squat": [
         ("Weight Bearing Lunge Test", "cm", 12.0, True, "ankle", "Test dorsiflessione in carico.", True),
         ("Passive Hip Flexion", "°", 120.0, True, "hip", "Flessione anca passiva.", True),
-        ("Hip Rotation (flexed 90°)", "°", 40.0, True, "hip", "Rotazione anca (flessione 90°).", True),
-        ("Wall Angel Test", "cm", 12.0, False, "thoracic", "Distanza cm tra braccio e muro; valori alti indicano rigidità.", True),
+        ("Hip Internal Rotation", "°", 35.0, True, "hip", "Rotazione interna anca (flessione 90°).", True),
+        ("Hip External Rotation", "°", 45.0, True, "hip", "Rotazione esterna anca (flessione 90°).", True),
+        ("Wall Angel Test", "cm", 12.0, True, "thoracic", "Distanza cm tra braccio e muro; valori alti indicano rigidità.", True),
         ("Shoulder ER (adducted, low-bar)", "°", 70.0, True, "shoulder", "Rotazione esterna spalla (low-bar).", True),
     ],
     "Panca": [
         ("Shoulder Flexion (supine)", "°", 180.0, True, "shoulder", "Flessione spalla (supina).", True),
         ("External Rotation (90° abd)", "°", 90.0, True, "shoulder", "ER a 90° abduzione.", True),
-        ("Wall Angel Test", "cm", 12.0, False, "thoracic", "Distanza cm tra braccio e muro; valori alti indicano rigidità.", True),
+        ("Wall Angel Test", "cm", 12.0, True, "thoracic", "Distanza cm tra braccio e muro; valori alti indicano rigidità.", True),
         ("Pectoralis Minor Length", "cm", 5.0, True, "shoulder", "Distanza PM: valori più bassi indicano maggiore mobilità.", False),
-        ("Thomas Test (modified)", "°", 10.0, False, "hip", "Thomas test (modificato).", True),
+        ("Thomas Test (modified)", "°", 10.0, True, "hip", "Thomas test (modificato).", True),
     ],
     "Deadlift": [
         ("Active Knee Extension (AKE)", "°", 90.0, True, "knee", "Estensione attiva ginocchio (AKE).", True),
@@ -210,6 +211,138 @@ MOVEMENT_QUALITY_TESTS = {
             "Controllo lombo-pelvico"
         ],
         "scoring": ["Ottimo (>60s)", "Buono (30-60s)", "Deficit (<30s)"]
+    }
+}
+
+# Injury Risk Database (EBM-based)
+INJURY_RISK_DATABASE = {
+    "Weight Bearing Lunge Test": {
+        "risk_threshold": 7.0,
+        "risk_injuries": ["Tendinopatia Achillea", "Fascite plantare", "Sindrome impingement anteriore caviglia"],
+        "mechanism": "Dorsiflessione limitata aumenta stress su tendine Achille e fascia plantare, altera biomeccanica squat",
+        "sport_specific": {"Squat": "Compenso con inclinazione tronco eccessiva, talloni sollevati, stress lombare"},
+        "evidence": "Decrease in ankle DF associated with increased injury risk (Backman & Danielson 2011)",
+        "priority_critical": 4.0,
+        "priority_high": 7.0
+    },
+    "Hip Internal Rotation": {
+        "risk_threshold": 7.0,
+        "risk_injuries": ["Conflitto femoro-acetabolare (FAI)", "Lesioni labrali", "Lombalgia da compenso"],
+        "mechanism": "Deficit IR anca causa compenso in rotazione lombare durante squat, aumenta stress su labrum",
+        "sport_specific": {"Squat": "Buttwink eccessivo, perdita profondità, valgo ginocchio"},
+        "evidence": "Limited hip IR predicts hip/groin pain in athletes (Mosler et al. 2018, BJSM)",
+        "priority_critical": 4.0,
+        "priority_high": 7.0
+    },
+    "Hip External Rotation": {
+        "risk_threshold": 7.0,
+        "risk_injuries": ["Sindrome piriforme", "Tendinopatia glutei", "Dolore trocanterico"],
+        "mechanism": "Deficit ER limita stabilità bacino, sovraccarica rotatori esterni e abduttori anca",
+        "sport_specific": {"Squat": "Collasso valgo ginocchia, Trendelenburg stance", "Deadlift": "Perdita setup, rotazione bacino"},
+        "evidence": "Hip ER deficit correlates with lateral hip pain (Reiman et al. 2012)",
+        "priority_critical": 4.0,
+        "priority_high": 7.0
+    },
+    "Passive Hip Flexion": {
+        "risk_threshold": 7.0,
+        "risk_injuries": ["Impingement anca", "Lombalgia", "Lesioni labrali"],
+        "mechanism": "ROM flessione <110° limita profondità squat, causa compenso lombare (buttwink precoce)",
+        "sport_specific": {"Squat": "Impossibilità raggiungere profondità, stress lombare"},
+        "evidence": "Hip flexion ROM critical for deep squat mechanics (Dill et al. 2014)",
+        "priority_critical": 4.0,
+        "priority_high": 7.0
+    },
+    "Active Knee Extension (AKE)": {
+        "risk_threshold": 7.0,
+        "risk_injuries": ["Lesioni hamstring", "Lombalgia", "Tendinopatia prossimale hamstring"],
+        "mechanism": "Deficit AKE indica rigidità hamstring, aumenta rischio strain durante deadlift/sprint",
+        "sport_specific": {"Deadlift": "Setup compromesso, flessione lombare eccessiva, rischio ernia discale"},
+        "evidence": "Limited knee extension (<20° from full) increases hamstring injury risk 2.4x (Freckleton & Pizzari 2013)",
+        "priority_critical": 3.5,
+        "priority_high": 6.5
+    },
+    "Straight Leg Raise (SLR)": {
+        "risk_threshold": 7.0,
+        "risk_injuries": ["Lesioni hamstring", "Neuropatia sciatica", "Lombalgia"],
+        "mechanism": "SLR <70° indica tensione neurale o rigidità hamstring, limita pattern hip hinge",
+        "sport_specific": {"Deadlift": "Incapacità mantenere schiena neutra in setup"},
+        "evidence": "Poor hamstring flexibility predicts lower back pain (Li et al. 2015)",
+        "priority_critical": 4.0,
+        "priority_high": 7.0
+    },
+    "Sorensen Endurance": {
+        "risk_threshold": 6.0,
+        "risk_injuries": ["Lombalgia cronica", "Spondilolistesi", "Strain erector spinae"],
+        "mechanism": "Deficit endurance estensori lombari (<120s) aumenta carico su strutture passive",
+        "sport_specific": {"Deadlift": "Loss of lordosis sotto carico, rischio injury lombare"},
+        "evidence": "Sorensen test <58s predicts LBP (OR 3.4) in athletes (Luoto et al. 1995)",
+        "priority_critical": 3.0,
+        "priority_high": 5.0
+    },
+    "Wall Angel Test": {
+        "risk_threshold": 7.0,
+        "risk_injuries": ["Sindrome impingement subacromiale", "Discinesia scapolare", "Lesioni cuffia rotatori"],
+        "mechanism": "Rigidità toracica causa scapular winging e pattern overhead alterato",
+        "sport_specific": {"Squat": "Barra scivola avanti in low-bar", "Panca": "Ridotto leg drive, arco sub-ottimale"},
+        "evidence": "Thoracic extension deficit correlates with shoulder pain in overhead athletes (Laudner et al. 2011)",
+        "priority_critical": 4.5,
+        "priority_high": 7.0
+    },
+    "Shoulder Flexion (supine)": {
+        "risk_threshold": 7.0,
+        "risk_injuries": ["Impingement subacromiale", "Borsite", "Tendinopatia bicipite"],
+        "mechanism": "Flessione <170° indica deficit capsulare o rigidità scapolo-toracica",
+        "sport_specific": {"Panca": "Traiettoria barra sub-ottimale, stress anteriore spalla"},
+        "evidence": "Limited shoulder flexion increases impingement risk (Tyler et al. 2010)",
+        "priority_critical": 4.0,
+        "priority_high": 7.0
+    },
+    "External Rotation (90° abd)": {
+        "risk_threshold": 7.0,
+        "risk_injuries": ["SLAP lesion", "Instabilità anteriore", "Lesione cuffia rotatori"],
+        "mechanism": "Deficit ER con abduzione indica tensione capsula anteriore, aumenta stress su labrum",
+        "sport_specific": {"Panca": "Perdita retrazione scapolare, stress capsula anteriore"},
+        "evidence": "Bilateral ER deficit >5° increases shoulder injury risk (Shanley et al. 2011, AJSM)",
+        "priority_critical": 4.0,
+        "priority_high": 7.0
+    },
+    "Pectoralis Minor Length": {
+        "risk_threshold": 6.0,
+        "risk_injuries": ["Sindrome stretto toracico", "Discinesia scapolare", "Neuropatia ulnare"],
+        "mechanism": "PM accorciato causa scapola protratta, riduce spazio subacromiale",
+        "sport_specific": {"Panca": "Retrazione scapolare limitata, perdita stabilità"},
+        "evidence": "Shortened pectoralis minor associated with shoulder dysfunction (Borstad & Ludewig 2005)",
+        "priority_critical": 3.0,
+        "priority_high": 6.0,
+        "note": "Valori PIÙ BASSI sono migliori per questo test"
+    },
+    "Thomas Test (modified)": {
+        "risk_threshold": 6.0,
+        "risk_injuries": ["Tendinopatia flessori anca", "Sindrome da impingement anca", "Lombalgia"],
+        "mechanism": "Flessori anca accorciati alterano tilt pelvico, aumentano lordosi lombare",
+        "sport_specific": {"Squat": "Tilt pelvico anteriore eccessivo", "Deadlift": "Estensione lombare compensatoria"},
+        "evidence": "Tight hip flexors correlate with anterior pelvic tilt and LBP (Sanderson & Maxwell 2015)",
+        "priority_critical": 3.5,
+        "priority_high": 6.0,
+        "note": "Valori PIÙ BASSI sono migliori per questo test"
+    },
+    "ULNT1A (Median nerve)": {
+        "risk_threshold": 7.0,
+        "risk_injuries": ["Sindrome tunnel carpale", "Neuropatia mediana", "Cervicobrachialgia"],
+        "mechanism": "Tensione neurale aumentata può causare parestesie e deficit forza durante pressing",
+        "sport_specific": {"Panca": "Parestesie mano durante set, perdita grip"},
+        "evidence": "Positive ULNT correlates with nerve pathology (Nee et al. 2012)",
+        "priority_critical": 4.0,
+        "priority_high": 7.0
+    },
+    "Plank Test": {
+        "risk_threshold": 5.0,
+        "risk_injuries": ["Lombalgia cronica", "Instabilità lombo-pelvica", "Ernia discale"],
+        "mechanism": "Core endurance <30s indica deficit stabilizzazione, aumenta carico su rachide",
+        "sport_specific": {"Squat": "Loss of brace, Valsalva inefficace", "Deadlift": "Flessione lombare sotto carico"},
+        "evidence": "Core endurance deficit predicts LBP (McGill et al. 1999)",
+        "priority_critical": 2.5,
+        "priority_high": 4.5
     }
 }
 
@@ -330,7 +463,7 @@ EXERCISE_PROTOCOLS = {
 SPORT_SPECIFIC_INTERPRETATION = {
     "Powerlifting": {
         "Squat": {
-            "critical_tests": ["Weight Bearing Lunge Test", "Hip Rotation (flexed 90°)", "Passive Hip Flexion"],
+            "critical_tests": ["Weight Bearing Lunge Test", "Hip Internal Rotation", "Hip External Rotation", "Passive Hip Flexion"],
             "threshold": 7.0,
             "note": "ROM anca critico per depth ATG; mobilità anca essenziale per stance largo"
         },
@@ -354,7 +487,7 @@ SPORT_SPECIFIC_INTERPRETATION = {
     },
     "Weightlifting": {
         "snatch_clean": {
-            "critical_tests": ["Weight Bearing Lunge Test", "Hip Rotation (flexed 90°)", "Shoulder Flexion (supine)"],
+            "critical_tests": ["Weight Bearing Lunge Test", "Hip Internal Rotation", "Hip External Rotation", "Shoulder Flexion (supine)"],
             "threshold": 8.0,
             "note": "Mobilità caviglia e anca critiche per receiving position profonda"
         }
@@ -364,25 +497,53 @@ SPORT_SPECIFIC_INTERPRETATION = {
 # Short labels for radar
 SHORT_RADAR_LABELS = {
     "Weight Bearing Lunge Test": "Mobilità caviglia",
+    "Weight Bearing Lunge Test Dx": "Caviglia Dx",
+    "Weight Bearing Lunge Test Sx": "Caviglia Sx",
     "Passive Hip Flexion": "Flessione anca",
-    "Hip Rotation (flexed 90°)": "Rotazione anca",
+    "Passive Hip Flexion Dx": "Flessione anca Dx",
+    "Passive Hip Flexion Sx": "Flessione anca Sx",
+    "Hip Internal Rotation": "IR anca",
+    "Hip Internal Rotation Dx": "IR anca Dx",
+    "Hip Internal Rotation Sx": "IR anca Sx",
+    "Hip External Rotation": "ER anca",
+    "Hip External Rotation Dx": "ER anca Dx",
+    "Hip External Rotation Sx": "ER anca Sx",
     "Wall Angel Test": "Wall Angel",
+    "Wall Angel Test Dx": "Wall Angel Dx",
+    "Wall Angel Test Sx": "Wall Angel Sx",
     "Shoulder ER (adducted, low-bar)": "ER spalla",
+    "Shoulder ER (adducted, low-bar) Dx": "ER spalla Dx",
+    "Shoulder ER (adducted, low-bar) Sx": "ER spalla Sx",
     "Shoulder Flexion (supine)": "Flessione spalla",
+    "Shoulder Flexion (supine) Dx": "Flessione spalla Dx",
+    "Shoulder Flexion (supine) Sx": "Flessione spalla Sx",
     "External Rotation (90° abd)": "ER 90° abd",
+    "External Rotation (90° abd) Dx": "ER 90° Dx",
+    "External Rotation (90° abd) Sx": "ER 90° Sx",
     "Pectoralis Minor Length": "PM length",
+    "Pectoralis Minor Length Dx": "PM Dx",
+    "Pectoralis Minor Length Sx": "PM Sx",
     "Thomas Test (modified)": "Thomas (flessori anca)",
+    "Thomas Test (modified) Dx": "Thomas Dx",
+    "Thomas Test (modified) Sx": "Thomas Sx",
     "Active Knee Extension (AKE)": "AKE hamstring",
+    "Active Knee Extension (AKE) Dx": "AKE Dx",
+    "Active Knee Extension (AKE) Sx": "AKE Sx",
     "Straight Leg Raise (SLR)": "SLR",
+    "Straight Leg Raise (SLR) Dx": "SLR Dx",
+    "Straight Leg Raise (SLR) Sx": "SLR Sx",
     "Sorensen Endurance": "Endurance lombare",
     "ULNT1A (Median nerve)": "ULNT1A (mediano)",
+    "ULNT1A (Median nerve) Dx": "ULNT1A Dx",
+    "ULNT1A (Median nerve) Sx": "ULNT1A Sx",
 }
 
 # PDF labels
 PDF_TEST_LABELS = {
     "Weight Bearing Lunge Test": "Test caviglia",
     "Passive Hip Flexion": "Test mob. flessione anca",
-    "Hip Rotation (flexed 90°)": "Test rotazione anca",
+    "Hip Internal Rotation": "Test rotazione interna anca",
+    "Hip External Rotation": "Test rotazione esterna anca",
     "Wall Angel Test": "Test mobilità toracica",
     "Shoulder ER (adducted, low-bar)": "Test rotazione spalla",
     "Shoulder Flexion (supine)": "Test flessione spalla",
@@ -408,9 +569,13 @@ EBM_LIBRARY = {
         "title": "Flessione anca passiva",
         "text": "Test: flessione passiva. Interpretazione: misura il ROM passivo dell'anca. Deficit (<110°) può limitare profondità squat.",
     },
-    "Hip Rotation (flexed 90°)": {
-        "title": "Rotazione anca (flessione 90°)",
-        "text": "Test: rotazione in flessione 90°. Interpretazione: ROM rotazionale funzionale. Asimmetrie >15° possono indicare problematiche articolari.",
+    "Hip Internal Rotation": {
+        "title": "Rotazione interna anca (flessione 90°)",
+        "text": "Test: rotazione interna in flessione 90°. Range normale: 30-45°. Deficit (<25°) può limitare stance largo nello squat. Asimmetrie >10° possono indicare problematiche articolari.",
+    },
+    "Hip External Rotation": {
+        "title": "Rotazione esterna anca (flessione 90°)",
+        "text": "Test: rotazione esterna in flessione 90°. Range normale: 40-50°. Deficit (<35°) può limitare apertura dell'anca. Asimmetrie >10° possono indicare problematiche articolari.",
     },
     "Wall Angel Test": {
         "title": "Wall Angel",
@@ -590,7 +755,6 @@ def seed_defaults():
                     "desc": desc,
                     "section": sec,
                     "higher_is_better": hib,
-                    "input_method": "degrees" if name == "Thomas Test (modified)" else "degrees",
                 }
 
 seed_defaults()
@@ -655,6 +819,78 @@ def validate_input(test_name, value, side=None):
 
 # -----------------------------
 # Clinical algorithms
+# -----------------------------
+# EBM Risk Assessment
+# -----------------------------
+def assess_injury_risk(df, sport, session_state):
+    """Evidence-based injury risk assessment with prioritization"""
+    risk_warnings = []
+    
+    for _, row in df.iterrows():
+        test_name = row["Test"]
+        score = row["Score"]
+        region = row["Regione"]
+        
+        # Check if test is in risk database
+        if test_name not in INJURY_RISK_DATABASE:
+            continue
+        
+        risk_data = INJURY_RISK_DATABASE[test_name]
+        
+        # Determine priority level
+        priority = "BASSO"
+        priority_icon = "🟢"
+        urgency_days = ">30"
+        
+        if score < risk_data.get("priority_critical", 4.0):
+            priority = "CRITICO"
+            priority_icon = "🔴"
+            urgency_days = "IMMEDIATO (0-7 giorni)"
+            action = "STOP carichi >70% 1RM - Intervento immediato necessario"
+        elif score < risk_data.get("priority_high", 7.0):
+            priority = "ALTO"
+            priority_icon = "🟠"
+            urgency_days = "7-14 giorni"
+            action = "RIDURRE volume/intensità - Iniziare protocollo correttivo"
+        elif score < risk_data["risk_threshold"]:
+            priority = "MODERATO"
+            priority_icon = "🟡"
+            urgency_days = "14-30 giorni"
+            action = "Monitorare e integrare lavoro accessorio"
+        else:
+            continue  # Score OK, no warning
+        
+        # Build warning
+        warning = {
+            "priority": priority,
+            "priority_icon": priority_icon,
+            "urgency": urgency_days,
+            "test": test_name,
+            "score": score,
+            "region": region,
+            "risk_injuries": risk_data["risk_injuries"],
+            "mechanism": risk_data["mechanism"],
+            "sport_specific": risk_data.get("sport_specific", {}).get(sport, ""),
+            "evidence": risk_data["evidence"],
+            "action": action,
+            "note": risk_data.get("note", "")
+        }
+        
+        # Add pain multiplier
+        if row.get("Dolore", False) or row.get("DoloreDx", False) or row.get("DoloreSx", False):
+            warning["pain_present"] = True
+            warning["action"] += " ⚠️ DOLORE PRESENTE - Priorità aumentata"
+        else:
+            warning["pain_present"] = False
+        
+        risk_warnings.append(warning)
+    
+    # Sort by priority (Critical > High > Moderate), then by score
+    priority_order = {"CRITICO": 0, "ALTO": 1, "MODERATO": 2, "BASSO": 3}
+    risk_warnings.sort(key=lambda x: (priority_order[x["priority"]], x["score"]))
+    
+    return risk_warnings
+
 # -----------------------------
 def check_risk_factors(df, session_state):
     """Identify risk factors based on data patterns"""
@@ -872,70 +1108,39 @@ def render_inputs_for_section(section):
                     st.info(instr)
 
                 key = short_key(name)
+                max_val = rec.get("ref", ref) * 1.5 if rec.get("ref", ref) > 0 else 10.0
                 
-                if name == "Thomas Test (modified)":
-                    method_key = f"{key}_method"
-                    current_method = rec.get("input_method", "degrees")
-                    method = st.selectbox("Metodo input", options=["degrees", "cm"], 
-                                         index=0 if current_method == "degrees" else 1, key=method_key)
-                    rec["input_method"] = method
+                if rec.get("bilat", False):
+                    c1, c2 = st.columns([1, 1])
+                    with c1:
+                        dx = st.slider(f"Dx ({unit})", 0.0, max_val, float(rec.get("Dx", 0.0)), 0.1, key=f"{key}_Dx")
+                        pdx = st.checkbox("Dolore Dx", value=bool(rec.get("DoloreDx", False)), key=f"{key}_pDx")
+                    with c2:
+                        sx = st.slider(f"Sx ({unit})", 0.0, max_val, float(rec.get("Sx", 0.0)), 0.1, key=f"{key}_Sx")
+                        psx = st.checkbox("Dolore Sx", value=bool(rec.get("DoloreSx", False)), key=f"{key}_pSx")
                     
-                    if method == "cm":
-                        max_cm = rec.get("ref", ref) * 1.5 if rec.get("ref", ref) > 0 else 20.0
-                        val_cm = st.slider("Distanza coscia‑tavolo (cm)", 0.0, max_cm, 
-                                          float(rec.get("Val_cm", 0.0)), 0.1, key=f"{key}_Val_cm")
-                        rec["Val_cm"] = val_cm
-                        ref_cm = 10.0
-                        deg = float(val_cm) * (rec.get("ref", ref) / ref_cm)
-                        rec["Val"] = deg
-                    else:
-                        max_deg = rec.get("ref", ref) * 1.5 if rec.get("ref", ref) > 0 else 30.0
-                        val_deg = st.slider("Angolo estensione (°)", 0.0, max_deg, 
-                                           float(rec.get("Val", 0.0)), 0.5, key=f"{key}_Val_deg")
-                        rec["Val"] = val_deg
-                    
-                    sc = ability_linear(rec["Val"], rec.get("ref", ref), rec.get("higher_is_better", hib))
-                    st.caption(f"Score (calcolato su gradi): **{sc:.1f}/10**")
+                    rec.update({"Dx": dx, "Sx": sx, "DoloreDx": pdx, "DoloreSx": psx})
+                    sc = ability_linear((dx + sx) / 2.0, rec.get("ref", ref), rec.get("higher_is_better", hib))
+                    sym = symmetry_score(dx, sx, unit)
+                    st.caption(f"Score: **{sc:.1f}/10** — Δ {abs(dx - sx):.1f} {unit} — Sym: **{sym:.1f}/10")
                     
                     # Validation
-                    warnings = validate_input(name, rec["Val"])
-                    for w in warnings:
+                    warnings_dx = validate_input(name, dx, "Dx")
+                    warnings_sx = validate_input(name, sx, "Sx")
+                    for w in warnings_dx + warnings_sx:
                         st.warning(w)
                 
                 else:
-                    max_val = rec.get("ref", ref) * 1.5 if rec.get("ref", ref) > 0 else 10.0
+                    val = st.slider(f"Valore ({unit})", 0.0, max_val, float(rec.get("Val", 0.0)), 0.1, key=f"{key}_Val")
+                    p = st.checkbox("Dolore", value=bool(rec.get("Dolore", False)), key=f"{key}_p")
+                    rec.update({"Val": val, "Dolore": p})
+                    sc = ability_linear(val, rec.get("ref", ref), rec.get("higher_is_better", hib))
+                    st.caption(f"Score: **{sc:.1f}/10**")
                     
-                    if rec.get("bilat", False):
-                        c1, c2 = st.columns([1, 1])
-                        with c1:
-                            dx = st.slider(f"Dx ({unit})", 0.0, max_val, float(rec.get("Dx", 0.0)), 0.1, key=f"{key}_Dx")
-                            pdx = st.checkbox("Dolore Dx", value=bool(rec.get("DoloreDx", False)), key=f"{key}_pDx")
-                        with c2:
-                            sx = st.slider(f"Sx ({unit})", 0.0, max_val, float(rec.get("Sx", 0.0)), 0.1, key=f"{key}_Sx")
-                            psx = st.checkbox("Dolore Sx", value=bool(rec.get("DoloreSx", False)), key=f"{key}_pSx")
-                        
-                        rec.update({"Dx": dx, "Sx": sx, "DoloreDx": pdx, "DoloreSx": psx})
-                        sc = ability_linear((dx + sx) / 2.0, rec.get("ref", ref), rec.get("higher_is_better", hib))
-                        sym = symmetry_score(dx, sx, unit)
-                        st.caption(f"Score: **{sc:.1f}/10** — Δ {abs(dx - sx):.1f} {unit} — Sym: **{sym:.1f}/10")
-                        
-                        # Validation
-                        warnings_dx = validate_input(name, dx, "Dx")
-                        warnings_sx = validate_input(name, sx, "Sx")
-                        for w in warnings_dx + warnings_sx:
-                            st.warning(w)
-                    
-                    else:
-                        val = st.slider(f"Valore ({unit})", 0.0, max_val, float(rec.get("Val", 0.0)), 0.1, key=f"{key}_Val")
-                        p = st.checkbox("Dolore", value=bool(rec.get("Dolore", False)), key=f"{key}_p")
-                        rec.update({"Val": val, "Dolore": p})
-                        sc = ability_linear(val, rec.get("ref", ref), rec.get("higher_is_better", hib))
-                        st.caption(f"Score: **{sc:.1f}/10**")
-                        
-                        # Validation
-                        warnings = validate_input(name, val)
-                        for w in warnings:
-                            st.warning(w)
+                    # Validation
+                    warnings = validate_input(name, val)
+                    for w in warnings:
+                        st.warning(w)
                 
                 st.markdown("</div>", unsafe_allow_html=True)
 
@@ -973,20 +1178,74 @@ def build_df(section):
                     dolore_dx, dolore_sx
                 ])
             else:
-                if name == "Thomas Test (modified)":
-                    display_val = rec.get("Val_cm") if rec.get("input_method") == "cm" else rec.get("Val", 0.0)
-                    val_for_score = rec.get("Val", 0.0)
-                    sc = round(ability_linear(val_for_score, rec.get("ref", ref), rec.get("higher_is_better", hib)), 2)
-                    dolore = bool(rec.get("Dolore", False))
-                    rows.append([sec, name, unit, rec.get("ref", ref), f"{display_val:.1f}", sc, 
-                                "", "", "", "", dolore, region, False, False])
-                else:
-                    val = pd.to_numeric(rec.get("Val", 0.0), errors="coerce")
-                    val = 0.0 if pd.isna(val) else float(val)
-                    sc = round(ability_linear(val, rec.get("ref", ref), rec.get("higher_is_better", hib)), 2)
-                    dolore = bool(rec.get("Dolore", False))
-                    rows.append([sec, name, unit, rec.get("ref", ref), f"{val:.1f}", sc, 
-                                "", "", "", "", dolore, region, False, False])
+                val = pd.to_numeric(rec.get("Val", 0.0), errors="coerce")
+                val = 0.0 if pd.isna(val) else float(val)
+                sc = round(ability_linear(val, rec.get("ref", ref), rec.get("higher_is_better", hib)), 2)
+                dolore = bool(rec.get("Dolore", False))
+                rows.append([sec, name, unit, rec.get("ref", ref), f"{val:.1f}", sc, 
+                            "", "", "", "", dolore, region, False, False])
+
+    df = pd.DataFrame(rows, columns=[
+        "Sezione", "Test", "Unità", "Rif", "Valore", "Score",
+        "Dx", "Sx", "Delta", "SymScore", "Dolore", "Regione",
+        "DoloreDx", "DoloreSx"
+    ])
+    
+    for col in ["Score", "Dx", "Sx", "Delta", "SymScore"]:
+        df[col] = pd.to_numeric(df[col], errors="coerce")
+    
+    return df
+
+def build_df_for_radar(section):
+    """Build dataframe for radar chart with bilateral tests split into Dx/Sx rows"""
+    rows = []
+    seen_tests = set()
+    for sec, items in TESTS.items():
+        if section != "Valutazione Generale" and sec != section:
+            continue
+        for (name, unit, ref, bilat, region, desc, hib) in items:
+            if section == "Valutazione Generale":
+                if name in seen_tests:
+                    continue
+                seen_tests.add(name)
+
+            rec = st.session_state["vals"].get(name)
+            if not rec:
+                continue
+
+            if rec.get("bilat", False):
+                # Create TWO rows for bilateral tests: one for Dx, one for Sx
+                dx = pd.to_numeric(rec.get("Dx", 0.0), errors="coerce")
+                sx = pd.to_numeric(rec.get("Sx", 0.0), errors="coerce")
+                dx = 0.0 if pd.isna(dx) else float(dx)
+                sx = 0.0 if pd.isna(sx) else float(sx)
+                
+                sc_dx = round(ability_linear(dx, rec.get("ref", ref), rec.get("higher_is_better", hib)), 2)
+                sc_sx = round(ability_linear(sx, rec.get("ref", ref), rec.get("higher_is_better", hib)), 2)
+                
+                dolore_dx = bool(rec.get("DoloreDx", False))
+                dolore_sx = bool(rec.get("DoloreSx", False))
+                
+                # Row for Dx
+                rows.append([
+                    sec, f"{name} Dx", unit, rec.get("ref", ref), f"{dx:.1f}", sc_dx,
+                    round(dx, 2), "", "", "", dolore_dx, region,
+                    dolore_dx, False
+                ])
+                
+                # Row for Sx
+                rows.append([
+                    sec, f"{name} Sx", unit, rec.get("ref", ref), f"{sx:.1f}", sc_sx,
+                    "", round(sx, 2), "", "", dolore_sx, region,
+                    False, dolore_sx
+                ])
+            else:
+                val = pd.to_numeric(rec.get("Val", 0.0), errors="coerce")
+                val = 0.0 if pd.isna(val) else float(val)
+                sc = round(ability_linear(val, rec.get("ref", ref), rec.get("higher_is_better", hib)), 2)
+                dolore = bool(rec.get("Dolore", False))
+                rows.append([sec, name, unit, rec.get("ref", ref), f"{val:.1f}", sc, 
+                            "", "", "", "", dolore, region, False, False])
 
     df = pd.DataFrame(rows, columns=[
         "Sezione", "Test", "Unità", "Rif", "Valore", "Score",
@@ -1051,7 +1310,8 @@ def radar_plot_matplotlib(df, title="Punteggi (0–10)"):
 SIMPLE_TEST_LABELS = {
     "Weight Bearing Lunge Test": "Caviglia",
     "Passive Hip Flexion": "Flessione anca",
-    "Hip Rotation (flexed 90°)": "Rotazione anca",
+    "Hip Internal Rotation": "IR anca",
+    "Hip External Rotation": "ER anca",
     "Wall Angel Test": "Mobilità toracica",
     "Shoulder ER (adducted, low-bar)": "ER Spalla",
     "Shoulder Flexion (supine)": "Flessione spalla",
@@ -1396,6 +1656,101 @@ def pdf_report_clinico(logo_bytes, athlete, evaluator, date_str, section, df,
                             width=16 * cm, height=10 * cm, hAlign="CENTER"))
         story.append(Spacer(1, 16))
 
+    # NEW: Injury Risk Assessment (EBM-based)
+    risk_warnings = assess_injury_risk(df, session_state.get("sport", "Powerlifting"), session_state)
+    
+    if risk_warnings:
+        story.append(PageBreak())
+        story.append(Paragraph("<b>⚠️ ANALISI RISCHIO INFORTUNI (Evidence-Based)</b>", heading))
+        story.append(Spacer(1, 8))
+        
+        risk_disclaimer = (
+            "<i>La seguente analisi identifica deficit biomeccanici associati ad aumentato rischio di "
+            "infortuni specifici, basandosi su letteratura scientifica e studi prospettici. "
+            "I livelli di priorità indicano l'urgenza dell'intervento correttivo.</i>"
+        )
+        story.append(Paragraph(risk_disclaimer, small))
+        story.append(Spacer(1, 12))
+        
+        # Risk summary table
+        risk_summary = []
+        critical_count = sum(1 for w in risk_warnings if w["priority"] == "CRITICO")
+        high_count = sum(1 for w in risk_warnings if w["priority"] == "ALTO")
+        moderate_count = sum(1 for w in risk_warnings if w["priority"] == "MODERATO")
+        
+        summary_text = f"""
+        <b>RIEPILOGO RISCHI:</b><br/>
+        • Deficit CRITICI: {critical_count} {'🔴' * critical_count}<br/>
+        • Deficit ALTI: {high_count} {'🟠' * high_count}<br/>
+        • Deficit MODERATI: {moderate_count} {'🟡' * moderate_count}
+        """
+        story.append(Paragraph(summary_text, body))
+        story.append(Spacer(1, 12))
+        
+        # Detailed warnings (limit to top 8 for space)
+        for idx, warning in enumerate(risk_warnings[:8], 1):
+            # Priority header
+            priority_header = f"""
+            <b>{warning['priority_icon']} {warning['priority']} — {warning['test']}</b> (Score: {warning['score']:.1f}/10)<br/>
+            <i>Urgenza intervento: {warning['urgency']}</i>
+            """
+            story.append(Paragraph(priority_header, body))
+            story.append(Spacer(1, 4))
+            
+            # Risk table
+            risk_table_data = [
+                ["Infortuni associati:", ", ".join(warning['risk_injuries'][:3])],
+                ["Meccanismo:", warning['mechanism']],
+            ]
+            
+            if warning['sport_specific']:
+                risk_table_data.append(["Impatto sport-specifico:", warning['sport_specific']])
+            
+            risk_table_data.append(["Evidenza scientifica:", warning['evidence']])
+            risk_table_data.append(["Azione raccomandata:", warning['action']])
+            
+            if warning.get('note'):
+                risk_table_data.append(["Nota:", warning['note']])
+            
+            t = Table(risk_table_data, colWidths=[4.5*cm, 12*cm])
+            t.setStyle(TableStyle([
+                ("BACKGROUND", (0, 0), (0, -1), colors.HexColor("#f3f4f6")),
+                ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
+                ("FONTSIZE", (0, 0), (-1, -1), 7),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("GRID", (0, 0), (-1, -1), 0.25, colors.grey),
+                ("LEFTPADDING", (0, 0), (-1, -1), 6),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+                ("TOPPADDING", (0, 0), (-1, -1), 4),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+            ]))
+            
+            # Color code by priority
+            if warning["priority"] == "CRITICO":
+                bg_color = colors.HexColor("#fee2e2")
+            elif warning["priority"] == "ALTO":
+                bg_color = colors.HexColor("#fed7aa")
+            else:
+                bg_color = colors.HexColor("#fef3c7")
+            
+            t.setStyle(TableStyle([
+                ("BACKGROUND", (0, 0), (-1, -1), bg_color),
+            ]))
+            
+            story.append(t)
+            
+            if warning.get("pain_present"):
+                pain_warning = "<b>⚠️ DOLORE PRESENTE IN QUESTO TEST - Riferimento medico raccomandato prima di procedere</b>"
+                story.append(Spacer(1, 4))
+                story.append(Paragraph(pain_warning, small))
+            
+            story.append(Spacer(1, 12))
+        
+        if len(risk_warnings) > 8:
+            story.append(Paragraph(f"<i>... e altri {len(risk_warnings)-8} deficit identificati. Vedere sezione raccomandazioni.</i>", small))
+        
+        story.append(Spacer(1, 16))
+    
     # Recommendations
     story.append(PageBreak())
     story.append(Paragraph("<b>Raccomandazioni cliniche e priorità di intervento</b>", heading))
@@ -1710,18 +2065,8 @@ with st.sidebar:
                     rec["DoloreDx"] = random.random() < 0.15
                     rec["DoloreSx"] = random.random() < 0.15
                 else:
-                    if name == "Thomas Test (modified)":
-                        rec["input_method"] = random.choice(["degrees", "cm"])
-                        if rec["input_method"] == "cm":
-                            rec["Val_cm"] = max(0.0, rec.get("ref", 10.0) * random.uniform(0.2, 1.2))
-                            ref_cm = 10.0
-                            rec["Val"] = rec["Val_cm"] * (rec.get("ref", 10.0) / ref_cm)
-                        else:
-                            rec["Val"] = max(0.0, rec.get("ref", 10.0) * random.uniform(0.5, 1.2))
-                        rec["Dolore"] = random.random() < 0.15
-                    else:
-                        rec["Val"] = max(0.0, ref * random.uniform(0.5, 1.2))
-                        rec["Dolore"] = random.random() < 0.15
+                    rec["Val"] = max(0.0, ref * random.uniform(0.5, 1.2))
+                    rec["Dolore"] = random.random() < 0.15
             st.success("✓ Valori randomizzati")
             st.rerun()
     
@@ -1991,7 +2336,9 @@ with tab3:
         
         with col_viz1:
             st.markdown("#### 🎯 Radar Chart - Punteggi")
-            radar_fig = plotly_radar(df_show)
+            # Use expanded dataframe for radar to show Dx/Sx separately
+            df_radar_expanded = build_df_for_radar("Valutazione Generale")
+            radar_fig = plotly_radar(df_radar_expanded)
             if radar_fig:
                 st.plotly_chart(radar_fig, use_container_width=True)
             else:
@@ -2036,6 +2383,91 @@ with tab3:
                             st.markdown(f"*Progressione: {protocol['progressione']}*")
         else:
             st.success("✓ Nessuna raccomandazione critica. Continuare monitoraggio regolare.")
+        
+        st.markdown("---")
+        
+        # NEW: Injury Risk Assessment (EBM-based)
+        st.markdown("### 🚨 Analisi Rischio Infortuni (Evidence-Based)")
+        
+        st.info("""📚 **Analisi basata su evidenze scientifiche**: I seguenti warning identificano deficit biomeccanici 
+        associati ad aumentato rischio di infortuni specifici, basandosi su studi prospettici, revisioni sistematiche 
+        e meta-analisi pubblicate. Ogni warning include il riferimento scientifico di supporto.""")
+        
+        risk_warnings = assess_injury_risk(df_show, st.session_state.get("sport", "Powerlifting"), st.session_state)
+        
+        if risk_warnings:
+            # Risk summary
+            critical_count = sum(1 for w in risk_warnings if w["priority"] == "CRITICO")
+            high_count = sum(1 for w in risk_warnings if w["priority"] == "ALTO")
+            moderate_count = sum(1 for w in risk_warnings if w["priority"] == "MODERATO")
+            
+            col_risk1, col_risk2, col_risk3 = st.columns(3)
+            with col_risk1:
+                st.metric("🔴 Rischi CRITICI", critical_count, 
+                         delta="Azione immediata" if critical_count > 0 else "OK",
+                         delta_color="inverse" if critical_count > 0 else "normal")
+            with col_risk2:
+                st.metric("🟠 Rischi ALTI", high_count,
+                         delta="Attenzione" if high_count > 0 else "OK",
+                         delta_color="inverse" if high_count > 0 else "normal")
+            with col_risk3:
+                st.metric("🟡 Rischi MODERATI", moderate_count,
+                         delta="Monitorare" if moderate_count > 0 else "OK",
+                         delta_color="normal")
+            
+            st.markdown("---")
+            
+            # Detailed warnings
+            for idx, warning in enumerate(risk_warnings, 1):
+                # Color code by priority
+                if warning["priority"] == "CRITICO":
+                    border_color = "#dc2626"
+                    bg_color = "#fee2e2"
+                elif warning["priority"] == "ALTO":
+                    border_color = "#ea580c"
+                    bg_color = "#fed7aa"
+                else:
+                    border_color = "#ca8a04"
+                    bg_color = "#fef3c7"
+                
+                with st.container():
+                    st.markdown(f"""
+                    <div style='border-left: 4px solid {border_color}; padding-left: 15px; background-color: {bg_color}20; padding: 10px; border-radius: 5px; margin-bottom: 15px;'>
+                        <h4>{warning['priority_icon']} <b>{warning['priority']}</b> — {warning['test']}</h4>
+                        <p><b>Score:</b> {warning['score']:.1f}/10 | <b>Urgenza intervento:</b> {warning['urgency']}</p>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    col_w1, col_w2 = st.columns([1, 1])
+                    
+                    with col_w1:
+                        st.markdown(f"**🎯 Infortuni associati:**")
+                        for injury in warning['risk_injuries']:
+                            st.markdown(f"- {injury}")
+                        
+                        if warning['sport_specific']:
+                            st.markdown(f"**⚡ Impatto sport-specifico:**")
+                            st.markdown(f"*{warning['sport_specific']}*")
+                    
+                    with col_w2:
+                        st.markdown(f"**🔬 Meccanismo biomeccanico:**")
+                        st.markdown(f"{warning['mechanism']}")
+                        
+                        st.markdown(f"**📚 Evidenza scientifica:**")
+                        st.markdown(f"*{warning['evidence']}*")
+                    
+                    st.markdown(f"**✅ Azione raccomandata:**")
+                    st.markdown(f"➡️ {warning['action']}")
+                    
+                    if warning.get('note'):
+                        st.info(f"ℹ️ {warning['note']}")
+                    
+                    if warning.get('pain_present'):
+                        st.error("⚠️ **DOLORE PRESENTE** - Riferimento medico raccomandato prima di procedere con carico")
+                    
+                    st.markdown("---")
+        else:
+            st.success("✅ Nessun deficit critico identificato. Tutti i test rientrano nei range di sicurezza basati su evidenze.")
 
 # TAB 4: PROGRESSION (CORRECTED)
 with tab4:
@@ -2279,7 +2711,9 @@ with tab5:
         
         # Prepare data for PDF
         try:
-            df_radar = df_show[df_show["Score"].notnull()].copy()
+            # Use expanded dataframe for radar to show Dx/Sx separately
+            df_radar_expanded = build_df_for_radar("Valutazione Generale")
+            df_radar = df_radar_expanded[df_radar_expanded["Score"].notnull()].copy()
             radar_buf = radar_plot_matplotlib(df_radar, title="Punteggi Test (0-10)") if len(df_radar) >= 3 else None
         except Exception:
             radar_buf = None
