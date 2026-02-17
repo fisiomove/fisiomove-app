@@ -945,121 +945,127 @@ def check_risk_factors(df, session_state):
     return alerts
 
 def generate_recommendations(df, sport, session_state):
-    """Generate evidence-based recommendations"""
+    """Generate detailed clinical conclusions with priorities and asymmetries"""
     recommendations = []
+    priority_counter = 1
     
-    # Priority 1: Critical scores (<4)
+    # Priority 1: Critical scores (<4) - URGENT
     critical = df[df["Score"] < 4].copy()
     if not critical.empty:
         for _, row in critical.iterrows():
             test_name = row["Test"]
             region = row["Regione"]
+            score = row["Score"]
             
-            # Find appropriate protocol
-            protocol = None
-            if "ankle" in region:
-                protocol = EXERCISE_PROTOCOLS["ankle_mobility"]
-            elif "hip" in region and "rotation" in test_name.lower():
-                protocol = EXERCISE_PROTOCOLS["hip_rotation"]
-            elif "hip" in region and "flexion" in test_name.lower():
-                protocol = EXERCISE_PROTOCOLS["hip_flexion"]
-            elif "hip" in region and "thomas" in test_name.lower():
-                protocol = EXERCISE_PROTOCOLS["hip_flexors"]
-            elif "thoracic" in region:
-                protocol = EXERCISE_PROTOCOLS["thoracic_mobility"]
-            elif "shoulder" in region:
-                protocol = EXERCISE_PROTOCOLS["shoulder_mobility"]
-            elif "knee" in region or "hamstring" in test_name.lower():
-                protocol = EXERCISE_PROTOCOLS["hamstring_length"]
-            elif "lumbar" in region:
-                protocol = EXERCISE_PROTOCOLS["core_endurance"]
-            elif "neural" in test_name.lower() or "ulnt" in test_name.lower():
-                protocol = EXERCISE_PROTOCOLS["neural_mobility"]
+            # Calculate severity percentage
+            deficit_percent = int((10 - score) / 10 * 100)
+            
+            # Determine impact
+            impact = "Limitazione SEVERA che può causare compensi e aumentare il rischio di infortunio"
+            recommendation = "Richiede intervento immediato e prioritario. Evitare carichi elevati (>85% 1RM) sulla regione fino a miglioramento."
             
             rec = {
-                "priority": "🚨 ALTA",
+                "priority_num": priority_counter,
+                "priority": "🚨 CRITICA",
                 "test": test_name,
-                "score": row["Score"],
-                "action": f"Intervento immediato su {region}",
-                "detail": "Evitare carichi massimali (>85% 1RM) fino a miglioramento",
-                "timeline": "2-4 settimane",
-                "protocol": protocol
+                "region": region,
+                "score": score,
+                "deficit_percent": deficit_percent,
+                "category": "Valutazione Urgente",
+                "impact": impact,
+                "recommendation": recommendation,
+                "timeline": "2-4 settimane"
             }
             recommendations.append(rec)
+            priority_counter += 1
     
-    # Priority 2: Moderate scores (4-7)
+    # Priority 2: Significant Asymmetries (SymScore < 6)
+    asymmetries = df[df["SymScore"] < 6].copy()
+    if not asymmetries.empty:
+        for _, row in asymmetries.iterrows():
+            test_name = row["Test"]
+            region = row["Regione"]
+            sym_score = row["SymScore"]
+            delta = row.get("Delta", 0)
+            unit = row.get("Unità", "")
+            
+            # Determine side info
+            dx_val = row.get("Dx", 0)
+            sx_val = row.get("Sx", 0)
+            
+            if dx_val > sx_val:
+                weaker_side = "sinistra"
+                stronger_side = "destra"
+            else:
+                weaker_side = "destra"
+                stronger_side = "sinistra"
+            
+            # Calculate asymmetry percentage
+            higher_val = max(dx_val, sx_val) if max(dx_val, sx_val) > 0 else 1
+            asym_percent = int((abs(delta) / higher_val) * 100)
+            
+            impact = f"Deficit significativo lato {weaker_side} rispetto al {stronger_side}. Rischio di sovraccarico compensatorio e pattern di movimento alterato."
+            recommendation = f"Correggere l'asimmetria con lavoro specifico sul lato {weaker_side}. Monitorare bilateralità nei movimenti funzionali."
+            
+            rec = {
+                "priority_num": priority_counter,
+                "priority": "⚖️ ASIMMETRIA",
+                "test": test_name,
+                "region": region,
+                "score": sym_score,
+                "delta": f"{delta}{unit}",
+                "asym_percent": asym_percent,
+                "weaker_side": weaker_side,
+                "category": "Deficit di Simmetria Bilaterale",
+                "impact": impact,
+                "recommendation": recommendation,
+                "timeline": "3-6 settimane"
+            }
+            recommendations.append(rec)
+            priority_counter += 1
+    
+    # Priority 3: Moderate scores (4-7) - IMPORTANT
     moderate = df[(df["Score"] >= 4) & (df["Score"] < 7)].copy()
     if not moderate.empty:
         for _, row in moderate.iterrows():
             test_name = row["Test"]
             region = row["Regione"]
+            score = row["Score"]
             
-            protocol = None
-            if "ankle" in region:
-                protocol = EXERCISE_PROTOCOLS["ankle_mobility"]
-            elif "hip" in region:
-                if "rotation" in test_name.lower():
-                    protocol = EXERCISE_PROTOCOLS["hip_rotation"]
-                elif "flexion" in test_name.lower():
-                    protocol = EXERCISE_PROTOCOLS["hip_flexion"]
-                elif "thomas" in test_name.lower():
-                    protocol = EXERCISE_PROTOCOLS["hip_flexors"]
-            elif "thoracic" in region:
-                protocol = EXERCISE_PROTOCOLS["thoracic_mobility"]
-            elif "shoulder" in region:
-                protocol = EXERCISE_PROTOCOLS["shoulder_mobility"]
-            elif "knee" in region or "hamstring" in test_name.lower():
-                protocol = EXERCISE_PROTOCOLS["hamstring_length"]
-            elif "lumbar" in region:
-                protocol = EXERCISE_PROTOCOLS["core_endurance"]
+            deficit_percent = int((10 - score) / 10 * 100)
+            
+            impact = "Limitazione moderata che può ridurre la performance e potenzialmente evolvere in problematica se non gestita."
+            recommendation = "Inserire lavoro mirato e progressivo. Monitorare durante carico crescente."
             
             rec = {
-                "priority": "⚠️ MEDIA",
+                "priority_num": priority_counter,
+                "priority": "⚠️ MODERATA",
                 "test": test_name,
-                "score": row["Score"],
-                "action": f"Lavoro mirato su {region}",
-                "detail": "Continuare allenamento con focus su mobilità/rinforzo specifico",
-                "timeline": "4-8 settimane",
-                "protocol": protocol
+                "region": region,
+                "score": score,
+                "deficit_percent": deficit_percent,
+                "category": "Limitazione Moderata",
+                "impact": impact,
+                "recommendation": recommendation,
+                "timeline": "4-8 settimane"
             }
             recommendations.append(rec)
+            priority_counter += 1
     
-    # Priority 3: Asymmetries
-    asymmetries = df[df["SymScore"] < 6].copy()
-    if not asymmetries.empty:
-        for _, row in asymmetries.iterrows():
-            rec = {
-                "priority": "⚠️ ASIMMETRIA",
-                "test": row["Test"],
-                "score": row["SymScore"],
-                "action": f"Correzione asimmetria {row['Regione']}",
-                "detail": f"Lavoro unilaterale, pattern correction. Delta: {row['Delta']}{row['Unità']}",
-                "timeline": "3-6 settimane",
-                "protocol": None
-            }
-            recommendations.append(rec)
+    # Sort by priority: Critical first, then Asymmetries, then Moderate
+    def sort_key(rec):
+        if rec["priority"] == "🚨 CRITICA":
+            return (0, rec["score"])  # Lower score = higher priority
+        elif rec["priority"] == "⚖️ ASIMMETRIA":
+            return (1, rec["score"])  # Lower sym score = higher priority
+        else:
+            return (2, rec["score"])  # Lower score = higher priority
     
-    # Sport-specific critical tests
-    if sport in SPORT_SPECIFIC_INTERPRETATION:
-        for lift, data in SPORT_SPECIFIC_INTERPRETATION[sport].items():
-            critical_tests = data.get("critical_tests", [])
-            threshold = data.get("threshold", 7.0)
-            
-            for test in critical_tests:
-                test_data = df[df["Test"] == test]
-                if not test_data.empty:
-                    score = test_data.iloc[0]["Score"]
-                    if score < threshold:
-                        rec = {
-                            "priority": f"🎯 SPORT-SPECIFIC ({sport})",
-                            "test": test,
-                            "score": score,
-                            "action": f"Test critico per {lift}",
-                            "detail": data.get("note", ""),
-                            "timeline": "Priorità alta",
-                            "protocol": None
-                        }
-                        recommendations.append(rec)
+    recommendations.sort(key=sort_key)
+    
+    # Renumber priorities after sorting
+    for i, rec in enumerate(recommendations, 1):
+        rec["priority_num"] = i
     
     return recommendations
 
@@ -1512,35 +1518,81 @@ def pdf_report_clinico(logo_bytes, athlete, evaluator, date_str, section, df,
     styles = getSampleStyleSheet()
     normal = styles["Normal"]
     title_style = styles["Title"]
+    
+    # Enhanced color palette
+    COLOR_CRITICAL = colors.HexColor("#dc2626")
+    COLOR_ASYMMETRY = colors.HexColor("#ea580c")
+    COLOR_MODERATE = colors.HexColor("#ca8a04")
+    COLOR_SUCCESS = colors.HexColor("#16a34a")
+    COLOR_PRIMARY = colors.HexColor(PRIMARY)
+    COLOR_BG_CRITICAL = colors.HexColor("#fee2e2")
+    COLOR_BG_ASYMMETRY = colors.HexColor("#ffedd5")
+    COLOR_BG_MODERATE = colors.HexColor("#fef9c3")
+    COLOR_BG_INFO = colors.HexColor("#eff6ff")
+    
+    # Improved typography
     heading = ParagraphStyle("heading", parent=styles["Heading2"], alignment=TA_LEFT, 
-                            textColor=colors.HexColor(PRIMARY), fontSize=14, spaceAfter=12)
-    small = ParagraphStyle("small", parent=styles["Normal"], fontSize=8, leading=10)
-    body = ParagraphStyle("body", parent=styles["Normal"], fontSize=9, leading=12, spaceAfter=6)
+                            textColor=COLOR_PRIMARY, fontSize=15, spaceAfter=14, fontName="Helvetica-Bold",
+                            spaceBefore=8, borderWidth=0, leftIndent=0)
+    heading_large = ParagraphStyle("heading_large", parent=heading, fontSize=16, 
+                                   textColor=COLOR_PRIMARY, spaceAfter=16, spaceBefore=12)
+    small = ParagraphStyle("small", parent=styles["Normal"], fontSize=9, leading=11)
+    body = ParagraphStyle("body", parent=styles["Normal"], fontSize=10, leading=14, spaceAfter=8)
 
     story = []
     
-    # Header
+    # Enhanced Header with colored bar
     header_table = Table([
         [
             RLImage(io.BytesIO(logo_bytes), width=4.0 * cm, height=1.0 * cm),
-            Paragraph(f"<b>Report Valutazione Completo</b><br/>{sanitize_text_for_plot(section)}", title_style),
-            Paragraph(f"<b>Atleta:</b> {athlete}<br/><b>Valutatore:</b> {evaluator}<br/><b>Data:</b> {date_str}", small),
+            Paragraph(f"<b>Report Valutazione Completo</b><br/><font size=10>{sanitize_text_for_plot(section)}</font>", title_style),
+            Paragraph(f"<b>Atleta:</b> {athlete}<br/><b>Valutatore:</b> {evaluator}<br/><b>Data:</b> {date_str}", body),
         ]
     ], colWidths=[4.2 * cm, 8.8 * cm, 4.0 * cm])
-    header_table.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "MIDDLE")]))
+    header_table.setStyle(TableStyle([
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("BACKGROUND", (0, 0), (-1, -1), COLOR_BG_INFO),
+        ("BOX", (0, 0), (-1, -1), 1.5, COLOR_PRIMARY),
+        ("LEFTPADDING", (0, 0), (-1, -1), 10),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 10),
+        ("TOPPADDING", (0, 0), (-1, -1), 8),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+    ]))
     story.append(header_table)
-    story.append(Spacer(1, 12))
+    story.append(Spacer(1, 20))
 
-    # Red Flags Section (if any)
+    # Red Flags Section (if any) - Enhanced styling
     if session_state.get("red_flags"):
-        story.append(Paragraph("<b>⚠️ RED FLAGS IDENTIFICATE</b>", heading))
-        for flag in session_state["red_flags"]:
-            story.append(Paragraph(f"• {RED_FLAGS.get(flag, flag)}", body))
-        story.append(Paragraph("<b>AZIONE: Riferimento medico raccomandato prima di procedere.</b>", 
-                              ParagraphStyle("alert", parent=body, textColor=colors.red)))
-        story.append(Spacer(1, 12))
+        red_flags_header = Table([[
+            Paragraph("<b>⚠️ RED FLAGS IDENTIFICATE</b>", heading_large)
+        ]], colWidths=[17*cm])
+        red_flags_header.setStyle(TableStyle([
+            ("BACKGROUND", (0,0), (-1,-1), COLOR_CRITICAL),
+            ("TEXTCOLOR", (0,0), (-1,-1), colors.white),
+            ("LEFTPADDING", (0,0), (-1,-1), 12),
+            ("RIGHTPADDING", (0,0), (-1,-1), 12),
+            ("TOPPADDING", (0,0), (-1,-1), 10),
+            ("BOTTOMPADDING", (0,0), (-1,-1), 10),
+        ]))
+        story.append(red_flags_header)
+        story.append(Spacer(1, 8))
+        
+        flags_list = "<br/>".join([f"• {RED_FLAGS.get(flag, flag)}" for flag in session_state["red_flags"]])
+        flags_content = f"{flags_list}<br/><br/><b>AZIONE: Riferimento medico raccomandato prima di procedere.</b>"
+        
+        flags_box = Table([[Paragraph(flags_content, body)]], colWidths=[17*cm])
+        flags_box.setStyle(TableStyle([
+            ("BACKGROUND", (0,0), (-1,-1), COLOR_BG_CRITICAL),
+            ("BOX", (0,0), (-1,-1), 2, COLOR_CRITICAL),
+            ("LEFTPADDING", (0,0), (-1,-1), 12),
+            ("RIGHTPADDING", (0,0), (-1,-1), 12),
+            ("TOPPADDING", (0,0), (-1,-1), 10),
+            ("BOTTOMPADDING", (0,0), (-1,-1), 10),
+        ]))
+        story.append(flags_box)
+        story.append(Spacer(1, 18))
 
-    # Anamnesis
+    # Anamnesis with improved table style
     story.append(Paragraph("<b>Anamnesi</b>", heading))
     anamnesis_data = [
         ["Sport/Attività:", session_state.get("sport", "N/A")],
@@ -1549,49 +1601,66 @@ def pdf_report_clinico(logo_bytes, athlete, evaluator, date_str, section, df,
         ["Sintomi attuali:", session_state.get("current_symptoms", "Nessuno") or "Nessuno"],
         ["Obiettivi:", session_state.get("goals", "N/A") or "N/A"],
     ]
-    anamnesis_table = Table(anamnesis_data, colWidths=[4 * cm, 12 * cm])
+    anamnesis_table = Table(anamnesis_data, colWidths=[4.5 * cm, 12.5 * cm])
     anamnesis_table.setStyle(TableStyle([
         ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
-        ("FONTSIZE", (0, 0), (-1, -1), 9),
+        ("FONTSIZE", (0, 0), (-1, -1), 10),
         ("VALIGN", (0, 0), (-1, -1), "TOP"),
-        ("GRID", (0, 0), (-1, -1), 0.25, colors.lightgrey),
+        ("BACKGROUND", (0, 0), (0, -1), colors.HexColor("#f9fafb")),
+        ("GRID", (0, 0), (-1, -1), 0.5, colors.lightgrey),
+        ("LEFTPADDING", (0, 0), (-1, -1), 8),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 8),
+        ("TOPPADDING", (0, 0), (-1, -1), 6),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
     ]))
     story.append(anamnesis_table)
-    story.append(Spacer(1, 12))
+    story.append(Spacer(1, 18))
 
     # Functional Scales
     story.append(Paragraph("<b>Scale Funzionali</b>", heading))
     nprs = session_state.get("nprs", 0)
-    story.append(Paragraph(f"<b>NPRS</b> (dolore medio ultima settimana): {nprs}/10", body))
+    story.append(Paragraph(f"<b>NPRS</b> (dolore medio ultima settimana): <b>{nprs}/10</b>", body))
     
     psfs_activities = session_state.get("psfs_activities", [])
     if psfs_activities:
         story.append(Paragraph("<b>PSFS</b> (Patient-Specific Functional Scale):", body))
         for act in psfs_activities:
-            story.append(Paragraph(f"• {act['activity']}: {act['score']}/10", body))
-    story.append(Spacer(1, 12))
+            story.append(Paragraph(f"• {act['activity']}: <b>{act['score']}/10</b>", body))
+    story.append(Spacer(1, 18))
 
-    # Metrics Summary
+    # Enhanced Metrics Summary with colored boxes
     avg_score = df["Score"].mean() if "Score" in df.columns and not df["Score"].isna().all() else 0.0
     n_dolore = int(df["Dolore"].sum()) if "Dolore" in df.columns else 0
     sym_mean = df["SymScore"].mean() if "SymScore" in df.columns else np.nan
     
     story.append(Paragraph("<b>Sintesi Metriche</b>", heading))
-    metrics_table = Table([[
-        Paragraph("<b>Score medio</b>", small), Paragraph(f"{avg_score:.1f}/10", small),
-        Paragraph("<b>Test con dolore</b>", small), Paragraph(str(n_dolore), small),
-        Paragraph("<b>Symmetry medio</b>", small), Paragraph(f"{sym_mean:.1f}/10" if not pd.isna(sym_mean) else "n/a", small)
-    ]], colWidths=[2.4*cm, 2.0*cm, 2.8*cm, 1.8*cm, 3.0*cm, 2.2*cm])
+    
+    # Use color-coded metric boxes
+    metric_data = [[
+        Paragraph("<b>Score medio</b><br/><font size=14><b>{:.1f}</b></font>/10".format(avg_score), body),
+        Paragraph("<b>Test con dolore</b><br/><font size=14><b>{}</b></font>".format(n_dolore), body),
+        Paragraph("<b>Symmetry medio</b><br/><font size=14><b>{}</b></font>/10".format(f"{sym_mean:.1f}" if not pd.isna(sym_mean) else "n/a"), body)
+    ]]
+    
+    metrics_table = Table(metric_data, colWidths=[5.5*cm, 5.5*cm, 5.5*cm])
     metrics_table.setStyle(TableStyle([
-        ("BOX", (0,0), (-1,-1), 0.5, colors.HexColor(PRIMARY)),
+        ("BOX", (0,0), (-1,-1), 2, COLOR_PRIMARY),
         ("VALIGN", (0,0), (-1,-1), "MIDDLE"),
-        ("BACKGROUND", (0,0), (-1,-1), colors.HexColor("#F0F4FF"))
+        ("ALIGN", (0,0), (-1,-1), "CENTER"),
+        ("BACKGROUND", (0,0), (-1,-1), COLOR_BG_INFO),
+        ("LEFTPADDING", (0,0), (-1,-1), 12),
+        ("RIGHTPADDING", (0,0), (-1,-1), 12),
+        ("TOPPADDING", (0,0), (-1,-1), 10),
+        ("BOTTOMPADDING", (0,0), (-1,-1), 10),
+        ("GRID", (0,0), (-1,-1), 1, colors.white)
     ]))
     story.append(metrics_table)
-    story.append(Spacer(1, 12))
+    story.append(Spacer(1, 18))
 
-    # Results table
+    # Results table with improved styling
     story.append(Paragraph("<b>Risultati Test Oggettivi</b>", heading))
+    story.append(Spacer(1, 8))
+    
     disp = df.copy()
     disp["Status"] = disp["Score"].apply(lambda s: "✔" if s >= 7 else ("⚠" if s >= 4 else "✖"))
     disp["TestPdf"] = disp["Test"].apply(pdf_test_label)
@@ -1601,60 +1670,89 @@ def pdf_report_clinico(logo_bytes, athlete, evaluator, date_str, section, df,
     for _, r in disp.iterrows():
         table_data.append([r["Status"], r["TestPdf"], r["Valore"], r["Unità"], r["Rif"], f"{r['Score']:.1f}"])
     
-    colWidths = [1.0*cm, 7.0*cm, 2.0*cm, 2.0*cm, 1.6*cm, 2.0*cm]
+    colWidths = [1.2*cm, 7.0*cm, 2.0*cm, 2.0*cm, 1.6*cm, 2.0*cm]
     result_table = Table(table_data, colWidths=colWidths, repeatRows=1)
     
     style = TableStyle([
-        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor(PRIMARY)),
+        ("BACKGROUND", (0, 0), (-1, 0), COLOR_PRIMARY),
         ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
         ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-        ("FONTSIZE", (0, 0), (-1, -1), 8),
-        ("GRID", (0, 0), (-1, -1), 0.25, colors.grey),
+        ("FONTSIZE", (0, 0), (-1, -1), 9),
+        ("ALIGN", (0, 0), (0, -1), "CENTER"),
+        ("ALIGN", (2, 0), (-1, -1), "CENTER"),
+        ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
         ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("LEFTPADDING", (0, 0), (-1, -1), 6),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+        ("TOPPADDING", (0, 0), (-1, -1), 5),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
     ])
     
     for i in range(1, len(table_data)):
-        bg = colors.whitesmoke if i % 2 == 0 else colors.white
+        bg = colors.HexColor("#f9fafb") if i % 2 == 0 else colors.white
         style.add("BACKGROUND", (0, i), (-1, i), bg)
         try:
             score = float(table_data[i][5])
             if score >= 7:
-                color = colors.HexColor("#ecfdf5")
+                color = colors.HexColor("#d1fae5")
+                style.add("TEXTCOLOR", (5, i), (5, i), COLOR_SUCCESS)
             elif score >= 4:
-                color = colors.HexColor("#fffaf0")
+                color = colors.HexColor("#fef3c7")
+                style.add("TEXTCOLOR", (5, i), (5, i), COLOR_MODERATE)
             else:
-                color = colors.HexColor("#fff1f2")
+                color = colors.HexColor("#fee2e2")
+                style.add("TEXTCOLOR", (5, i), (5, i), COLOR_CRITICAL)
             style.add("BACKGROUND", (5, i), (5, i), color)
+            style.add("FONTNAME", (5, i), (5, i), "Helvetica-Bold")
         except Exception:
             pass
     
     result_table.setStyle(style)
     story.append(result_table)
-    story.append(Spacer(1, 16))
+    story.append(Spacer(1, 18))
 
-    # Charts
+    # Charts with section header
     if radar_buf or asym_buf:
-        story.append(Paragraph("<b>Visualizzazioni</b>", heading))
+        story.append(Paragraph("<b>Visualizzazioni Grafiche</b>", heading))
+        story.append(Spacer(1, 10))
         
         chart_elements = []
         if radar_buf:
+            chart_elements.append(Paragraph("<i>Grafico Radar - Profilo Mobilità</i>", small))
+            chart_elements.append(Spacer(1, 4))
             chart_elements.append(RLImage(io.BytesIO(radar_buf.getvalue()), 
                                          width=9 * cm, height=9 * cm, hAlign="CENTER"))
         if asym_buf:
-            chart_elements.append(Spacer(1, 8))
+            chart_elements.append(Spacer(1, 12))
+            chart_elements.append(Paragraph("<i>Analisi Asimmetrie Bilaterali</i>", small))
+            chart_elements.append(Spacer(1, 4))
             chart_elements.append(RLImage(io.BytesIO(asym_buf.getvalue()), 
                                          width=14 * cm, height=6 * cm, hAlign="CENTER"))
         
         story.append(KeepTogether(chart_elements))
-        story.append(Spacer(1, 16))
+        story.append(Spacer(1, 18))
 
-    # Progress over time (if available)
+    # Progress over time (if available) with enhanced header
     if progress_buf:
         story.append(PageBreak())
-        story.append(Paragraph("<b>Progressione Temporale</b>", heading))
+        
+        progress_header = Table([[
+            Paragraph("<b>PROGRESSIONE TEMPORALE</b>", heading_large)
+        ]], colWidths=[17*cm])
+        progress_header.setStyle(TableStyle([
+            ("BACKGROUND", (0,0), (-1,-1), COLOR_SUCCESS),
+            ("TEXTCOLOR", (0,0), (-1,-1), colors.white),
+            ("LEFTPADDING", (0,0), (-1,-1), 12),
+            ("RIGHTPADDING", (0,0), (-1,-1), 12),
+            ("TOPPADDING", (0,0), (-1,-1), 10),
+            ("BOTTOMPADDING", (0,0), (-1,-1), 10),
+        ]))
+        story.append(progress_header)
+        story.append(Spacer(1, 12))
+        
         story.append(RLImage(io.BytesIO(progress_buf.getvalue()), 
                             width=16 * cm, height=10 * cm, hAlign="CENTER"))
-        story.append(Spacer(1, 16))
+        story.append(Spacer(1, 18))
 
     # NEW: Injury Risk Assessment (EBM-based)
     risk_warnings = assess_injury_risk(df, session_state.get("sport", "Powerlifting"), session_state)
@@ -1751,42 +1849,158 @@ def pdf_report_clinico(logo_bytes, athlete, evaluator, date_str, section, df,
         
         story.append(Spacer(1, 16))
     
-    # Recommendations
+    # Clinical Conclusions Section with enhanced styling
     story.append(PageBreak())
-    story.append(Paragraph("<b>Raccomandazioni cliniche e priorità di intervento</b>", heading))
     
-    disclaimer_text = ("<i>Disclaimer: I protocolli di esercizi si basano su principi biomeccanici, "
-                      "esperienza clinica e letteratura disponibile. Il livello di evidenza scientifica varia. "
-                      "Personalizzare in base alla risposta individuale del paziente.</i>")
-    story.append(Paragraph(disclaimer_text, small))
-    story.append(Spacer(1, 8))
-    
-    if recommendations:
-        for i, rec in enumerate(recommendations[:6], 1):  # Limit to top 6 for space
-            rec_text = f"""
-            <b>{rec['priority']}</b> — {rec['test']} (Score: {rec['score']:.1f}/10)<br/>
-            <b>Azione:</b> {rec['action']}<br/>
-            <b>Dettaglio:</b> {rec['detail']}<br/>
-            <b>Timeline:</b> {rec['timeline']}
-            """
-            story.append(Paragraph(rec_text, body))
-            
-            # Add exercise protocol if available
-            if rec.get('protocol'):
-                protocol = rec['protocol']
-                story.append(Paragraph(f"<b>Protocollo suggerito:</b> {protocol['nome']}", body))
-                story.append(Paragraph(f"<i>Frequenza: {protocol['frequenza']} — Durata: {protocol['durata']}</i>", small))
-                
-                ex_list = "<br/>".join([f"  • {ex}" for ex in protocol['esercizi'][:3]])  # First 3 exercises
-                story.append(Paragraph(ex_list, small))
-            
-            story.append(Spacer(1, 10))
-    else:
-        story.append(Paragraph("Nessuna raccomandazione critica. Continuare monitoraggio.", body))
-    
+    # Section header with colored bar
+    conclusion_header = Table([[
+        Paragraph("<b>CONCLUSIONI CLINICHE E PRIORITÀ DI INTERVENTO</b>", heading_large)
+    ]], colWidths=[17*cm])
+    conclusion_header.setStyle(TableStyle([
+        ("BACKGROUND", (0,0), (-1,-1), COLOR_PRIMARY),
+        ("TEXTCOLOR", (0,0), (-1,-1), colors.white),
+        ("LEFTPADDING", (0,0), (-1,-1), 12),
+        ("RIGHTPADDING", (0,0), (-1,-1), 12),
+        ("TOPPADDING", (0,0), (-1,-1), 10),
+        ("BOTTOMPADDING", (0,0), (-1,-1), 10),
+    ]))
+    story.append(conclusion_header)
     story.append(Spacer(1, 16))
+    
+    # Enhanced summary header with colored badges
+    if recommendations:
+        summary_counts = {
+            "critical": len([r for r in recommendations if r["priority"] == "🚨 CRITICA"]),
+            "asymmetry": len([r for r in recommendations if r["priority"] == "⚖️ ASIMMETRIA"]),
+            "moderate": len([r for r in recommendations if r["priority"] == "⚠️ MODERATA"])
+        }
+        
+        # Create colored summary boxes
+        summary_data = [[
+            Paragraph(f"<b>CRITICHE</b><br/><font size=16><b>{summary_counts['critical']}</b></font>", body),
+            Paragraph(f"<b>ASIMMETRIE</b><br/><font size=16><b>{summary_counts['asymmetry']}</b></font>", body),
+            Paragraph(f"<b>MODERATE</b><br/><font size=16><b>{summary_counts['moderate']}</b></font>", body),
+            Paragraph(f"<b>TOTALE</b><br/><font size=16><b>{len(recommendations)}</b></font>", body)
+        ]]
+        
+        summary_table = Table(summary_data, colWidths=[4.2*cm, 4.2*cm, 4.2*cm, 4.2*cm])
+        summary_table.setStyle(TableStyle([
+            ("ALIGN", (0,0), (-1,-1), "CENTER"),
+            ("VALIGN", (0,0), (-1,-1), "MIDDLE"),
+            ("BACKGROUND", (0,0), (0,0), COLOR_BG_CRITICAL),
+            ("BACKGROUND", (1,0), (1,0), COLOR_BG_ASYMMETRY),
+            ("BACKGROUND", (2,0), (2,0), COLOR_BG_MODERATE),
+            ("BACKGROUND", (3,0), (3,0), COLOR_BG_INFO),
+            ("BOX", (0,0), (0,0), 2, COLOR_CRITICAL),
+            ("BOX", (1,0), (1,0), 2, COLOR_ASYMMETRY),
+            ("BOX", (2,0), (2,0), 2, COLOR_MODERATE),
+            ("BOX", (3,0), (3,0), 2, COLOR_PRIMARY),
+            ("LEFTPADDING", (0,0), (-1,-1), 10),
+            ("RIGHTPADDING", (0,0), (-1,-1), 10),
+            ("TOPPADDING", (0,0), (-1,-1), 12),
+            ("BOTTOMPADDING", (0,0), (-1,-1), 12),
+        ]))
+        story.append(summary_table)
+        story.append(Spacer(1, 20))
+        
+        # Detailed priorities with enhanced visual boxes
+        story.append(Paragraph("<b>ELENCO PRIORITÀ DI INTERVENTO (in ordine di urgenza):</b>", heading))
+        story.append(Spacer(1, 12))
+        
+        for rec in recommendations[:10]:  # Top 10 priorities
+            # Determine colors based on priority type
+            if rec["priority"] == "🚨 CRITICA":
+                bg_color = COLOR_BG_CRITICAL
+                border_color = COLOR_CRITICAL
+                priority_label = "CRITICA"
+            elif rec["priority"] == "⚖️ ASIMMETRIA":
+                bg_color = COLOR_BG_ASYMMETRY
+                border_color = COLOR_ASYMMETRY
+                priority_label = "ASIMMETRIA"
+            else:
+                bg_color = COLOR_BG_MODERATE
+                border_color = COLOR_MODERATE
+                priority_label = "MODERATA"
+            
+            # Priority badge and header in colored box
+            priority_header_text = f"<b>PRIORITÀ {rec['priority_num']}: {priority_label}</b>"
+            priority_box = Table([[Paragraph(priority_header_text, body)]], colWidths=[17*cm])
+            priority_box.setStyle(TableStyle([
+                ("BACKGROUND", (0,0), (-1,-1), bg_color),
+                ("BOX", (0,0), (-1,-1), 2, border_color),
+                ("LEFTPADDING", (0,0), (-1,-1), 10),
+                ("RIGHTPADDING", (0,0), (-1,-1), 10),
+                ("TOPPADDING", (0,0), (-1,-1), 8),
+                ("BOTTOMPADDING", (0,0), (-1,-1), 8),
+            ]))
+            story.append(priority_box)
+            story.append(Spacer(1, 6))
+            
+            # Details table
+            detail_rows = []
+            detail_rows.append([Paragraph("<b>Test:</b>", body), Paragraph(rec['test'], body)])
+            detail_rows.append([Paragraph("<b>Regione:</b>", body), Paragraph(rec['region'], body)])
+            
+            # Score and metrics
+            if rec["priority"] == "⚖️ ASIMMETRIA":
+                detail_rows.append([Paragraph("<b>Score Simmetria:</b>", body), 
+                                   Paragraph(f"{rec['score']:.1f}/10", body)])
+                detail_rows.append([Paragraph("<b>Differenza:</b>", body), 
+                                   Paragraph(f"{rec['delta']} (~{rec.get('asym_percent', 0)}% asimmetria)", body)])
+                detail_rows.append([Paragraph("<b>Lato debole:</b>", body), 
+                                   Paragraph(rec['weaker_side'].upper(), body)])
+            else:
+                detail_rows.append([Paragraph("<b>Score:</b>", body), 
+                                   Paragraph(f"{rec['score']:.1f}/10", body)])
+                detail_rows.append([Paragraph("<b>Deficit:</b>", body), 
+                                   Paragraph(f"~{rec.get('deficit_percent', 0)}% sotto riferimento", body)])
+            
+            detail_rows.append([Paragraph("<b>Impatto:</b>", body), 
+                               Paragraph(rec['impact'], body)])
+            detail_rows.append([Paragraph("<b>Raccomandazione:</b>", body), 
+                               Paragraph(rec['recommendation'], body)])
+            detail_rows.append([Paragraph("<b>Timeline:</b>", body), 
+                               Paragraph(rec['timeline'], body)])
+            
+            detail_table = Table(detail_rows, colWidths=[4*cm, 13*cm])
+            detail_table.setStyle(TableStyle([
+                ("VALIGN", (0,0), (-1,-1), "TOP"),
+                ("FONTNAME", (0,0), (0,-1), "Helvetica-Bold"),
+                ("BACKGROUND", (0,0), (0,-1), colors.HexColor("#f9fafb")),
+                ("GRID", (0,0), (-1,-1), 0.5, colors.lightgrey),
+                ("LEFTPADDING", (0,0), (-1,-1), 8),
+                ("RIGHTPADDING", (0,0), (-1,-1), 8),
+                ("TOPPADDING", (0,0), (-1,-1), 6),
+                ("BOTTOMPADDING", (0,0), (-1,-1), 6),
+            ]))
+            story.append(detail_table)
+            story.append(Spacer(1, 16))
+    else:
+        story.append(Paragraph("✅ Nessuna limitazione critica o asimmetria significativa rilevata. Continuare monitoraggio periodico.", body))
+    
+    story.append(Spacer(1, 20))
+    
+    # Clinical interpretation note in colored box
+    interpretation = (
+        "<b>Nota Interpretativa:</b><br/>"
+        "Le priorità sono ordinate per urgenza clinica. Si raccomanda di affrontare le problematiche "
+        "nell'ordine indicato, iniziando dalle valutazioni critiche e dai deficit di simmetria più significativi. "
+        "Le asimmetrie bilaterali richiedono particolare attenzione in quanto possono portare a pattern di movimento "
+        "compensatori e aumentare il rischio di sovraccarico su strutture specifiche."
+    )
+    interpretation_box = Table([[Paragraph(interpretation, small)]], colWidths=[17*cm])
+    interpretation_box.setStyle(TableStyle([
+        ("BACKGROUND", (0,0), (-1,-1), colors.HexColor("#fef9c3")),
+        ("BOX", (0,0), (-1,-1), 1, COLOR_MODERATE),
+        ("LEFTPADDING", (0,0), (-1,-1), 10),
+        ("RIGHTPADDING", (0,0), (-1,-1), 10),
+        ("TOPPADDING", (0,0), (-1,-1), 8),
+        ("BOTTOMPADDING", (0,0), (-1,-1), 8),
+    ]))
+    story.append(interpretation_box)
+    story.append(Spacer(1, 18))
 
-    # Pain regions
+    # Pain regions in styled box
     pain_regions = []
     for _, row in df.iterrows():
         regione = str(row.get("Regione", "") or "").strip()
@@ -1807,27 +2021,66 @@ def pdf_report_clinico(logo_bytes, athlete, evaluator, date_str, section, df,
     
     story.append(Paragraph("<b>Regioni Dolorose Rilevate</b>", heading))
     if pain_regions:
-        for pr in pain_regions:
-            story.append(Paragraph(f"• {pr.capitalize()}", body))
+        pain_list = "<br/>".join([f"• {pr.capitalize()}" for pr in pain_regions])
+        pain_box = Table([[Paragraph(pain_list, body)]], colWidths=[17*cm])
+        pain_box.setStyle(TableStyle([
+            ("BACKGROUND", (0,0), (-1,-1), COLOR_BG_CRITICAL),
+            ("BOX", (0,0), (-1,-1), 1.5, COLOR_CRITICAL),
+            ("LEFTPADDING", (0,0), (-1,-1), 10),
+            ("RIGHTPADDING", (0,0), (-1,-1), 10),
+            ("TOPPADDING", (0,0), (-1,-1), 8),
+            ("BOTTOMPADDING", (0,0), (-1,-1), 8),
+        ]))
+        story.append(pain_box)
     else:
-        story.append(Paragraph("Nessuna regione dolorosa segnalata.", body))
-    story.append(Spacer(1, 16))
+        story.append(Paragraph("✅ Nessuna regione dolorosa segnalata.", body))
+    story.append(Spacer(1, 18))
 
-    # Clinical notes
+    # Clinical notes with styled boxes
     if session_state.get("clinical_notes", "").strip():
         story.append(Paragraph("<b>Note Cliniche Aggiuntive</b>", heading))
-        story.append(Paragraph(session_state["clinical_notes"], body))
-        story.append(Spacer(1, 12))
+        notes_box = Table([[Paragraph(session_state["clinical_notes"], body)]], colWidths=[17*cm])
+        notes_box.setStyle(TableStyle([
+            ("BACKGROUND", (0,0), (-1,-1), COLOR_BG_INFO),
+            ("BOX", (0,0), (-1,-1), 1, COLOR_PRIMARY),
+            ("LEFTPADDING", (0,0), (-1,-1), 10),
+            ("RIGHTPADDING", (0,0), (-1,-1), 10),
+            ("TOPPADDING", (0,0), (-1,-1), 8),
+            ("BOTTOMPADDING", (0,0), (-1,-1), 8),
+        ]))
+        story.append(notes_box)
+        story.append(Spacer(1, 14))
 
     if session_state.get("postural_observations", "").strip():
         story.append(Paragraph("<b>Osservazioni Posturali</b>", heading))
-        story.append(Paragraph(session_state["postural_observations"], body))
-        story.append(Spacer(1, 12))
+        posture_box = Table([[Paragraph(session_state["postural_observations"], body)]], colWidths=[17*cm])
+        posture_box.setStyle(TableStyle([
+            ("BACKGROUND", (0,0), (-1,-1), COLOR_BG_INFO),
+            ("BOX", (0,0), (-1,-1), 1, COLOR_PRIMARY),
+            ("LEFTPADDING", (0,0), (-1,-1), 10),
+            ("RIGHTPADDING", (0,0), (-1,-1), 10),
+            ("TOPPADDING", (0,0), (-1,-1), 8),
+            ("BOTTOMPADDING", (0,0), (-1,-1), 8),
+        ]))
+        story.append(posture_box)
+        story.append(Spacer(1, 14))
 
-    # Signature
-    story.append(Spacer(1, 20))
-    story.append(Paragraph("Firma Fisioterapista: ______________________", small))
-    story.append(Paragraph(f"Data: {date_str}", small))
+    # Signature section with styled box
+    story.append(Spacer(1, 24))
+    signature_table = Table([
+        [Paragraph("<b>Firma Fisioterapista:</b> ______________________", body)],
+        [Paragraph(f"<b>Data:</b> {date_str}", body)]
+    ], colWidths=[17*cm])
+    signature_table.setStyle(TableStyle([
+        ("BACKGROUND", (0,0), (-1,-1), colors.HexColor("#f9fafb")),
+        ("BOX", (0,0), (-1,-1), 1, colors.grey),
+        ("LEFTPADDING", (0,0), (-1,-1), 10),
+        ("RIGHTPADDING", (0,0), (-1,-1), 10),
+        ("TOPPADDING", (0,0), (-1,-1), 10),
+        ("BOTTOMPADDING", (0,0), (-1,-1), 10),
+        ("VALIGN", (0,0), (-1,-1), "MIDDLE"),
+    ]))
+    story.append(signature_table)
 
     doc.build(story, onFirstPage=add_footer, onLaterPages=add_footer)
     buf.seek(0)
@@ -2354,35 +2607,59 @@ with tab3:
         
         st.markdown("---")
         
-        # Recommendations
-        st.markdown("### 💡 Raccomandazioni Evidence-Based")
+        # Clinical Conclusions
+        st.markdown("### 📋 Conclusioni Cliniche e Priorità di Intervento")
         
-        st.info("""⚠️ **Disclaimer Evidenza Scientifica**: I protocolli di esercizi proposti si basano su principi biomeccanici, 
-        esperienza clinica e letteratura disponibile. Il livello di evidenza varia: alcuni esercizi hanno supporto da RCT di qualità 
-        (es. eccentrici per hamstrings), altri si basano su opinione di esperti e meccanismi plausibili. 
-        Gli esercizi neurodinamici e alcune tecniche di mobilità hanno evidenza limitata o controversa. 
-        Personalizzare sempre in base alla risposta individuale del paziente.""")
+        st.info("""💡 **Analisi basata su valutazioni oggettive**: Le seguenti conclusioni identificano le aree di limitazione, 
+        i deficit di simmetria bilaterale e le priorità di intervento basate sui risultati dei test eseguiti. 
+        L'ordine di priorità considera la severità della limitazione, l'impatto funzionale e il potenziale rischio.""")
         
         recommendations = generate_recommendations(df_show, st.session_state.get("sport", "Powerlifting"), st.session_state)
         
         if recommendations:
+            # Summary metrics
+            summary_counts = {
+                "critical": len([r for r in recommendations if r["priority"] == "🚨 CRITICA"]),
+                "asymmetry": len([r for r in recommendations if r["priority"] == "⚖️ ASIMMETRIA"]),
+                "moderate": len([r for r in recommendations if r["priority"] == "⚠️ MODERATA"])
+            }
+            
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("🚨 Valutazioni Critiche", summary_counts["critical"])
+            with col2:
+                st.metric("⚖️ Deficit Simmetria", summary_counts["asymmetry"])
+            with col3:
+                st.metric("⚠️ Limitazioni Moderate", summary_counts["moderate"])
+            
+            st.markdown("---")
+            
+            # Display each recommendation
             for rec in recommendations:
-                with st.expander(f"{rec['priority']} — {rec['test']} (Score: {rec['score']:.1f}/10)", expanded=False):
-                    st.markdown(f"**Azione:** {rec['action']}")
-                    st.markdown(f"**Dettaglio:** {rec['detail']}")
-                    st.markdown(f"**Timeline:** {rec['timeline']}")
+                priority_label = f"PRIORITÀ {rec['priority_num']} — {rec['priority']}"
+                
+                # Different display based on type
+                if rec["priority"] == "⚖️ ASIMMETRIA":
+                    title = f"{priority_label} — {rec['test']} (Simmetria: {rec['score']:.1f}/10)"
+                else:
+                    title = f"{priority_label} — {rec['test']} (Score: {rec['score']:.1f}/10)"
+                
+                with st.expander(title, expanded=(rec['priority_num'] <= 3)):
+                    st.markdown(f"**📍 Regione:** {rec['region']}")
                     
-                    if rec.get('protocol'):
-                        protocol = rec['protocol']
-                        st.markdown(f"**Protocollo suggerito:** {protocol['nome']}")
-                        st.markdown(f"*Frequenza: {protocol['frequenza']} — Durata: {protocol['durata']}*")
-                        st.markdown("**Esercizi:**")
-                        for ex in protocol['esercizi']:
-                            st.markdown(f"- {ex}")
-                        if 'progressione' in protocol:
-                            st.markdown(f"*Progressione: {protocol['progressione']}*")
+                    # Metrics based on type
+                    if rec["priority"] == "⚖️ ASIMMETRIA":
+                        st.markdown(f"**⚖️ Differenza bilaterale:** {rec['delta']} (~{rec.get('asym_percent', 0)}% asimmetria)")
+                        st.markdown(f"**👉 Lato più debole:** {rec['weaker_side'].upper()}")
+                    else:
+                        st.markdown(f"**📊 Deficit stimato:** ~{rec.get('deficit_percent', 0)}% sotto il riferimento")
+                    
+                    st.markdown(f"**🎯 Categoria:** {rec['category']}")
+                    st.markdown(f"**💥 Impatto clinico:** {rec['impact']}")
+                    st.markdown(f"**✅ Raccomandazione:** {rec['recommendation']}")
+                    st.markdown(f"**⏱️ Timeline suggerita:** {rec['timeline']}")
         else:
-            st.success("✓ Nessuna raccomandazione critica. Continuare monitoraggio regolare.")
+            st.success("✅ Nessuna limitazione critica o asimmetria significativa rilevata. Continuare monitoraggio regolare.")
         
         st.markdown("---")
         
