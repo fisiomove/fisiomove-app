@@ -153,6 +153,28 @@ RELIEVING_FACTORS = [
     "Terapia manuale"
 ]
 
+# Bibliografia scientifica completa
+BIBLIOGRAPHY = [
+    "Backman LJ, Danielson P. Low range of ankle dorsiflexion predisposes for patellar tendinopathy in junior elite basketball players: a 1-year prospective study. Am J Sports Med. 2011;39(12):2626-33.",
+    "Borstad JD, Ludewig PM. The effect of long versus short pectoralis minor resting length on scapular kinematics in healthy individuals. J Orthop Sports Phys Ther. 2005;35(4):227-38.",
+    "Dill KE, Begalle RL, Frank BS, Zinder SM, Padua DA. Altered knee and ankle kinematics during squatting in those with limited weight-bearing-lunge ankle-dorsiflexion range of motion. J Athl Train. 2014;49(6):723-32.",
+    "Freckleton G, Pizzari T. Risk factors for hamstring muscle strain injury in sport: a systematic review and meta-analysis. Br J Sports Med. 2013;47(6):351-8.",
+    "Laudner KG, Stanek JM, Meister K. Differences in scapular upward rotation between baseball pitchers and position players. Am J Sports Med. 2011;39(12):2682-7.",
+    "Li Y, McClure PW, Pratt N. The effect of hamstring muscle stretching on standing posture and on lumbar and hip motions during forward bending. Phys Ther. 2015;76(8):836-45.",
+    "Liaghat B, Skou ST, Sondergaard J, Boyle E, Søgaard K, Juul-Kristensen B. Short-term effectiveness of high-load compared with low-load strengthening exercise on self-reported function in patients with hypermobile shoulders: a randomised controlled trial. Br J Sports Med. 2021;55(23):1364-1371.",
+    "Liaghat B, Juul-Kristensen B, Frydendal T, Marie Larsen C, Søgaard K, Iliadis S. Competitive swimmers with hypermobility have strength and proprioception deficits but no increased risk of shoulder pain: A prospective case-control study. J Sci Med Sport. 2021;24(11):1145-1150.",
+    "Luoto S, Heliövaara M, Hurri H, Alaranta H. Static back endurance and the risk of low-back pain. Clin Biomech. 1995;10(6):323-4.",
+    "McGill SM, Childs A, Liebenson C. Endurance times for low back stabilization exercises: clinical targets for testing and training from a normal database. Arch Phys Med Rehabil. 1999;80(8):941-4.",
+    "Mosler AB, Weir A, Eirale C, et al. Epidemiology of time loss groin injuries in a men's professional football league: a 2-year prospective study of 17 clubs and 606 players. Br J Sports Med. 2018;52(5):292-297.",
+    "Nathan JA, Davies K, Swaine IL. Hypermobility and sports injuries in junior netball players. Br J Sports Med. 2018;52(8):1-2.",
+    "Nee RJ, Jull GA, Vicenzino B, Coppieters MW. The validity of upper-limb neurodynamic tests for detecting peripheral neuropathic pain. J Orthop Sports Phys Ther. 2012;42(5):413-24.",
+    "Pasanen K, Ekola T, Vasankari T, et al. High ankle dorsiflexion and decreased knee frontal plane projection angle as risk factors for anterior cruciate ligament injury: a prospective study. Orthop J Sports Med. 2025;13(1):23259671241310242.",
+    "Reiman MP, Goode AP, Cook CE, Holmich P, Thorborg K. Diagnostic accuracy of clinical tests for the diagnosis of hip femoroacetabular impingement/labral tear: a systematic review with meta-analysis. Br J Sports Med. 2012;49(12):811.",
+    "Sanderson M, Maxwell S. The effect of lumbar extension on hip flexor length in chronic low back pain. Physiotherapy. 2015;101:eS1356-7.",
+    "Shanley E, Rauh MJ, Michener LA, Ellenbecker TS, Garrison JC, Thigpen CA. Shoulder range of motion measures as risk factors for shoulder and elbow injuries in high school softball and baseball players. Am J Sports Med. 2011;39(9):1997-2006.",
+    "Tyler TF, Nicholas SJ, Roy T, Gleim GW. Quantification of posterior capsule tightness and motion loss in patients with shoulder impingement. Am J Sports Med. 2010;28(5):668-73."
+]
+
 # Tests definitions
 TESTS = {
     "Squat": [
@@ -160,15 +182,15 @@ TESTS = {
         ("Passive Hip Flexion", "°", 120.0, True, "hip", "Flessione anca passiva.", True),
         ("Hip Internal Rotation", "°", 35.0, True, "hip", "Rotazione interna anca (flessione 90°).", True),
         ("Hip External Rotation", "°", 45.0, True, "hip", "Rotazione esterna anca (flessione 90°).", True),
-        ("Wall Angel Test", "cm", 12.0, True, "thoracic", "Distanza cm tra braccio e muro; valori alti indicano rigidità.", True),
+        ("Wall Angel Test", "cm", 0.0, True, "thoracic", "Distanza braccio da schienale: 0cm=100%, negativo=ipermobile, positivo=deficit.", True),
         ("Shoulder ER (adducted, low-bar)", "°", 70.0, True, "shoulder", "Rotazione esterna spalla (low-bar).", True),
     ],
     "Panca": [
         ("Shoulder Flexion (supine)", "°", 180.0, True, "shoulder", "Flessione spalla (supina).", True),
         ("External Rotation (90° abd)", "°", 90.0, True, "shoulder", "ER a 90° abduzione.", True),
-        ("Wall Angel Test", "cm", 12.0, True, "thoracic", "Distanza cm tra braccio e muro; valori alti indicano rigidità.", True),
-        ("Pectoralis Minor Length", "cm", 5.0, True, "shoulder", "Distanza PM: valori più bassi indicano maggiore mobilità.", False),
-        ("Thomas Test (modified)", "°", 10.0, True, "hip", "Thomas test (modificato).", True),
+        ("Wall Angel Test", "cm", 0.0, True, "thoracic", "Distanza braccio da schienale: 0cm=100%, negativo=ipermobile, positivo=deficit.", True),
+        ("Pectoralis Minor Length", "cm", 5.0, True, "shoulder", "Distanza PM: 5cm=100%, <5cm=ipermobile, >5cm=rigido.", False),
+        ("Thomas Test (modified)", "°", 10.0, True, "hip", "Thomas Test: 10°=100%, >10°=ipermobile, <10°=rigido.", True),
     ],
     "Deadlift": [
         ("Active Knee Extension (AKE)", "°", 90.0, True, "knee", "Estensione attiva ginocchio (AKE).", True),
@@ -314,17 +336,17 @@ INJURY_RISK_DATABASE = {
         "evidence": "Shortened pectoralis minor associated with shoulder dysfunction (Borstad & Ludewig 2005)",
         "priority_critical": 3.0,
         "priority_high": 6.0,
-        "note": "Valori PIÙ BASSI sono migliori per questo test"
+        "note": "Scala: 0cm=150% (ipermobile), 5cm=100% (ottimale), 13cm=0% (rigido critico)"
     },
     "Thomas Test (modified)": {
         "risk_threshold": 6.0,
         "risk_injuries": ["Tendinopatia flessori anca", "Sindrome da impingement anca", "Lombalgia"],
-        "mechanism": "Flessori anca accorciati alterano tilt pelvico, aumentano lordosi lombare",
-        "sport_specific": {"Squat": "Tilt pelvico anteriore eccessivo", "Deadlift": "Estensione lombare compensatoria"},
-        "evidence": "Tight hip flexors correlate with anterior pelvic tilt and LBP (Sanderson & Maxwell 2015)",
+        "mechanism": "Deficit mobilità flessori anca altera tilt pelvico e meccanica squat/deadlift",
+        "sport_specific": {"Squat": "Setup compromesso, limitazione profondità", "Deadlift": "Compenso lombare"},
+        "evidence": "Hip flexor tightness correlates with anterior pelvic tilt and LBP (Sanderson & Maxwell 2015)",
         "priority_critical": 3.5,
         "priority_high": 6.0,
-        "note": "Valori PIÙ BASSI sono migliori per questo test"
+        "note": "Scala: -10°=0% (rigido critico), 10°=100% (ottimale), 20°=150% (ipermobile)"
     },
     "ULNT1A (Median nerve)": {
         "risk_threshold": 7.0,
@@ -579,7 +601,7 @@ EBM_LIBRARY = {
     },
     "Wall Angel Test": {
         "title": "Wall Angel",
-        "text": "Test: distanza cm tra braccio e muro. Interpretazione: valori maggiori indicano maggiore rigidità toracica (scala invertita). Importante per overhead e bench press.",
+        "text": "Test: distanza cm tra braccio e schienale. 0cm = mobilità ottimale (100%). Valori negativi (-1 a -10cm) = ipermobilità. Valori positivi (>0cm) = deficit/rigidità toracica. Importante per overhead e bench press.",
     },
     "Pectoralis Minor Length": {
         "title": "Lunghezza piccolo pettorale",
@@ -762,30 +784,193 @@ seed_defaults()
 # -----------------------------
 # Scoring and validation
 # -----------------------------
-def ability_linear(val, ref, higher_is_better=True):
+def ability_linear(val, ref, higher_is_better=True, test_name=None):
+    """
+    Calculate functional ability score as percentage of reference value.
+    - For higher_is_better=True: score = (val / ref) * 100%
+    - For higher_is_better=False: score decreases as value increases from 0 to ref
+    - Special cases identified by test_name for precise handling
+    
+    Values >100% indicate hypermobility (will be flagged separately by detect_hypermobility).
+    Reference value = 100%.
+    """
     try:
+        val = float(val)
+        
+        # Special handling for Wall Angel Test (ref=0 or by name)
+        # Scale: -10cm (ipermobile) to +25cm (deficit rigido)
+        # 0cm = 100%, +25cm = 0%, -10cm = 150%
+        if ref == 0 or (test_name and "Wall Angel" in test_name):
+            if val <= 0:
+                # Negative values = hypermobility: -1cm = 105%, -10cm = 150%
+                score = 100.0 + (abs(val) / 10.0) * 50.0
+            else:
+                # Positive values = deficit: +25cm = 0%, linear scale
+                score = max(0.0, 100.0 - (val / 25.0) * 100.0)
+            return score
+        
+        # Special handling for Pectoralis Minor Length
+        # Scale: 0cm (ipermobile 150%) to 5cm (100%) to 13cm (rigido 0%)
+        if test_name and "Pectoralis Minor" in test_name:
+            if val <= 5.0:
+                # Values ≤5cm: 0cm = 150%, 5cm = 100%
+                score = 100.0 + ((5.0 - val) / 5.0) * 50.0
+            else:
+                # Values >5cm: 13cm = 0%, linear scale
+                score = max(0.0, 100.0 - ((val - 5.0) / 8.0) * 100.0)
+            return score
+        
+        # Special handling for Thomas Test
+        # Scale: -10° (rigido 0%) to 10° (100%) to 20° (ipermobile 150%)
+        if test_name and "Thomas Test" in test_name:
+            if val >= 10.0:
+                # Values ≥10°: 20° = 150%, 10° = 100%
+                score = 100.0 + ((val - 10.0) / 10.0) * 50.0
+            else:
+                # Values <10°: -10° = 0%, linear scale
+                score = max(0.0, 100.0 - ((10.0 - val) / 20.0) * 100.0)
+            return score
+        
         if ref <= 0:
             return 0.0
-        val = float(val)
+            
         if higher_is_better:
-            score = (val / float(ref)) * 10.0
+            # Simply calculate percentage - no penalty for hypermobility
+            score = (val / float(ref)) * 100.0
         else:
-            v = min(val, ref)
-            score = (1.0 - (v / float(ref))) * 10.0
-        return max(0.0, min(10.0, score))
+            # For lower-is-better tests: score decreases as value increases
+            # 0 = 100%, ref = 0%, values > ref get negative scores (capped at 0)
+            score = max(0.0, (1.0 - (val / float(ref))) * 100.0)
+        return max(0.0, score)  # Allow values >100% for hypermobility
     except Exception:
         return 0.0
 
-def symmetry_score(dx, sx, unit):
+def detect_hypermobility(val, ref, higher_is_better, unit):
+    """
+    Detect if value indicates hypermobility (excessive range of motion).
+    Returns: (is_hypermobile, severity, threshold)
+    Severity: 'MILD' (115-125%), 'MODERATE' (125-140%), 'SEVERE' (>140%)
+    Special case: Wall Angel Test with ref=0 uses negative values for hypermobility
+    """
     try:
-        diff = abs(float(dx) - float(sx))
+        val = float(val)
+        
+        # Special case: Wall Angel Test (ref=0)
+        if ref == 0 and higher_is_better:
+            if val >= 0:  # Positive or zero values = normal/deficit
+                return False, None, None
+            # Negative values = hypermobility
+            # -1 to -3 cm = MILD, -3 to -7 cm = MODERATE, < -7 cm = SEVERE
+            abs_val = abs(val)
+            if abs_val >= 7.0:
+                return True, "SEVERE", -7.0
+            elif abs_val >= 3.0:
+                return True, "MODERATE", -3.0
+            elif abs_val >= 1.0:
+                return True, "MILD", -1.0
+            return False, None, None
+        
+        # Special case: Thomas Test (ref=10.0, higher is better)
+        # Hypermobility when val > 10: MILD >11°, MODERATE >14°, SEVERE >17°
+        if ref == 10.0 and higher_is_better and "°" in unit:
+            if val <= 10.0:  # Normal or deficit range
+                return False, None, None
+            # Hypermobility range
+            if val >= 17.0:
+                return True, "SEVERE", 17.0
+            elif val >= 14.0:
+                return True, "MODERATE", 14.0
+            elif val > 11.0:
+                return True, "MILD", 11.0
+            return False, None, None
+        
+        # Special case: Pectoralis Minor (ref=5.0, lower is better)
+        # Hypermobility when val < 5: MILD <4.5cm, MODERATE <3.5cm, SEVERE <2cm
+        if ref == 5.0 and not higher_is_better and "cm" in unit:
+            if val >= 5.0:  # Normal or deficit range
+                return False, None, None
+            # Hypermobility range
+            if val < 2.0:
+                return True, "SEVERE", 2.0
+            elif val < 3.5:
+                return True, "MODERATE", 3.5
+            elif val < 4.5:
+                return True, "MILD", 4.5
+            return False, None, None
+        
+        # Standard logic for other tests
+        if not higher_is_better or ref <= 0:
+            return False, None, None
+        
+        percentage = (val / ref) * 100
+        
+        # Define thresholds based on unit type
+        if "°" in unit or "deg" in unit.lower():
+            # Angular measurements - tighter threshold
+            mild_threshold = 115  # 15% above
+            moderate_threshold = 125  # 25% above 
+            severe_threshold = 140  # 40% above
+        elif "cm" in unit or "mm" in unit:
+            # Linear measurements
+            mild_threshold = 120
+            moderate_threshold = 135
+            severe_threshold = 150
+        elif "sec" in unit:
+            # Endurance - wider range acceptable
+            mild_threshold = 150
+            moderate_threshold = 200
+            severe_threshold = 300
+        else:
+            mild_threshold = 115
+            moderate_threshold = 130
+            severe_threshold = 150
+        
+        threshold_val = ref * (mild_threshold / 100)
+        
+        if percentage >= severe_threshold:
+            return True, "SEVERE", threshold_val
+        elif percentage >= moderate_threshold:
+            return True, "MODERATE", threshold_val
+        elif percentage >= mild_threshold:
+            return True, "MILD", threshold_val
+        else:
+            return False, None, threshold_val
+            
+    except Exception:
+        return False, None, None
+
+def symmetry_score(dx, sx, unit, ref=None, higher_is_better=True, test_name=None):
+    """
+    Calculate symmetry score between left and right sides.
+    Returns 100% for perfect symmetry, 0% for maximum asymmetry.
+    
+    If ref and higher_is_better are provided, calculates asymmetry based on 
+    performance difference (score difference) rather than raw value difference.
+    This ensures clinical relevance for all test types.
+    """
+    try:
+        dx = float(dx)
+        sx = float(sx)
+        
+        # If ref provided, calculate asymmetry based on score difference
+        if ref is not None and ref != 0:
+            score_dx = ability_linear(dx, ref, higher_is_better, test_name)
+            score_sx = ability_linear(sx, ref, higher_is_better, test_name)
+            score_diff = abs(score_dx - score_sx)
+            
+            # Asymmetry scale: 0-20% score difference is acceptable
+            # >20% score difference indicates significant asymmetry
+            return max(0.0, 100.0 - (score_diff / 20.0) * 100.0)
+        
+        # Fallback to absolute difference method
+        diff = abs(dx - sx)
         if "°" in unit:
             scale = 20.0
         elif unit == "cm":
             scale = 8.0
         else:
             scale = 10.0
-        return 10.0 * max(0.0, 1.0 - min(diff, scale) / scale)
+        return 100.0 * max(0.0, 1.0 - min(diff, scale) / scale)
     except Exception:
         return 0.0
 
@@ -793,7 +978,23 @@ def validate_input(test_name, value, side=None):
     """Validate input values and provide clinical warnings"""
     warnings = []
     
-    if test_name == "Weight Bearing Lunge Test":
+    if test_name == "Wall Angel Test":
+        if value < -10:
+            warnings.append("⚠️ Valore oltre range ipermobilità (<-10cm). Verificare misurazione.")
+        elif value <= -7:
+            warnings.append("🔴 Ipermobilità SEVERA (≤-7cm). Alto rischio instabilità. Necessaria stabilizzazione.")
+        elif value <= -3:
+            warnings.append("🟠 Ipermobilità MODERATA (-3 a -7cm). Rischio instabilità. Controllo motorio essenziale.")
+        elif value < 0:
+            warnings.append("🟡 Ipermobilità LIEVE (<0cm). Monitorare stabilità dinamica.")
+        elif value > 20:
+            warnings.append("🚨 Rigidità toracica severa (>20cm). Limitazione molto significativa overhead.")
+        elif value > 15:
+            warnings.append("🔴 Rigidità toracica marcata (>15cm). Limitazione significativa overhead.")
+        elif value > 5:
+            warnings.append("⚠️ Rigidità toracica moderata (>5cm). Priorità mobilizzazione toracica.")
+    
+    elif test_name == "Weight Bearing Lunge Test":
         if value > 20:
             warnings.append("⚠️ Valore inusuale per WBLT (>20cm). Verificare misurazione.")
         elif value < 8:
@@ -814,6 +1015,36 @@ def validate_input(test_name, value, side=None):
             warnings.append("🚨 Endurance lombare critica (<30s). Alto rischio low back pain.")
         elif value < 60:
             warnings.append("⚠️ Endurance lombare sotto norma. Priorità allenamento core.")
+    
+    elif test_name == "Thomas Test (modified)":
+        if value > 20:
+            warnings.append("⚠️ Valore oltre range ipermobilità (>20°). Verificare misurazione.")
+        elif value >= 17:
+            warnings.append("🔴 Ipermobilità SEVERA flessori anca (≥17°). Alto rischio instabilità. Necessario controllo motorio.")
+        elif value >= 14:
+            warnings.append("🟠 Ipermobilità MODERATA flessori anca (14-16°). Rischio instabilità. Priorità stabilizzazione.")
+        elif value > 11:
+            warnings.append("🟡 Ipermobilità LIEVE flessori anca (11-13°). Monitorare controllo dinamico.")
+        elif value < -5:
+            warnings.append("🚨 Rigidità severa flessori anca (<-5°). Limitazione significativa squat/overhead.")
+        elif value < 5:
+            warnings.append("⚠️ Rigidità moderata flessori anca (<5°). Priorità mobilizzazione anteriore anca.")
+    
+    elif test_name == "Pectoralis Minor Length":
+        if value > 13:
+            warnings.append("⚠️ Valore oltre range ipomobilità (>13cm). Verificare misurazione.")
+        elif value >= 11:
+            warnings.append("🚨 Rigidità severa pettorale minore (≥11cm). Alto rischio disfunzione scapolare.")
+        elif value >= 8:
+            warnings.append("🔴 Rigidità marcata pettorale minore (8-10cm). Limitazione significativa overhead.")
+        elif value > 6:
+            warnings.append("⚠️ Rigidità moderata pettorale minore (6-7cm). Priorità rilascio anteriore spalla.")
+        elif value < 2:
+            warnings.append("🔴 Ipermobilità SEVERA pettorale minore (<2cm). Instabilità anteriore spalla. Necessaria stabilizzazione.")
+        elif value < 3.5:
+            warnings.append("🟠 Ipermobilità MODERATA pettorale minore (<3.5cm). Rischio instabilità anteriore.")
+        elif value < 4.5:
+            warnings.append("🟡 Ipermobilità LIEVE pettorale minore (<4.5cm). Monitorare stabilità scapolare.")
     
     return warnings
 
@@ -837,53 +1068,247 @@ def assess_injury_risk(df, sport, session_state):
         
         risk_data = INJURY_RISK_DATABASE[test_name]
         
-        # Determine priority level
-        priority = "BASSO"
-        priority_icon = "🟢"
-        urgency_days = ">30"
+        # Check bilateral tests separately (Dx and Sx)
+        dx_val = row.get("Dx", "")
+        sx_val = row.get("Sx", "")
+        ref = row.get("Rif", 10.0)
         
-        if score < risk_data.get("priority_critical", 4.0):
-            priority = "CRITICO"
-            priority_icon = "🔴"
-            urgency_days = "IMMEDIATO (0-7 giorni)"
-            action = "STOP carichi >70% 1RM - Intervento immediato necessario"
-        elif score < risk_data.get("priority_high", 7.0):
-            priority = "ALTO"
-            priority_icon = "🟠"
-            urgency_days = "7-14 giorni"
-            action = "RIDURRE volume/intensità - Iniziare protocollo correttivo"
-        elif score < risk_data["risk_threshold"]:
-            priority = "MODERATO"
-            priority_icon = "🟡"
-            urgency_days = "14-30 giorni"
-            action = "Monitorare e integrare lavoro accessorio"
+        # Get higher_is_better from row data
+        higher_is_better = True
+        for section_tests in TESTS.values():
+            for test_tuple in section_tests:
+                if test_tuple[0] == test_name:
+                    higher_is_better = test_tuple[6] if len(test_tuple) > 6 else True
+                    break
+        
+        # Function to evaluate a single side/value
+        def evaluate_side(score_val, side_label=""):
+            priority = "BASSO"
+            priority_icon = "🟢"
+            urgency_days = ">30"
+            
+            # Convert thresholds from 0-10 scale to 0-100 scale
+            critical_threshold = risk_data.get("priority_critical", 3.0) * 10
+            high_threshold = risk_data.get("priority_high", 5.0) * 10
+            moderate_threshold = risk_data.get("risk_threshold", 7.0) * 10
+            
+            if score_val < critical_threshold:
+                priority = "CRITICO"
+                priority_icon = "🔴"
+                urgency_days = "IMMEDIATO (0-7 giorni)"
+                action = "STOP carichi >70% 1RM - Intervento immediato necessario"
+            elif score_val < high_threshold:
+                priority = "ALTO"
+                priority_icon = "🟠"
+                urgency_days = "7-14 giorni"
+                action = "RIDURRE volume/intensità - Iniziare protocollo correttivo"
+            elif score_val < moderate_threshold:
+                priority = "MODERATO"
+                priority_icon = "🟡"
+                urgency_days = "14-30 giorni"
+                action = "Monitorare e integrare lavoro accessorio"
+            else:
+                return None  # Score OK, no warning
+            
+            # Build warning
+            test_display = f"{test_name} {side_label}".strip()
+            warning = {
+                "priority": priority,
+                "priority_icon": priority_icon,
+                "urgency": urgency_days,
+                "test": test_display,
+                "score": score_val,
+                "region": region,
+                "risk_injuries": risk_data["risk_injuries"],
+                "mechanism": risk_data["mechanism"],
+                "sport_specific": risk_data.get("sport_specific", {}).get(sport, ""),
+                "evidence": risk_data["evidence"],
+                "action": action,
+                "note": risk_data.get("note", "")
+            }
+            return warning
+        
+        # Check if bilateral test with separate Dx/Sx values
+        if dx_val != "" and sx_val != "" and pd.notna(dx_val) and pd.notna(sx_val):
+            # Evaluate Dx side
+            dx_score = round(ability_linear(float(dx_val), ref, higher_is_better, test_name), 2)
+            warning_dx = evaluate_side(dx_score, "Dx")
+            if warning_dx:
+                # Add pain multiplier
+                if row.get("DoloreDx", False):
+                    warning_dx["pain_present"] = True
+                    warning_dx["action"] += " ⚠️ DOLORE PRESENTE - Priorità aumentata"
+                else:
+                    warning_dx["pain_present"] = False
+                risk_warnings.append(warning_dx)
+            
+            # Evaluate Sx side
+            sx_score = round(ability_linear(float(sx_val), ref, higher_is_better, test_name), 2)
+            warning_sx = evaluate_side(sx_score, "Sx")
+            if warning_sx:
+                # Add pain multiplier
+                if row.get("DoloreSx", False):
+                    warning_sx["pain_present"] = True
+                    warning_sx["action"] += " ⚠️ DOLORE PRESENTE - Priorità aumentata"
+                else:
+                    warning_sx["pain_present"] = False
+                risk_warnings.append(warning_sx)
         else:
-            continue  # Score OK, no warning
+            # Unilateral test or average score evaluation
+            warning = evaluate_side(score)
+            if warning:
+                # Add pain multiplier
+                if row.get("Dolore", False) or row.get("DoloreDx", False) or row.get("DoloreSx", False):
+                    warning["pain_present"] = True
+                    warning["action"] += " ⚠️ DOLORE PRESENTE - Priorità aumentata"
+                else:
+                    warning["pain_present"] = False
+                risk_warnings.append(warning)
+    
+    # NEW: Check for HYPERMOBILITY (excessive range of motion)
+    for _, row in df.iterrows():
+        test_name = row["Test"]
+        score = row["Score"]
+        region = row["Regione"]
+        unit = row.get("Unità", "")
+        ref = row.get("Rif", 0)
         
-        # Build warning
-        warning = {
-            "priority": priority,
-            "priority_icon": priority_icon,
-            "urgency": urgency_days,
-            "test": test_name,
-            "score": score,
-            "region": region,
-            "risk_injuries": risk_data["risk_injuries"],
-            "mechanism": risk_data["mechanism"],
-            "sport_specific": risk_data.get("sport_specific", {}).get(sport, ""),
-            "evidence": risk_data["evidence"],
-            "action": action,
-            "note": risk_data.get("note", "")
-        }
+        # Get higher_is_better from test definition
+        higher_is_better = True
+        for section_tests in TESTS.values():
+            for test_tuple in section_tests:
+                if test_tuple[0] == test_name:
+                    higher_is_better = test_tuple[6] if len(test_tuple) > 6 else True
+                    break
         
-        # Add pain multiplier
-        if row.get("Dolore", False) or row.get("DoloreDx", False) or row.get("DoloreSx", False):
-            warning["pain_present"] = True
-            warning["action"] += " ⚠️ DOLORE PRESENTE - Priorità aumentata"
-        else:
-            warning["pain_present"] = False
+        # Function to evaluate hypermobility for a single side/value
+        def evaluate_hypermobility(val, side_label=""):
+            # Detect hypermobility
+            is_hypermobile, severity, threshold = detect_hypermobility(val, ref, higher_is_better, unit)
+            
+            if not is_hypermobile:
+                return None
+            
+            # Determine priority based on severity and region
+            if severity == "SEVERE":
+                priority = "ALTO"
+                priority_icon = "🟠"
+                urgency_days = "7-14 giorni"
+            elif severity == "MODERATE":
+                priority = "MODERATO"
+                priority_icon = "🟡"
+                urgency_days = "14-21 giorni"
+            else:  # MILD
+                priority = "MODERATO"
+                priority_icon = "🟡"
+                urgency_days = "21-30 giorni"
+            
+            # Region-specific risks
+            if region in ["shoulder", "spalla"]:
+                risk_injuries = ["Instabilità gleno-omerale", "Lussazione anteriore/posteriore", "Lesioni labrali", "Sindrome da impingement"]
+                mechanism = "Lassità capsulo-legamentosa eccessiva riduce controllo neuromuscolare e aumenta traslazione omerale"
+                evidence = "Liaghat et al. 2021: OR=3.25 per infortuni spalla in atleti ipermobili (meta-analisi)"
+                action = "STABILIZZAZIONE: Lavoro eccentrico cuffia rotatori, controllo scapolare, evitare ROM estremi sotto carico"
+            elif region in ["hip", "anca"]:
+                risk_injuries = ["Impingement femoro-acetabolare", "Lesioni labrali", "Instabilità anca", "Tendinopatia flessori"]
+                mechanism = "Eccessivo ROM può causare conflitto osseo o instabilità capsulare"
+                evidence = "Pasanen et al. 2025: Ipermobilità anca associata a ↑rischio lesioni LCA in atlete"
+                action = "CONTROLLO MOTORIO: Squat mono-podalico, copenhagen plank, limitare ROM fine corsa" 
+            elif region in ["knee", "ginocchio"]:
+                risk_injuries = ["Lesione LCA", "Instabilità rotulea", "Sublussazione patella"]
+                mechanism = "Iperestensione ginocchio riduce stabilità passiva e sovraccarica legamenti"
+                evidence = "Pasanen et al. 2025: Lassità articolare è fattore di rischio LCA prospettico"
+                action = "RINFORZO: Focus eccentrico ischio-crurali, evitare iperestensione, taping correttivo"
+            elif region in ["ankle", "caviglia"]:
+                risk_injuries = ["Distorsioni ricorrenti", "Instabilità cronica caviglia", "Tendinopatia peroneale"]
+                mechanism = "Lassità legamentosa laterale riduce stabilità propriocettiva"
+                evidence = "Nathan et al. 2018: Ipermobili hanno maggior incidenza lussazioni vs distorsioni"
+                action = "PROPRIOCEZIONE: Balance board, single-leg deadlift, rinforzo peroneali"
+            elif region in ["thoracic", "toracica"]:
+                risk_injuries = ["Instabilità scapolare", "Compensi posturali", "Disfunzione movimento overhead"]
+                mechanism = "Eccessiva mobilità toracica può indicare instabilità segmentaria"
+                evidence = "Joint hypermobility associato a pattern movimento alterati"
+                action = "STABILIZZAZIONE: Core stability, controllo scapolare, rinforzo paravertebrali"
+            else:
+                risk_injuries = ["Instabilità articolare", "Pattern movimento compensatori"]
+                mechanism = "Eccessivo ROM può indicare lassità legamentosa e ridotto controllo neuromuscolare"
+                evidence = "Joint hypermobility associato a ↑durata infortuni (Nathan 2018)"
+                action = "STABILIZZAZIONE: Lavoro isometrico end-range, controllo motorio, rinforzo specifico"
+            
+            # Sport-specific notes
+            sport_specific = ""
+            if sport in ["Powerlifting", "Weightlifting"]:
+                if region == "shoulder":
+                    sport_specific = "Rischio perdita transfer forza in panca e overhead press. Setup instabile."
+                elif region == "hip":
+                    sport_specific = "Squat instabile, 'folding' in buca, difficoltà a mantenere tensione"
+            elif sport == "CrossFit":
+                if region == "shoulder":
+                    sport_specific = "Alto rischio in overhead (snatch, OHS, HSPU). Kipping instabile."
+                elif region == "hip":  
+                    sport_specific = "Rischio in olympic lifts, box jumps, wall balls con iperestensione"
+            
+            # Get score for this specific side
+            side_score = ability_linear(val, ref, higher_is_better, test_name)
+            
+            test_display = f"{test_name} {side_label}".strip()
+            warning = {
+                "priority": priority,
+                "priority_icon": priority_icon,
+                "urgency": urgency_days,
+                "test": test_display,
+                "score": side_score,
+                "region": region,
+                "risk_injuries": risk_injuries,
+                "mechanism": mechanism,
+                "sport_specific": sport_specific,
+                "evidence": evidence,
+                "action": action,
+                "note": f"⚖️ IPERMOBILITÀ {severity}: {val:.1f}{unit} (riferimento: {ref:.1f}{unit}, soglia rischio: >{threshold:.1f}{unit})",
+                "pain_present": False,
+                "hypermobility": True,
+                "severity": severity
+            }
+            return warning
         
-        risk_warnings.append(warning)
+        # Get value - use Dx/Sx columns for bilateral tests, otherwise Valore
+        try:
+            dx_val = row.get("Dx", "")
+            sx_val = row.get("Sx", "")
+            
+            # Check if this is a bilateral test (Dx/Sx columns populated)
+            if dx_val != "" and sx_val != "" and pd.notna(dx_val) and pd.notna(sx_val):
+                dx_val = float(dx_val)
+                sx_val = float(sx_val)
+                
+                # Evaluate Dx side
+                warning_dx = evaluate_hypermobility(dx_val, "Dx")
+                if warning_dx:
+                    warning_dx["pain_present"] = row.get("DoloreDx", False)
+                    if warning_dx["pain_present"]:
+                        warning_dx["action"] += " ⚠️ DOLORE PRESENTE - Priorità aumentata"
+                    risk_warnings.append(warning_dx)
+                
+                # Evaluate Sx side
+                warning_sx = evaluate_hypermobility(sx_val, "Sx")
+                if warning_sx:
+                    warning_sx["pain_present"] = row.get("DoloreSx", False)
+                    if warning_sx["pain_present"]:
+                        warning_sx["action"] += " ⚠️ DOLORE PRESENTE - Priorità aumentata"
+                    risk_warnings.append(warning_sx)
+            else:
+                # Unilateral test - use Valore field
+                val_str = row.get("Valore", "")
+                val = float(val_str)
+                
+                warning = evaluate_hypermobility(val)
+                if warning:
+                    warning["pain_present"] = row.get("Dolore", False)
+                    if warning["pain_present"]:
+                        warning["action"] += " ⚠️ DOLORE PRESENTE - Priorità aumentata"
+                    risk_warnings.append(warning)
+        except:
+            continue
     
     # Sort by priority (Critical > High > Moderate), then by score
     priority_order = {"CRITICO": 0, "ALTO": 1, "MODERATO": 2, "BASSO": 3}
@@ -949,8 +1374,8 @@ def generate_recommendations(df, sport, session_state):
     recommendations = []
     priority_counter = 1
     
-    # Priority 1: Critical scores (<4) - URGENT
-    critical = df[df["Score"] < 4].copy()
+    # Priority 1: Critical scores (<40%) - URGENT
+    critical = df[df["Score"] < 40].copy()
     if not critical.empty:
         for _, row in critical.iterrows():
             test_name = row["Test"]
@@ -958,7 +1383,7 @@ def generate_recommendations(df, sport, session_state):
             score = row["Score"]
             
             # Calculate severity percentage
-            deficit_percent = int((10 - score) / 10 * 100)
+            deficit_percent = int(100 - score)
             
             # Determine impact
             impact = "Limitazione SEVERA che può causare compensi e aumentare il rischio di infortunio"
@@ -979,8 +1404,8 @@ def generate_recommendations(df, sport, session_state):
             recommendations.append(rec)
             priority_counter += 1
     
-    # Priority 2: Significant Asymmetries (SymScore < 6)
-    asymmetries = df[df["SymScore"] < 6].copy()
+    # Priority 2: Significant Asymmetries (SymScore < 60%)
+    asymmetries = df[df["SymScore"] < 60].copy()
     if not asymmetries.empty:
         for _, row in asymmetries.iterrows():
             test_name = row["Test"]
@@ -1024,15 +1449,15 @@ def generate_recommendations(df, sport, session_state):
             recommendations.append(rec)
             priority_counter += 1
     
-    # Priority 3: Moderate scores (4-7) - IMPORTANT
-    moderate = df[(df["Score"] >= 4) & (df["Score"] < 7)].copy()
+    # Priority 3: Moderate scores (40-70%) - IMPORTANT
+    moderate = df[(df["Score"] >= 40) & (df["Score"] < 70)].copy()
     if not moderate.empty:
         for _, row in moderate.iterrows():
             test_name = row["Test"]
             region = row["Regione"]
             score = row["Score"]
             
-            deficit_percent = int((10 - score) / 10 * 100)
+            deficit_percent = int(100 - score)
             
             impact = "Limitazione moderata che può ridurre la performance e potenzialmente evolvere in problematica se non gestita."
             recommendation = "Inserire lavoro mirato e progressivo. Monitorare durante carico crescente."
@@ -1114,21 +1539,34 @@ def render_inputs_for_section(section):
                     st.info(instr)
 
                 key = short_key(name)
-                max_val = rec.get("ref", ref) * 1.5 if rec.get("ref", ref) > 0 else 10.0
+                
+                # Special case for Wall Angel Test: allow negative values and set proper range
+                if name == "Wall Angel Test":
+                    min_val = -10.0
+                    max_val = 25.0  # Allow up to 25cm positive (deficit)
+                elif name == "Thomas Test (modified)":
+                    min_val = -10.0
+                    max_val = 20.0  # Allow from -10° (rigid) to 20° (hypermobile)
+                elif name == "Pectoralis Minor Length":
+                    min_val = 0.0
+                    max_val = 13.0  # Allow from 0cm (hypermobile) to 13cm (rigid)
+                else:
+                    min_val = 0.0
+                    max_val = rec.get("ref", ref) * 1.5 if rec.get("ref", ref) > 0 else 10.0
                 
                 if rec.get("bilat", False):
                     c1, c2 = st.columns([1, 1])
                     with c1:
-                        dx = st.slider(f"Dx ({unit})", 0.0, max_val, float(rec.get("Dx", 0.0)), 0.1, key=f"{key}_Dx")
+                        dx = st.number_input(f"Dx ({unit})", min_value=min_val, max_value=max_val, value=float(rec.get("Dx", 0.0)), step=0.1, key=f"{key}_Dx")
                         pdx = st.checkbox("Dolore Dx", value=bool(rec.get("DoloreDx", False)), key=f"{key}_pDx")
                     with c2:
-                        sx = st.slider(f"Sx ({unit})", 0.0, max_val, float(rec.get("Sx", 0.0)), 0.1, key=f"{key}_Sx")
+                        sx = st.number_input(f"Sx ({unit})", min_value=min_val, max_value=max_val, value=float(rec.get("Sx", 0.0)), step=0.1, key=f"{key}_Sx")
                         psx = st.checkbox("Dolore Sx", value=bool(rec.get("DoloreSx", False)), key=f"{key}_pSx")
                     
                     rec.update({"Dx": dx, "Sx": sx, "DoloreDx": pdx, "DoloreSx": psx})
-                    sc = ability_linear((dx + sx) / 2.0, rec.get("ref", ref), rec.get("higher_is_better", hib))
-                    sym = symmetry_score(dx, sx, unit)
-                    st.caption(f"Score: **{sc:.1f}/10** — Δ {abs(dx - sx):.1f} {unit} — Sym: **{sym:.1f}/10")
+                    sc = ability_linear((dx + sx) / 2.0, rec.get("ref", ref), rec.get("higher_is_better", hib), name)
+                    sym = symmetry_score(dx, sx, unit, rec.get("ref", ref), rec.get("higher_is_better", hib), name)
+                    st.caption(f"Score: **{sc:.0f}%** — Δ {abs(dx - sx):.1f} {unit} — Sym: **{sym:.0f}%")
                     
                     # Validation
                     warnings_dx = validate_input(name, dx, "Dx")
@@ -1137,11 +1575,11 @@ def render_inputs_for_section(section):
                         st.warning(w)
                 
                 else:
-                    val = st.slider(f"Valore ({unit})", 0.0, max_val, float(rec.get("Val", 0.0)), 0.1, key=f"{key}_Val")
+                    val = st.number_input(f"Valore ({unit})", min_value=min_val, max_value=max_val, value=float(rec.get("Val", 0.0)), step=0.1, key=f"{key}_Val")
                     p = st.checkbox("Dolore", value=bool(rec.get("Dolore", False)), key=f"{key}_p")
                     rec.update({"Val": val, "Dolore": p})
-                    sc = ability_linear(val, rec.get("ref", ref), rec.get("higher_is_better", hib))
-                    st.caption(f"Score: **{sc:.1f}/10**")
+                    sc = ability_linear(val, rec.get("ref", ref), rec.get("higher_is_better", hib), name)
+                    st.caption(f"Score: **{sc:.0f}%**")
                     
                     # Validation
                     warnings = validate_input(name, val)
@@ -1172,9 +1610,9 @@ def build_df(section):
                 dx = 0.0 if pd.isna(dx) else float(dx)
                 sx = 0.0 if pd.isna(sx) else float(sx)
                 avg = (dx + sx) / 2.0
-                sc = round(ability_linear(avg, rec.get("ref", ref), rec.get("higher_is_better", hib)), 2)
+                sc = round(ability_linear(avg, rec.get("ref", ref), rec.get("higher_is_better", hib), name), 2)
                 delta = round(abs(dx - sx), 2)
-                sym = round(symmetry_score(dx, sx, unit), 2)
+                sym = round(symmetry_score(dx, sx, unit, rec.get("ref", ref), rec.get("higher_is_better", hib), name), 2)
                 dolore_dx = bool(rec.get("DoloreDx", False))
                 dolore_sx = bool(rec.get("DoloreSx", False))
                 dolore_any = dolore_dx or dolore_sx
@@ -1186,7 +1624,7 @@ def build_df(section):
             else:
                 val = pd.to_numeric(rec.get("Val", 0.0), errors="coerce")
                 val = 0.0 if pd.isna(val) else float(val)
-                sc = round(ability_linear(val, rec.get("ref", ref), rec.get("higher_is_better", hib)), 2)
+                sc = round(ability_linear(val, rec.get("ref", ref), rec.get("higher_is_better", hib), name), 2)
                 dolore = bool(rec.get("Dolore", False))
                 rows.append([sec, name, unit, rec.get("ref", ref), f"{val:.1f}", sc, 
                             "", "", "", "", dolore, region, False, False])
@@ -1226,8 +1664,8 @@ def build_df_for_radar(section):
                 dx = 0.0 if pd.isna(dx) else float(dx)
                 sx = 0.0 if pd.isna(sx) else float(sx)
                 
-                sc_dx = round(ability_linear(dx, rec.get("ref", ref), rec.get("higher_is_better", hib)), 2)
-                sc_sx = round(ability_linear(sx, rec.get("ref", ref), rec.get("higher_is_better", hib)), 2)
+                sc_dx = round(ability_linear(dx, rec.get("ref", ref), rec.get("higher_is_better", hib), name), 2)
+                sc_sx = round(ability_linear(sx, rec.get("ref", ref), rec.get("higher_is_better", hib), name), 2)
                 
                 dolore_dx = bool(rec.get("DoloreDx", False))
                 dolore_sx = bool(rec.get("DoloreSx", False))
@@ -1248,7 +1686,7 @@ def build_df_for_radar(section):
             else:
                 val = pd.to_numeric(rec.get("Val", 0.0), errors="coerce")
                 val = 0.0 if pd.isna(val) else float(val)
-                sc = round(ability_linear(val, rec.get("ref", ref), rec.get("higher_is_better", hib)), 2)
+                sc = round(ability_linear(val, rec.get("ref", ref), rec.get("higher_is_better", hib), name), 2)
                 dolore = bool(rec.get("Dolore", False))
                 rows.append([sec, name, unit, rec.get("ref", ref), f"{val:.1f}", sc, 
                             "", "", "", "", dolore, region, False, False])
@@ -1267,7 +1705,7 @@ def build_df_for_radar(section):
 # -----------------------------
 # Visualization functions
 # -----------------------------
-def radar_plot_matplotlib(df, title="Punteggi (0–10)"):
+def radar_plot_matplotlib(df, title="Punteggi (0–140%)"):
     labels_raw = df["Test"].tolist()
     labels = [SHORT_RADAR_LABELS.get(name, name) for name in labels_raw]
     values = df["Score"].astype(float).tolist()
@@ -1281,34 +1719,69 @@ def radar_plot_matplotlib(df, title="Punteggi (0–10)"):
     angles = np.linspace(0, 2 * np.pi, num_vars, endpoint=False).tolist()
     angles += angles[:1]
 
-    fig, ax = plt.subplots(figsize=(8, 8), subplot_kw=dict(polar=True))
+    # Create figure with space for legend
+    fig = plt.figure(figsize=(10, 8))
+    ax = fig.add_subplot(111, polar=True)
     ax.set_theta_offset(np.pi / 2)
     ax.set_theta_direction(-1)
-    ax.plot(angles, values, linewidth=2, linestyle="solid", color=PRIMARY)
-    ax.fill(angles, values, alpha=0.25, color=PRIMARY)
+    
+    # Add colored background zones
+    theta = np.linspace(0, 2 * np.pi, 100)
+    
+    # Yellow zone (0-90): Ipomobilità
+    r_yellow = np.full_like(theta, 90)
+    ax.fill_between(theta, 0, r_yellow, color="#FDE047", alpha=0.5, label="Ipomobilità (0-90%)")
+    
+    # Green zone (90-100): Normalità
+    r_green_min = np.full_like(theta, 90)
+    r_green_max = np.full_like(theta, 100)
+    ax.fill_between(theta, r_green_min, r_green_max, color="#86EFAC", alpha=0.6, label="Normalità (90-100%)")
+    
+    # Blue zone (100-140): Ipermobilità
+    r_blue_min = np.full_like(theta, 100)
+    r_blue_max = np.full_like(theta, 140)
+    ax.fill_between(theta, r_blue_min, r_blue_max, color="#93C5FD", alpha=0.5, label="Ipermobilità (>100%)")
+    
+    # Plot data
+    ax.plot(angles, values, linewidth=2.5, linestyle="solid", color=PRIMARY, zorder=3)
+    ax.fill(angles, values, alpha=0.25, color=PRIMARY, zorder=3)
 
+    # Node colors based on value
     node_colors = []
     for v in values[:-1]:
-        if v >= 7:
-            node_colors.append("#16A34A")
-        elif v >= 4:
-            node_colors.append("#F59E0B")
+        if v > 115:
+            if v > 140:  # Ipermobilità severa
+                node_colors.append("#DC2626")
+            elif v > 125:  # Ipermobilità moderata
+                node_colors.append("#F59E0B")
+            else:  # Ipermobilità lieve
+                node_colors.append("#3B82F6")
+        elif v >= 71:
+            node_colors.append("#16A34A")  # Verde
+        elif v >= 51:
+            node_colors.append("#EAB308")  # Giallo
+        elif v >= 31:
+            node_colors.append("#F59E0B")  # Arancione
         else:
-            node_colors.append("#DC2626")
+            node_colors.append("#DC2626")  # Rosso
     
     node_angles = angles[:-1]
-    ax.scatter(node_angles, values[:-1], c=node_colors, s=100, zorder=5, edgecolors="k", linewidths=2)
+    ax.scatter(node_angles, values[:-1], c=node_colors, s=120, zorder=5, edgecolors="k", linewidths=2)
 
-    ax.set_yticks([2, 4, 6, 8, 10])
-    ax.set_ylim(0, 10)
+    ax.set_yticks([20, 40, 60, 80, 100, 120, 140])
+    ax.set_ylim(0, 140)
     ax.set_xticks(angles[:-1])
-    ax.set_xticklabels(labels[:-1], fontsize=10)
-    ax.set_title(sanitize_text_for_plot(title), y=1.08, fontsize=16, fontweight="bold")
-    ax.grid(True, linestyle="--", alpha=0.7)
+    ax.set_xticklabels(labels[:-1], fontsize=10, fontweight="bold")
+    ax.set_title(sanitize_text_for_plot(title), y=1.1, fontsize=16, fontweight="bold")
+    ax.grid(True, linestyle="--", alpha=0.5, zorder=1)
+    
+    # Add legend
+    ax.legend(loc='upper right', bbox_to_anchor=(1.35, 1.0), fontsize=9, 
+             frameon=True, fancybox=True, shadow=True)
 
     buf = io.BytesIO()
     plt.tight_layout()
-    plt.savefig(buf, format="png", dpi=150)
+    plt.savefig(buf, format="png", dpi=150, bbox_inches='tight')
     buf.seek(0)
     plt.close(fig)
     return buf
@@ -1346,18 +1819,20 @@ def asymmetry_plot_matplotlib(df, title="SymScore – Simmetria Dx/Sx"):
 
     colors_map = []
     for score in scores:
-        if score >= 7:
-            colors_map.append("#16A34A")
-        elif score >= 4:
-            colors_map.append("#F59E0B")
+        if score >= 71:
+            colors_map.append("#16A34A")  # Verde
+        elif score >= 51:
+            colors_map.append("#EAB308")  # Giallo
+        elif score >= 31:
+            colors_map.append("#F59E0B")  # Arancione
         else:
-            colors_map.append("#DC2626")
+            colors_map.append("#DC2626")  # Rosso
 
     fig, ax = plt.subplots(figsize=(10, 6))
     bars = ax.barh(labels, scores, color=colors_map, edgecolor="black", linewidth=1.2)
-    ax.set_xlabel("SymScore (0–10)", fontsize=12, fontweight="bold")
+    ax.set_xlabel("SymScore (0–100%)", fontsize=12, fontweight="bold")
     ax.set_title(sanitize_text_for_plot(title), fontsize=14, fontweight="bold")
-    ax.set_xlim(0, 10)
+    ax.set_xlim(0, 100)
     ax.invert_yaxis()
     ax.grid(True, axis="x", linestyle="--", alpha=0.5)
 
@@ -1386,7 +1861,7 @@ def plotly_radar(df):
     fig.update_traces(fill="toself", marker=dict(size=8))
     fig.update_layout(
         margin=dict(l=40, r=40, t=50, b=40), 
-        polar=dict(radialaxis=dict(range=[0, 10], showticklabels=True, tickfont=dict(size=10))),
+        polar=dict(radialaxis=dict(range=[0, 140], showticklabels=True, tickfont=dict(size=10))),
         font=dict(size=11)
     )
     return fig
@@ -1402,7 +1877,7 @@ def plotly_asymmetry(df):
     fig = px.bar(df_bilat, x="SymScore", y="ShortLabel", orientation="h", 
                  template="plotly_white", color="SymScore", 
                  color_continuous_scale=["#DC2626", "#F59E0B", "#16A34A"], 
-                 range_x=[0, 10])
+                 range_x=[0, 100])
     fig.update_layout(margin=dict(l=20, r=20, t=40, b=20), showlegend=False)
     fig.update_xaxes(title="Symmetry Score")
     fig.update_yaxes(title="")
@@ -1433,13 +1908,13 @@ def plot_progress_over_time(history):
                 dx = test_data.get("Dx", 0.0)
                 sx = test_data.get("Sx", 0.0)
                 avg = (float(dx) + float(sx)) / 2.0
-                score = ability_linear(avg, ref, hib)
+                score = ability_linear(avg, ref, hib, test_name)
                 scores.append(score)
                 if test_data.get("DoloreDx") or test_data.get("DoloreSx"):
                     pains += 1
             else:
                 val = test_data.get("Val", 0.0)
-                score = ability_linear(val, ref, hib)
+                score = ability_linear(val, ref, hib, test_name)
                 scores.append(score)
                 if test_data.get("Dolore"):
                     pains += 1
@@ -1454,11 +1929,11 @@ def plot_progress_over_time(history):
     
     # Plot 1: Average scores
     ax1.plot(dates_dt, avg_scores, marker='o', linewidth=2, markersize=8, color=PRIMARY)
-    ax1.set_ylabel("Score Medio (0-10)", fontsize=12, fontweight="bold")
+    ax1.set_ylabel("Score Medio (0-100%)", fontsize=12, fontweight="bold")
     ax1.set_title("Progressione Score nel Tempo", fontsize=14, fontweight="bold")
     ax1.grid(True, alpha=0.3)
-    ax1.set_ylim(0, 10)
-    ax1.axhline(y=7, color='green', linestyle='--', alpha=0.5, label='Target (7)')
+    ax1.set_ylim(0, 100)
+    ax1.axhline(y=71, color='green', linestyle='--', alpha=0.5, label='Target (71%)')
     ax1.legend()
     
     # Plot 2: Pain counts
@@ -1637,9 +2112,9 @@ def pdf_report_clinico(logo_bytes, athlete, evaluator, date_str, section, df,
     
     # Use color-coded metric boxes
     metric_data = [[
-        Paragraph("<b>Score medio</b><br/><font size=14><b>{:.1f}</b></font>/10".format(avg_score), body),
+        Paragraph("<b>Score medio</b><br/><font size=14><b>{:.0f}%</b></font>".format(avg_score), body),
         Paragraph("<b>Test con dolore</b><br/><font size=14><b>{}</b></font>".format(n_dolore), body),
-        Paragraph("<b>Symmetry medio</b><br/><font size=14><b>{}</b></font>/10".format(f"{sym_mean:.1f}" if not pd.isna(sym_mean) else "n/a"), body)
+        Paragraph("<b>Symmetry medio</b><br/><font size=14><b>{}</b></font>".format(f"{sym_mean:.0f}%" if not pd.isna(sym_mean) else "n/a"), body)
     ]]
     
     metrics_table = Table(metric_data, colWidths=[5.5*cm, 5.5*cm, 5.5*cm])
@@ -1657,17 +2132,28 @@ def pdf_report_clinico(logo_bytes, athlete, evaluator, date_str, section, df,
     story.append(metrics_table)
     story.append(Spacer(1, 18))
 
-    # Results table with improved styling
+    # Results table with improved styling - using radar dataframe for consistency
     story.append(Paragraph("<b>Risultati Test Oggettivi</b>", heading))
     story.append(Spacer(1, 8))
     
-    disp = df.copy()
-    disp["Status"] = disp["Score"].apply(lambda s: "✔" if s >= 7 else ("⚠" if s >= 4 else "✖"))
-    disp["TestPdf"] = disp["Test"].apply(pdf_test_label)
+    # Use radar dataframe to show tests split by Dx/Sx like in the radar chart
+    df_radar = build_df_for_radar(section)
+    df_radar = df_radar[df_radar["Score"].notnull()].copy()
+    
+    df_radar["Status"] = df_radar["Score"].apply(lambda s: "✔" if s >= 71 else ("⚠" if s >= 31 else "✖"))
+    
+    # Add radar label in parentheses
+    def format_test_with_radar_label(test_name):
+        radar_label = SHORT_RADAR_LABELS.get(test_name, test_name)
+        base_name = test_name.replace(" Dx", "").replace(" Sx", "")
+        pdf_label = pdf_test_label(base_name)
+        return f"{pdf_label} ({radar_label})"
+    
+    df_radar["TestPdf"] = df_radar["Test"].apply(format_test_with_radar_label)
     
     table_cols = ["Status", "Test", "Valore", "Unità", "Rif", "Score"]
     table_data = [table_cols]
-    for _, r in disp.iterrows():
+    for _, r in df_radar.iterrows():
         table_data.append([r["Status"], r["TestPdf"], r["Valore"], r["Unità"], r["Rif"], f"{r['Score']:.1f}"])
     
     colWidths = [1.2*cm, 7.0*cm, 2.0*cm, 2.0*cm, 1.6*cm, 2.0*cm]
@@ -1693,14 +2179,17 @@ def pdf_report_clinico(logo_bytes, athlete, evaluator, date_str, section, df,
         style.add("BACKGROUND", (0, i), (-1, i), bg)
         try:
             score = float(table_data[i][5])
-            if score >= 7:
-                color = colors.HexColor("#d1fae5")
+            if score >= 71:
+                color = colors.HexColor("#d1fae5")  # Verde chiaro
                 style.add("TEXTCOLOR", (5, i), (5, i), COLOR_SUCCESS)
-            elif score >= 4:
-                color = colors.HexColor("#fef3c7")
+            elif score >= 51:
+                color = colors.HexColor("#fef9c3")  # Giallo chiaro
+                style.add("TEXTCOLOR", (5, i), (5, i), colors.HexColor("#ca8a04"))
+            elif score >= 31:
+                color = colors.HexColor("#fed7aa")  # Arancione chiaro
                 style.add("TEXTCOLOR", (5, i), (5, i), COLOR_MODERATE)
             else:
-                color = colors.HexColor("#fee2e2")
+                color = colors.HexColor("#fee2e2")  # Rosso chiaro
                 style.add("TEXTCOLOR", (5, i), (5, i), COLOR_CRITICAL)
             style.add("BACKGROUND", (5, i), (5, i), color)
             style.add("FONTNAME", (5, i), (5, i), "Helvetica-Bold")
@@ -1759,93 +2248,116 @@ def pdf_report_clinico(logo_bytes, athlete, evaluator, date_str, section, df,
     
     if risk_warnings:
         story.append(PageBreak())
-        story.append(Paragraph("<b>⚠️ ANALISI RISCHIO INFORTUNI (Evidence-Based)</b>", heading))
-        story.append(Spacer(1, 8))
-        
-        risk_disclaimer = (
-            "<i>La seguente analisi identifica deficit biomeccanici associati ad aumentato rischio di "
-            "infortuni specifici, basandosi su letteratura scientifica e studi prospettici. "
-            "I livelli di priorità indicano l'urgenza dell'intervento correttivo.</i>"
-        )
-        story.append(Paragraph(risk_disclaimer, small))
+        story.append(Paragraph("<b>⚠️ ANALISI RISCHIO INFORTUNI & IPERMOBILITÀ</b>", heading))
         story.append(Spacer(1, 12))
         
-        # Risk summary table
-        risk_summary = []
-        critical_count = sum(1 for w in risk_warnings if w["priority"] == "CRITICO")
-        high_count = sum(1 for w in risk_warnings if w["priority"] == "ALTO")
-        moderate_count = sum(1 for w in risk_warnings if w["priority"] == "MODERATO")
+        # Separate hypermobility from hypomobility warnings
+        hypermobile_warnings = [w for w in risk_warnings if w.get('hypermobility', False)]
+        hypomobile_warnings = [w for w in risk_warnings if not w.get('hypermobility', False)]
         
-        summary_text = f"""
-        <b>RIEPILOGO RISCHI:</b><br/>
-        • Deficit CRITICI: {critical_count} {'🔴' * critical_count}<br/>
-        • Deficit ALTI: {high_count} {'🟠' * high_count}<br/>
-        • Deficit MODERATI: {moderate_count} {'🟡' * moderate_count}
-        """
-        story.append(Paragraph(summary_text, body))
-        story.append(Spacer(1, 12))
+        # Calculate metrics like in Streamlit UI
+        critical_count = sum(1 for w in hypomobile_warnings if w["priority"] == "CRITICO" or w.get("score", 100) < 31)
+        hypermobile_critical_count = sum(1 for w in hypermobile_warnings if w.get("score", 0) > 100)
+        moderate_hypomobile_count = len([w for w in hypomobile_warnings if 31 <= w.get("score", 0) <= 70])
+        asymmetry_count = len(df[(df["SymScore"].notnull()) & (df["SymScore"] < 90)])
+        total_issues = critical_count + hypermobile_critical_count + moderate_hypomobile_count + asymmetry_count
         
-        # Detailed warnings (limit to top 8 for space)
-        for idx, warning in enumerate(risk_warnings[:8], 1):
-            # Priority header
-            priority_header = f"""
-            <b>{warning['priority_icon']} {warning['priority']} — {warning['test']}</b> (Score: {warning['score']:.1f}/10)<br/>
-            <i>Urgenza intervento: {warning['urgency']}</i>
-            """
-            story.append(Paragraph(priority_header, body))
-            story.append(Spacer(1, 4))
+        # Create summary table with metrics
+        summary_data = [[
+            Paragraph("<b>Ipomobili<br/>Critiche</b><br/><font size=14><b>{}</b></font><br/><font size=8>&lt;31%</font>".format(critical_count), body),
+            Paragraph("<b>Ipermobili<br/>Critiche</b><br/><font size=14><b>{}</b></font><br/><font size=8>&gt;100%</font>".format(hypermobile_critical_count), body),
+            Paragraph("<b>Ipomobilità<br/>Moderate</b><br/><font size=14><b>{}</b></font><br/><font size=8>31-70%</font>".format(moderate_hypomobile_count), body),
+            Paragraph("<b>Asimmetrie</b><br/><font size=14><b>{}</b></font><br/><font size=8>Dx/Sx</font>".format(asymmetry_count), body),
+            Paragraph("<b>Totale</b><br/><font size=14><b>{}</b></font><br/><font size=8>zone</font>".format(total_issues), body)
+        ]]
+        
+        summary_table = Table(summary_data, colWidths=[3.2*cm, 3.2*cm, 3.2*cm, 3.2*cm, 3.2*cm])
+        summary_table.setStyle(TableStyle([
+            ("BACKGROUND", (0,0), (0,0), colors.HexColor("#fee2e2")),  # Red for critical hypomobility
+            ("BACKGROUND", (1,0), (1,0), colors.HexColor("#fed7aa")),  # Orange for critical hypermobility
+            ("BACKGROUND", (2,0), (2,0), colors.HexColor("#fef3c7")),  # Yellow for moderate
+            ("BACKGROUND", (3,0), (3,0), colors.HexColor("#dbeafe")),  # Blue for asymmetries
+            ("BACKGROUND", (4,0), (4,0), colors.HexColor("#e5e7eb")),  # Gray for total
+            ("BOX", (0,0), (-1,-1), 1, colors.grey),
+            ("INNERGRID", (0,0), (-1,-1), 0.5, colors.grey),
+            ("ALIGN", (0,0), (-1,-1), "CENTER"),
+            ("VALIGN", (0,0), (-1,-1), "MIDDLE"),
+            ("TOPPADDING", (0,0), (-1,-1), 8),
+            ("BOTTOMPADDING", (0,0), (-1,-1), 8),
+        ]))
+        story.append(summary_table)
+        story.append(Spacer(1, 16))
+        
+        # Show hypomobility warnings (deficit)
+        if hypomobile_warnings:
+            story.append(Paragraph("<b>🔴 Deficit di Mobilità (Ipomobilità):</b>", body))
+            story.append(Spacer(1, 6))
             
-            # Risk table
-            risk_table_data = [
-                ["Infortuni associati:", ", ".join(warning['risk_injuries'][:3])],
-                ["Meccanismo:", warning['mechanism']],
-            ]
+            for warning in hypomobile_warnings[:8]:
+                priority_icon = warning.get('priority_icon', '⚠️')
+                priority = warning.get('priority', 'MODERATO')
+                test_name = warning.get('test', 'Test sconosciuto')
+                score = warning.get('score', 0)
+                
+                risk_text = f"{priority_icon} <b>{test_name}</b> — Score: {score:.0f}% — Priorità: {priority}"
+                story.append(Paragraph(risk_text, body))
+                story.append(Spacer(1, 3))
             
-            if warning['sport_specific']:
-                risk_table_data.append(["Impatto sport-specifico:", warning['sport_specific']])
-            
-            risk_table_data.append(["Evidenza scientifica:", warning['evidence']])
-            risk_table_data.append(["Azione raccomandata:", warning['action']])
-            
-            if warning.get('note'):
-                risk_table_data.append(["Nota:", warning['note']])
-            
-            t = Table(risk_table_data, colWidths=[4.5*cm, 12*cm])
-            t.setStyle(TableStyle([
-                ("BACKGROUND", (0, 0), (0, -1), colors.HexColor("#f3f4f6")),
-                ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
-                ("FONTSIZE", (0, 0), (-1, -1), 7),
-                ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                ("GRID", (0, 0), (-1, -1), 0.25, colors.grey),
-                ("LEFTPADDING", (0, 0), (-1, -1), 6),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 6),
-                ("TOPPADDING", (0, 0), (-1, -1), 4),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
-            ]))
-            
-            # Color code by priority
-            if warning["priority"] == "CRITICO":
-                bg_color = colors.HexColor("#fee2e2")
-            elif warning["priority"] == "ALTO":
-                bg_color = colors.HexColor("#fed7aa")
-            else:
-                bg_color = colors.HexColor("#fef3c7")
-            
-            t.setStyle(TableStyle([
-                ("BACKGROUND", (0, 0), (-1, -1), bg_color),
-            ]))
-            
-            story.append(t)
-            
-            if warning.get("pain_present"):
-                pain_warning = "<b>⚠️ DOLORE PRESENTE IN QUESTO TEST - Riferimento medico raccomandato prima di procedere</b>"
-                story.append(Spacer(1, 4))
-                story.append(Paragraph(pain_warning, small))
-            
+            if len(hypomobile_warnings) > 8:
+                story.append(Paragraph(f"<i>... e altri {len(hypomobile_warnings)-8} deficit.</i>", small))
             story.append(Spacer(1, 12))
         
-        if len(risk_warnings) > 8:
-            story.append(Paragraph(f"<i>... e altri {len(risk_warnings)-8} deficit identificati. Vedere sezione raccomandazioni.</i>", small))
+        # Show hypermobility warnings (excessive ROM)
+        if hypermobile_warnings:
+            story.append(Paragraph("<b>⚖️ Eccessiva Mobilità (Ipermobilità - Rischio Instabilità):</b>", body))
+            story.append(Spacer(1, 6))
+            
+            for warning in hypermobile_warnings[:8]:
+                priority_icon = "⚖️"
+                priority = warning.get('priority', 'MODERATO')
+                test_name = warning.get('test', 'Test sconosciuto')
+                score = warning.get('score', 0)
+                note = warning.get('note', '')
+                severity = warning.get('severity', 'MILD')
+                
+                # Color code by severity
+                if severity == "SEVERE":
+                    severity_color = "SEVERA"
+                    icon = "🔴"
+                elif severity == "MODERATE":
+                    severity_color = "MODERATA"
+                    icon = "🟠"
+                else:
+                    severity_color = "LIEVE"
+                    icon = "🟡"
+                
+                risk_text = f"{icon} <b>{test_name}</b> — Ipermobilità {severity_color} — Priorità: {priority}"
+                story.append(Paragraph(risk_text, body))
+                if note:
+                    story.append(Paragraph(f"<i>{note}</i>", small))
+                story.append(Spacer(1, 5))
+            
+            if len(hypermobile_warnings) > 8:
+                story.append(Paragraph(f"<i>... e altri {len(hypermobile_warnings)-8} casi di ipermobilità.</i>", small))
+            story.append(Spacer(1, 12))
+            
+            # Add explanation for hypermobility
+            hypermobility_note = (
+                "<b>Nota sull'Ipermobilità:</b> L'eccessivo range di movimento può indicare lassità "
+                "capsulo-legamentosa che riduce la stabilità articolare. Studi recenti (Liaghat 2021) "
+                "dimostrano che atleti ipermobili hanno rischio 3.25x maggiore di infortuni alla spalla. "
+                "Raccomandazione: focus su stabilizzazione, controllo motorio e rinforzo isometrico end-range."
+            )
+            note_box = Table([[Paragraph(hypermobility_note, small)]], colWidths=[16*cm])
+            note_box.setStyle(TableStyle([
+                ("BACKGROUND", (0,0), (-1,-1), colors.HexColor("#e0f2fe")),  # Light blue
+                ("BOX", (0,0), (-1,-1), 1, colors.HexColor("#0ea5e9")),
+                ("LEFTPADDING", (0,0), (-1,-1), 10),
+                ("RIGHTPADDING", (0,0), (-1,-1), 10),
+                ("TOPPADDING", (0,0), (-1,-1), 8),
+                ("BOTTOMPADDING", (0,0), (-1,-1), 8),
+            ]))
+            story.append(note_box)
         
         story.append(Spacer(1, 16))
     
@@ -1867,139 +2379,6 @@ def pdf_report_clinico(logo_bytes, athlete, evaluator, date_str, section, df,
     story.append(conclusion_header)
     story.append(Spacer(1, 16))
     
-    # Enhanced summary header with colored badges
-    if recommendations:
-        summary_counts = {
-            "critical": len([r for r in recommendations if r["priority"] == "🚨 CRITICA"]),
-            "asymmetry": len([r for r in recommendations if r["priority"] == "⚖️ ASIMMETRIA"]),
-            "moderate": len([r for r in recommendations if r["priority"] == "⚠️ MODERATA"])
-        }
-        
-        # Create colored summary boxes
-        summary_data = [[
-            Paragraph(f"<b>CRITICHE</b><br/><font size=16><b>{summary_counts['critical']}</b></font>", body),
-            Paragraph(f"<b>ASIMMETRIE</b><br/><font size=16><b>{summary_counts['asymmetry']}</b></font>", body),
-            Paragraph(f"<b>MODERATE</b><br/><font size=16><b>{summary_counts['moderate']}</b></font>", body),
-            Paragraph(f"<b>TOTALE</b><br/><font size=16><b>{len(recommendations)}</b></font>", body)
-        ]]
-        
-        summary_table = Table(summary_data, colWidths=[4.2*cm, 4.2*cm, 4.2*cm, 4.2*cm])
-        summary_table.setStyle(TableStyle([
-            ("ALIGN", (0,0), (-1,-1), "CENTER"),
-            ("VALIGN", (0,0), (-1,-1), "MIDDLE"),
-            ("BACKGROUND", (0,0), (0,0), COLOR_BG_CRITICAL),
-            ("BACKGROUND", (1,0), (1,0), COLOR_BG_ASYMMETRY),
-            ("BACKGROUND", (2,0), (2,0), COLOR_BG_MODERATE),
-            ("BACKGROUND", (3,0), (3,0), COLOR_BG_INFO),
-            ("BOX", (0,0), (0,0), 2, COLOR_CRITICAL),
-            ("BOX", (1,0), (1,0), 2, COLOR_ASYMMETRY),
-            ("BOX", (2,0), (2,0), 2, COLOR_MODERATE),
-            ("BOX", (3,0), (3,0), 2, COLOR_PRIMARY),
-            ("LEFTPADDING", (0,0), (-1,-1), 10),
-            ("RIGHTPADDING", (0,0), (-1,-1), 10),
-            ("TOPPADDING", (0,0), (-1,-1), 12),
-            ("BOTTOMPADDING", (0,0), (-1,-1), 12),
-        ]))
-        story.append(summary_table)
-        story.append(Spacer(1, 20))
-        
-        # Detailed priorities with enhanced visual boxes
-        story.append(Paragraph("<b>ELENCO PRIORITÀ DI INTERVENTO (in ordine di urgenza):</b>", heading))
-        story.append(Spacer(1, 12))
-        
-        for rec in recommendations[:10]:  # Top 10 priorities
-            # Determine colors based on priority type
-            if rec["priority"] == "🚨 CRITICA":
-                bg_color = COLOR_BG_CRITICAL
-                border_color = COLOR_CRITICAL
-                priority_label = "CRITICA"
-            elif rec["priority"] == "⚖️ ASIMMETRIA":
-                bg_color = COLOR_BG_ASYMMETRY
-                border_color = COLOR_ASYMMETRY
-                priority_label = "ASIMMETRIA"
-            else:
-                bg_color = COLOR_BG_MODERATE
-                border_color = COLOR_MODERATE
-                priority_label = "MODERATA"
-            
-            # Priority badge and header in colored box
-            priority_header_text = f"<b>PRIORITÀ {rec['priority_num']}: {priority_label}</b>"
-            priority_box = Table([[Paragraph(priority_header_text, body)]], colWidths=[17*cm])
-            priority_box.setStyle(TableStyle([
-                ("BACKGROUND", (0,0), (-1,-1), bg_color),
-                ("BOX", (0,0), (-1,-1), 2, border_color),
-                ("LEFTPADDING", (0,0), (-1,-1), 10),
-                ("RIGHTPADDING", (0,0), (-1,-1), 10),
-                ("TOPPADDING", (0,0), (-1,-1), 8),
-                ("BOTTOMPADDING", (0,0), (-1,-1), 8),
-            ]))
-            story.append(priority_box)
-            story.append(Spacer(1, 6))
-            
-            # Details table
-            detail_rows = []
-            detail_rows.append([Paragraph("<b>Test:</b>", body), Paragraph(rec['test'], body)])
-            detail_rows.append([Paragraph("<b>Regione:</b>", body), Paragraph(rec['region'], body)])
-            
-            # Score and metrics
-            if rec["priority"] == "⚖️ ASIMMETRIA":
-                detail_rows.append([Paragraph("<b>Score Simmetria:</b>", body), 
-                                   Paragraph(f"{rec['score']:.1f}/10", body)])
-                detail_rows.append([Paragraph("<b>Differenza:</b>", body), 
-                                   Paragraph(f"{rec['delta']} (~{rec.get('asym_percent', 0)}% asimmetria)", body)])
-                detail_rows.append([Paragraph("<b>Lato debole:</b>", body), 
-                                   Paragraph(rec['weaker_side'].upper(), body)])
-            else:
-                detail_rows.append([Paragraph("<b>Score:</b>", body), 
-                                   Paragraph(f"{rec['score']:.1f}/10", body)])
-                detail_rows.append([Paragraph("<b>Deficit:</b>", body), 
-                                   Paragraph(f"~{rec.get('deficit_percent', 0)}% sotto riferimento", body)])
-            
-            detail_rows.append([Paragraph("<b>Impatto:</b>", body), 
-                               Paragraph(rec['impact'], body)])
-            detail_rows.append([Paragraph("<b>Raccomandazione:</b>", body), 
-                               Paragraph(rec['recommendation'], body)])
-            detail_rows.append([Paragraph("<b>Timeline:</b>", body), 
-                               Paragraph(rec['timeline'], body)])
-            
-            detail_table = Table(detail_rows, colWidths=[4*cm, 13*cm])
-            detail_table.setStyle(TableStyle([
-                ("VALIGN", (0,0), (-1,-1), "TOP"),
-                ("FONTNAME", (0,0), (0,-1), "Helvetica-Bold"),
-                ("BACKGROUND", (0,0), (0,-1), colors.HexColor("#f9fafb")),
-                ("GRID", (0,0), (-1,-1), 0.5, colors.lightgrey),
-                ("LEFTPADDING", (0,0), (-1,-1), 8),
-                ("RIGHTPADDING", (0,0), (-1,-1), 8),
-                ("TOPPADDING", (0,0), (-1,-1), 6),
-                ("BOTTOMPADDING", (0,0), (-1,-1), 6),
-            ]))
-            story.append(detail_table)
-            story.append(Spacer(1, 16))
-    else:
-        story.append(Paragraph("✅ Nessuna limitazione critica o asimmetria significativa rilevata. Continuare monitoraggio periodico.", body))
-    
-    story.append(Spacer(1, 20))
-    
-    # Clinical interpretation note in colored box
-    interpretation = (
-        "<b>Nota Interpretativa:</b><br/>"
-        "Le priorità sono ordinate per urgenza clinica. Si raccomanda di affrontare le problematiche "
-        "nell'ordine indicato, iniziando dalle valutazioni critiche e dai deficit di simmetria più significativi. "
-        "Le asimmetrie bilaterali richiedono particolare attenzione in quanto possono portare a pattern di movimento "
-        "compensatori e aumentare il rischio di sovraccarico su strutture specifiche."
-    )
-    interpretation_box = Table([[Paragraph(interpretation, small)]], colWidths=[17*cm])
-    interpretation_box.setStyle(TableStyle([
-        ("BACKGROUND", (0,0), (-1,-1), colors.HexColor("#fef9c3")),
-        ("BOX", (0,0), (-1,-1), 1, COLOR_MODERATE),
-        ("LEFTPADDING", (0,0), (-1,-1), 10),
-        ("RIGHTPADDING", (0,0), (-1,-1), 10),
-        ("TOPPADDING", (0,0), (-1,-1), 8),
-        ("BOTTOMPADDING", (0,0), (-1,-1), 8),
-    ]))
-    story.append(interpretation_box)
-    story.append(Spacer(1, 18))
-
     # Pain regions in styled box
     pain_regions = []
     for _, row in df.iterrows():
@@ -2034,6 +2413,66 @@ def pdf_report_clinico(logo_bytes, athlete, evaluator, date_str, section, df,
         story.append(pain_box)
     else:
         story.append(Paragraph("✅ Nessuna regione dolorosa segnalata.", body))
+    story.append(Spacer(1, 18))
+    
+    # Asymmetries detected section
+    story.append(Paragraph("<b>Asimmetrie Rilevate</b>", heading))
+    asymmetries = []
+    for _, row in df.iterrows():
+        if pd.notna(row.get("SymScore")) and row.get("SymScore") < 90:
+            test_name = row.get("Test", "Test sconosciuto")
+            sym_score = row.get("SymScore", 0)
+            dx_val = row.get("Dx", 0)
+            sx_val = row.get("Sx", 0)
+            delta = row.get("Delta", 0)
+            unit = row.get("Unità", "")
+            
+            # Determine severity
+            if sym_score < 70:
+                severity = "ACUTA"
+                severity_color = COLOR_CRITICAL
+                bg_color = COLOR_BG_CRITICAL
+                icon = "🔴"
+            else:
+                severity = "MODERATA"
+                severity_color = colors.HexColor("#F59E0B")
+                bg_color = colors.HexColor("#FEF3C7")
+                icon = "🟡"
+            
+            asymmetries.append({
+                "test": test_name,
+                "sym_score": sym_score,
+                "dx": dx_val,
+                "sx": sx_val,
+                "delta": delta,
+                "unit": unit,
+                "severity": severity,
+                "icon": icon,
+                "bg_color": bg_color
+            })
+    
+    if asymmetries:
+        asym_items = []
+        for asym in asymmetries:
+            asym_text = (f"{asym['icon']} <b>{asym['test']}</b> — "
+                        f"Asimmetria {asym['severity']} (SymScore: {asym['sym_score']:.0f}%) — "
+                        f"Δ = {asym['delta']:.1f} {asym['unit']} "
+                        f"(Dx: {asym['dx']:.1f}, Sx: {asym['sx']:.1f})")
+            asym_items.append(asym_text)
+        
+        asym_list = "<br/>".join(asym_items)
+        asym_box = Table([[Paragraph(asym_list, body)]], colWidths=[17*cm])
+        asym_box.setStyle(TableStyle([
+            ("BACKGROUND", (0,0), (-1,-1), colors.HexColor("#FEF9C3")),
+            ("BOX", (0,0), (-1,-1), 1.5, colors.HexColor("#EAB308")),
+            ("LEFTPADDING", (0,0), (-1,-1), 10),
+            ("RIGHTPADDING", (0,0), (-1,-1), 10),
+            ("TOPPADDING", (0,0), (-1,-1), 8),
+            ("BOTTOMPADDING", (0,0), (-1,-1), 8),
+        ]))
+        story.append(asym_box)
+    else:
+        story.append(Paragraph("✅ Nessuna asimmetria significativa rilevata (tutte SymScore ≥90%).", body))
     story.append(Spacer(1, 18))
 
     # Clinical notes with styled boxes
@@ -2081,6 +2520,63 @@ def pdf_report_clinico(logo_bytes, athlete, evaluator, date_str, section, df,
         ("VALIGN", (0,0), (-1,-1), "MIDDLE"),
     ]))
     story.append(signature_table)
+    
+    # Bibliografia scientifica (testo molto piccolo)
+    story.append(PageBreak())
+    story.append(Spacer(1, 12))
+    
+    bib_title_style = ParagraphStyle(
+        "BibTitle",
+        parent=getSampleStyleSheet()["Normal"],
+        fontSize=10,
+        fontName="Helvetica-Bold",
+        textColor=colors.HexColor(PRIMARY),
+        alignment=1,  # Center
+        spaceAfter=8
+    )
+    
+    bib_text_style = ParagraphStyle(
+        "BibText",
+        parent=getSampleStyleSheet()["Normal"],
+        fontSize=7,
+        fontName="Helvetica",
+        textColor=colors.grey,
+        alignment=0,  # Left
+        leading=9,
+        leftIndent=5,
+        rightIndent=5,
+        spaceAfter=3
+    )
+    
+    story.append(Paragraph("BIBLIOGRAFIA SCIENTIFICA", bib_title_style))
+    story.append(Paragraph(
+        "<i>Il presente sistema di valutazione è basato sulle seguenti evidenze scientifiche:</i>",
+        bib_text_style
+    ))
+    story.append(Spacer(1, 6))
+    
+    # Add each reference
+    for i, ref in enumerate(BIBLIOGRAPHY, 1):
+        story.append(Paragraph(f"{i}. {ref}", bib_text_style))
+    
+    story.append(Spacer(1, 10))
+    
+    disclaimer_style = ParagraphStyle(
+        "Disclaimer",
+        parent=getSampleStyleSheet()["Normal"],
+        fontSize=6,
+        fontName="Helvetica-Oblique",
+        textColor=colors.grey,
+        alignment=1,  # Center
+        leading=8
+    )
+    
+    story.append(Paragraph(
+        "Le raccomandazioni cliniche fornite in questo report sono basate sulle migliori evidenze disponibili "
+        "e devono essere interpretate nel contesto clinico individuale. La pratica fisioterapica richiede sempre "
+        "ragionamento clinico professionale e considerazione delle caratteristiche specifiche del paziente.",
+        disclaimer_style
+    ))
 
     doc.build(story, onFirstPage=add_footer, onLaterPages=add_footer)
     buf.seek(0)
@@ -2436,9 +2932,9 @@ with tab1:
         st.caption("Patient-Specific Functional Scale - Valutare 3 attività limitate dal problema")
         
         psfs_activities = st.session_state.get("psfs_activities", [
-            {"activity": "Squat profondo", "score": 10},
-            {"activity": "Corsa", "score": 10},
-            {"activity": "Overhead press", "score": 10}
+            {"activity": "Squat profondo", "score": 100},
+            {"activity": "Corsa", "score": 100},
+            {"activity": "Overhead press", "score": 100}
         ])
         
         for i in range(3):
@@ -2448,15 +2944,14 @@ with tab1:
                                                                value=psfs_activities[i]["activity"],
                                                                key=f"psfs_act_{i}")
             with col_score:
-                psfs_activities[i]["score"] = st.slider(f"Capacità", 0, 10, 
-                                                        psfs_activities[i]["score"],
+                psfs_activities[i]["score"] = st.number_input(f"Capacità (%)", min_value=0, max_value=100, value=psfs_activities[i].get("score", 100),
                                                         key=f"psfs_score_{i}",
-                                                        help="0=impossibile, 10=come prima del problema")
+                                                        help="0=impossibile, 100=come prima del problema")
         
         st.session_state["psfs_activities"] = psfs_activities
         
         avg_psfs = np.mean([a["score"] for a in psfs_activities])
-        st.metric("PSFS Medio", f"{avg_psfs:.1f}/10")
+        st.metric("PSFS Medio", f"{avg_psfs:.0f}%")
         
         if avg_psfs < 5:
             st.warning("⚠️ Limitazione funzionale significativa")
@@ -2507,12 +3002,12 @@ with tab3:
         avg_score = df_show["Score"].mean() if not df_show["Score"].isna().all() else 0.0
         painful = int(df_show["Dolore"].sum()) if "Dolore" in df_show.columns else 0
         sym_mean = df_show["SymScore"].mean() if "SymScore" in df_show.columns else np.nan
-        critical_count = len(df_show[df_show["Score"] < 4])
+        critical_count = len(df_show[df_show["Score"] < 31])
         
         with col_metric1:
-            st.metric("Score Medio", f"{avg_score:.1f}/10",
-                     delta="Buono" if avg_score >= 7 else "Da migliorare",
-                     delta_color="normal" if avg_score >= 7 else "inverse")
+            st.metric("Score Medio", f"{avg_score:.0f}%",
+                     delta="Buono" if avg_score >= 71 else "Da migliorare",
+                     delta_color="normal" if avg_score >= 71 else "inverse")
         
         with col_metric2:
             st.metric("Test con Dolore", f"{painful}",
@@ -2521,9 +3016,9 @@ with tab3:
         
         with col_metric3:
             st.metric("Symmetry Medio", 
-                     f"{sym_mean:.1f}/10" if not pd.isna(sym_mean) else "n/a",
-                     delta="Simmetrico" if sym_mean >= 7 else "Asimmetrico" if not pd.isna(sym_mean) else "",
-                     delta_color="normal" if sym_mean >= 7 else "inverse")
+                     f"{sym_mean:.0f}%" if not pd.isna(sym_mean) else "n/a",
+                     delta="Simmetrico" if sym_mean >= 71 else "Asimmetrico" if not pd.isna(sym_mean) else "",
+                     delta_color="normal" if sym_mean >= 71 else "inverse")
         
         with col_metric4:
             st.metric("Test Critici", f"{critical_count}",
@@ -2567,12 +3062,14 @@ with tab3:
         def color_score(val):
             try:
                 v = float(val)
-                if v >= 7:
-                    color = '#d4edda'
-                elif v >= 4:
-                    color = '#fff3cd'
+                if v >= 71:
+                    color = '#d4edda'  # Verde
+                elif v >= 51:
+                    color = '#fef9c3'  # Giallo
+                elif v >= 31:
+                    color = '#fed7aa'  # Arancione
                 else:
-                    color = '#f8d7da'
+                    color = '#f8d7da'  # Rosso
                 return f'background-color: {color}'
             except:
                 return ''
@@ -2640,9 +3137,9 @@ with tab3:
                 
                 # Different display based on type
                 if rec["priority"] == "⚖️ ASIMMETRIA":
-                    title = f"{priority_label} — {rec['test']} (Simmetria: {rec['score']:.1f}/10)"
+                    title = f"{priority_label} — {rec['test']} (Simmetria: {rec['score']:.0f}%)"
                 else:
-                    title = f"{priority_label} — {rec['test']} (Score: {rec['score']:.1f}/10)"
+                    title = f"{priority_label} — {rec['test']} (Score: {rec['score']:.0f}%)"
                 
                 with st.expander(title, expanded=(rec['priority_num'] <= 3)):
                     st.markdown(f"**📍 Regione:** {rec['region']}")
@@ -2664,85 +3161,175 @@ with tab3:
         st.markdown("---")
         
         # NEW: Injury Risk Assessment (EBM-based)
-        st.markdown("### 🚨 Analisi Rischio Infortuni (Evidence-Based)")
+        st.markdown("### 🚨 Analisi Rischio Infortuni & Ipermobilità (Evidence-Based)")
         
-        st.info("""📚 **Analisi basata su evidenze scientifiche**: I seguenti warning identificano deficit biomeccanici 
-        associati ad aumentato rischio di infortuni specifici, basandosi su studi prospettici, revisioni sistematiche 
-        e meta-analisi pubblicate. Ogni warning include il riferimento scientifico di supporto.""")
+        st.info("""📚 **Analisi basata su evidenze scientifiche**: I seguenti warning identificano sia deficit biomeccanici 
+        (ipomobilità) che eccessi di mobilità (ipermobilità), entrambi associati ad aumentato rischio di infortuni. 
+        Studi recenti (Liaghat 2021, Pasanen 2025) dimostrano che l'ipermobilità aumenta il rischio di 3.25x per infortuni spalla.""")
         
         risk_warnings = assess_injury_risk(df_show, st.session_state.get("sport", "Powerlifting"), st.session_state)
         
         if risk_warnings:
-            # Risk summary
-            critical_count = sum(1 for w in risk_warnings if w["priority"] == "CRITICO")
-            high_count = sum(1 for w in risk_warnings if w["priority"] == "ALTO")
-            moderate_count = sum(1 for w in risk_warnings if w["priority"] == "MODERATO")
+            # Separate hypermobility from hypomobility
+            hypermobile_warnings = [w for w in risk_warnings if w.get('hypermobility', False)]
+            hypomobile_warnings = [w for w in risk_warnings if not w.get('hypermobility', False)]
             
-            col_risk1, col_risk2, col_risk3 = st.columns(3)
+            # Risk summary metrics
+            critical_count = sum(1 for w in hypomobile_warnings if w["priority"] == "CRITICO")
+            high_count = sum(1 for w in hypomobile_warnings if w["priority"] == "ALTO")
+            moderate_count = sum(1 for w in hypomobile_warnings if w["priority"] == "MODERATO")
+            
+            # Count hypermobile zones with score >100%
+            hypermobile_critical_count = sum(1 for w in hypermobile_warnings if w.get("score", 0) > 100)
+            
+            # Count moderate hypomobility (yellow/orange zones: 31-70%)
+            moderate_hypomobile_count = len([w for w in hypomobile_warnings 
+                                            if 31 <= w.get("score", 0) <= 70])
+            
+            # Count asymmetries from df
+            asymmetry_count = len(df_show[(df_show["SymScore"].notnull()) & (df_show["SymScore"] < 90)])
+            
+            # Total problematic zones
+            total_issues = critical_count + high_count + moderate_hypomobile_count + hypermobile_critical_count + asymmetry_count
+            
+            col_risk1, col_risk2, col_risk3, col_risk4, col_risk5 = st.columns(5)
             with col_risk1:
-                st.metric("🔴 Rischi CRITICI", critical_count, 
+                st.metric("🔴 Ipomobili Critiche", critical_count, 
                          delta="Azione immediata" if critical_count > 0 else "OK",
                          delta_color="inverse" if critical_count > 0 else "normal")
             with col_risk2:
-                st.metric("🟠 Rischi ALTI", high_count,
-                         delta="Attenzione" if high_count > 0 else "OK",
-                         delta_color="inverse" if high_count > 0 else "normal")
+                st.metric("🟠 Ipermobili Critiche", hypermobile_critical_count,
+                         delta=">100%" if hypermobile_critical_count > 0 else "OK",
+                         delta_color="inverse" if hypermobile_critical_count > 0 else "normal")
             with col_risk3:
-                st.metric("🟡 Rischi MODERATI", moderate_count,
-                         delta="Monitorare" if moderate_count > 0 else "OK",
+                st.metric("🟡 Ipomobilità Moderate", moderate_hypomobile_count,
+                         delta="Giallo/Arancio" if moderate_hypomobile_count > 0 else "OK",
                          delta_color="normal")
+            with col_risk4:
+                st.metric("⚖️ Asimmetrie", asymmetry_count,
+                         delta="Bilaterale" if asymmetry_count > 0 else "OK",
+                         delta_color="inverse" if asymmetry_count > 0 else "normal")
+            with col_risk5:
+                st.metric("📊 Totale", total_issues,
+                         delta="Zone a rischio" if total_issues > 0 else "OK",
+                         delta_color="inverse" if total_issues > 0 else "normal")
             
             st.markdown("---")
             
-            # Detailed warnings
-            for idx, warning in enumerate(risk_warnings, 1):
-                # Color code by priority
-                if warning["priority"] == "CRITICO":
-                    border_color = "#dc2626"
-                    bg_color = "#fee2e2"
-                elif warning["priority"] == "ALTO":
-                    border_color = "#ea580c"
-                    bg_color = "#fed7aa"
-                else:
-                    border_color = "#ca8a04"
-                    bg_color = "#fef3c7"
+            # Display hypomobility warnings first
+            if hypomobile_warnings:
+                st.markdown("#### 🔴 Deficit di Mobilità (Ipomobilità)")
                 
-                with st.container():
-                    st.markdown(f"""
-                    <div style='border-left: 4px solid {border_color}; padding-left: 15px; background-color: {bg_color}20; padding: 10px; border-radius: 5px; margin-bottom: 15px;'>
-                        <h4>{warning['priority_icon']} <b>{warning['priority']}</b> — {warning['test']}</h4>
-                        <p><b>Score:</b> {warning['score']:.1f}/10 | <b>Urgenza intervento:</b> {warning['urgency']}</p>
-                    </div>
-                    """, unsafe_allow_html=True)
+                for idx, warning in enumerate(hypomobile_warnings, 1):
+                    # Color code by priority
+                    if warning["priority"] == "CRITICO":
+                        border_color = "#dc2626"
+                        bg_color = "#fee2e2"
+                    elif warning["priority"] == "ALTO":
+                        border_color = "#ea580c"
+                        bg_color = "#fed7aa"
+                    else:
+                        border_color = "#ca8a04"
+                        bg_color = "#fef3c7"
                     
-                    col_w1, col_w2 = st.columns([1, 1])
-                    
-                    with col_w1:
-                        st.markdown(f"**🎯 Infortuni associati:**")
-                        for injury in warning['risk_injuries']:
-                            st.markdown(f"- {injury}")
+                    with st.container():
+                        st.markdown(f"""
+                        <div style='border-left: 4px solid {border_color}; padding-left: 15px; background-color: {bg_color}20; padding: 10px; border-radius: 5px; margin-bottom: 15px;'>
+                            <h4>{warning['priority_icon']} <b>{warning['priority']}</b> — {warning['test']}</h4>
+                            <p><b>Score:</b> {warning['score']:.0f}% | <b>Urgenza intervento:</b> {warning['urgency']}</p>
+                        </div>
+                        """, unsafe_allow_html=True)
                         
-                        if warning['sport_specific']:
-                            st.markdown(f"**⚡ Impatto sport-specifico:**")
-                            st.markdown(f"*{warning['sport_specific']}*")
-                    
-                    with col_w2:
-                        st.markdown(f"**🔬 Meccanismo biomeccanico:**")
-                        st.markdown(f"{warning['mechanism']}")
+                        col_w1, col_w2 = st.columns([1, 1])
                         
-                        st.markdown(f"**📚 Evidenza scientifica:**")
-                        st.markdown(f"*{warning['evidence']}*")
+                        with col_w1:
+                            st.markdown(f"**🎯 Infortuni associati:**")
+                            for injury in warning['risk_injuries']:
+                                st.markdown(f"- {injury}")
+                            
+                            if warning['sport_specific']:
+                                st.markdown(f"**⚡ Impatto sport-specifico:**")
+                                st.markdown(f"*{warning['sport_specific']}*")
+                        
+                        with col_w2:
+                            st.markdown(f"**🔬 Meccanismo biomeccanico:**")
+                            st.markdown(f"{warning['mechanism']}")
+                            
+                            st.markdown(f"**📚 Evidenza scientifica:**")
+                            st.markdown(f"*{warning['evidence']}*")
+                        
+                        st.markdown(f"**✅ Azione raccomandata:**")
+                        st.markdown(f"➡️ {warning['action']}")
+                        
+                        if warning.get('note'):
+                            st.info(f"ℹ️ {warning['note']}")
+                        
+                        if warning.get('pain_present'):
+                            st.error("⚠️ **DOLORE PRESENTE** - Riferimento medico raccomandato prima di procedere con carico")
+                        
+                        st.markdown("---")
+            
+            # Display hypermobility warnings
+            if hypermobile_warnings:
+                st.markdown("#### ⚖️ Eccessiva Mobilità (Ipermobilità - Rischio Instabilità)")
+                
+                st.info("""💡 **Zona Ottimale**: Un ROM eccessivo può aumentare il rischio di instabilità articolare, lussazioni e 
+                perdita di controllo motorio. La ricerca scientifica conferma che l'ipermobilità è un fattore di rischio significativo 
+                per infortuni (OR=3.25 per spalla). Priorità: STABILIZZAZIONE, non stretching!""")
+                
+                for idx, warning in enumerate(hypermobile_warnings, 1):
+                    severity = warning.get('severity', 'MILD')
                     
-                    st.markdown(f"**✅ Azione raccomandata:**")
-                    st.markdown(f"➡️ {warning['action']}")
+                    # Color code by severity
+                    if severity == "SEVERE":
+                        border_color = "#dc2626"
+                        bg_color = "#fee2e2"
+                        severity_icon = "🔴"
+                    elif severity == "MODERATE":
+                        border_color = "#f59e0b"
+                        bg_color = "#fef3c7"
+                        severity_icon = "🟡"
+                    else:
+                        border_color = "#3b82f6"
+                        bg_color = "#dbeafe"
+                        severity_icon = "🔵"
                     
-                    if warning.get('note'):
-                        st.info(f"ℹ️ {warning['note']}")
-                    
-                    if warning.get('pain_present'):
-                        st.error("⚠️ **DOLORE PRESENTE** - Riferimento medico raccomandato prima di procedere con carico")
-                    
-                    st.markdown("---")
+                    with st.container():
+                        st.markdown(f"""
+                        <div style='border-left: 4px solid {border_color}; padding-left: 15px; background-color: {bg_color}20; padding: 10px; border-radius: 5px; margin-bottom: 15px;'>
+                            <h4>⚖️ {severity_icon} <b>Ipermobilità {severity}</b> — {warning['test']}</h4>
+                            <p><b>Score:</b> {warning['score']:.0f}% | <b>Priorità:</b> {warning['priority']}</p>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        
+                        col_w1, col_w2 = st.columns([1, 1])
+                        
+                        with col_w1:
+                            st.markdown(f"**🎯 Rischi associati:**")
+                            for injury in warning['risk_injuries']:
+                                st.markdown(f"- {injury}")
+                            
+                            if warning['sport_specific']:
+                                st.markdown(f"**⚡ Impatto sport-specifico:**")
+                                st.markdown(f"*{warning['sport_specific']}*")
+                        
+                        with col_w2:
+                            st.markdown(f"**🔬 Meccanismo biomeccanico:**")
+                            st.markdown(f"{warning['mechanism']}")
+                            
+                            st.markdown(f"**📚 Evidenza scientifica:**")
+                            st.markdown(f"*{warning['evidence']}*")
+                        
+                        st.markdown(f"**✅ Raccomandazione (STABILIZZAZIONE):**")
+                        st.markdown(f"➡️ {warning['action']}")
+                        
+                        if warning.get('note'):
+                            st.warning(f"⚖️ {warning['note']}")
+                        
+                        if warning.get('pain_present'):
+                            st.error("⚠️ **DOLORE PRESENTE** - Possibile instabilità con sintomatologia, riferimento medico urgente")
+                        
+                        st.markdown("---")
         else:
             st.success("✅ Nessun deficit critico identificato. Tutti i test rientrano nei range di sicurezza basati su evidenze.")
 
@@ -2764,18 +3351,18 @@ with tab4:
                 # Calculate avg score from history
                 vals = h.get("data", {})
                 scores = []
-                for test_data in vals.values():
+                for test_name, test_data in vals.items():
                     ref = test_data.get("ref", 10.0)
                     hib = test_data.get("higher_is_better", True)
                     if test_data.get("bilat", False):
                         dx = test_data.get("Dx", 0.0)
                         sx = test_data.get("Sx", 0.0)
                         avg = (float(dx) + float(sx)) / 2.0
-                        score = ability_linear(avg, ref, hib)
+                        score = ability_linear(avg, ref, hib, test_name)
                         scores.append(score)
                     else:
                         val = test_data.get("Val", 0.0)
-                        score = ability_linear(val, ref, hib)
+                        score = ability_linear(val, ref, hib, test_name)
                         scores.append(score)
                 
                 avg_score = np.mean(scores) if scores else 0
@@ -2841,18 +3428,18 @@ with tab4:
                                     dx1 = data1.get("Dx", 0.0)
                                     sx1 = data1.get("Sx", 0.0)
                                     avg1 = (float(dx1) + float(sx1)) / 2.0
-                                    score1 = ability_linear(avg1, ref, hib)
+                                    score1 = ability_linear(avg1, ref, hib, test_name)
                                     
                                     dx2 = data2.get("Dx", 0.0)
                                     sx2 = data2.get("Sx", 0.0)
                                     avg2 = (float(dx2) + float(sx2)) / 2.0
-                                    score2 = ability_linear(avg2, ref, hib)
+                                    score2 = ability_linear(avg2, ref, hib, test_name)
                                 else:
                                     val1 = data1.get("Val", 0.0)
-                                    score1 = ability_linear(val1, ref, hib)
+                                    score1 = ability_linear(val1, ref, hib, test_name)
                                     
                                     val2 = data2.get("Val", 0.0)
-                                    score2 = ability_linear(val2, ref, hib)
+                                    score2 = ability_linear(val2, ref, hib, test_name)
                                 
                                 delta = score2 - score1
                                 trend = "📈" if delta > 0.5 else ("📉" if delta < -0.5 else "➡️")
@@ -2889,25 +3476,25 @@ with tab4:
             # Calcola score medio
             vals = h.get("data", {})
             scores = []
-            for test_data in vals.values():
+            for test_name, test_data in vals.items():
                 ref = test_data.get("ref", 10.0)
                 hib = test_data.get("higher_is_better", True)
                 if test_data.get("bilat", False):
                     dx = test_data.get("Dx", 0.0)
                     sx = test_data.get("Sx", 0.0)
                     avg = (float(dx) + float(sx)) / 2.0
-                    score = ability_linear(avg, ref, hib)
+                    score = ability_linear(avg, ref, hib, test_name)
                     scores.append(score)
                 else:
                     val = test_data.get("Val", 0.0)
-                    score = ability_linear(val, ref, hib)
+                    score = ability_linear(val, ref, hib, test_name)
                     scores.append(score)
             
             avg_score = np.mean(scores) if scores else 0
             
             col_score1, col_score2 = st.columns(2)
             with col_score1:
-                st.metric("Score Medio", f"{avg_score:.1f}/10")
+                st.metric("Score Medio", f"{avg_score:.0f}%")
             with col_score2:
                 st.metric("Numero Test", len(vals))
             
@@ -2925,10 +3512,10 @@ with tab4:
                     dx = test_data.get("Dx", 0.0)
                     sx = test_data.get("Sx", 0.0)
                     avg = (float(dx) + float(sx)) / 2.0
-                    score = ability_linear(avg, ref, hib)
+                    score = ability_linear(avg, ref, hib, test_name)
                 else:
                     val = test_data.get("Val", 0.0)
-                    score = ability_linear(val, ref, hib)
+                    score = ability_linear(val, ref, hib, test_name)
                 
                 test_scores.append({
                     "Test": test_name,
@@ -2991,7 +3578,7 @@ with tab5:
             # Use expanded dataframe for radar to show Dx/Sx separately
             df_radar_expanded = build_df_for_radar("Valutazione Generale")
             df_radar = df_radar_expanded[df_radar_expanded["Score"].notnull()].copy()
-            radar_buf = radar_plot_matplotlib(df_radar, title="Punteggi Test (0-10)") if len(df_radar) >= 3 else None
+            radar_buf = radar_plot_matplotlib(df_radar, title="Punteggi Test (0-140%)") if len(df_radar) >= 3 else None
         except Exception:
             radar_buf = None
         
